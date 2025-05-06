@@ -26,6 +26,13 @@ import {
   ToggleFeatureData,
   ApprovalRequest,
   updateCourseIntroVideo,
+  BulkReorderResponse,
+  updateLessonsOrderApi,
+  OrderItemData,
+  updateSectionsOrderApi,
+  syncCourseCurriculum,
+  SyncCurriculumPayload,
+  SyncCurriculumResponse,
 } from '@/services/course.service'; // Điều chỉnh đường dẫn nếu cần
 
 // Query Key Factory
@@ -319,6 +326,108 @@ export const useToggleCourseFeature = (
     onError: (error) => {
       console.error('Toggle feature failed:', error.message);
       // toast.error(error.message || 'Cập nhật trạng thái nổi bật thất bại.');
+    },
+    ...options,
+  });
+};
+
+// --- Hook Mutation MỚI cho Sync Curriculum ---
+export const useSyncCourseCurriculum = (
+  options?: UseMutationOptions<
+    SyncCurriculumResponse,
+    Error,
+    { courseId: number; payload: SyncCurriculumPayload }
+  >
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    SyncCurriculumResponse,
+    Error,
+    { courseId: number; payload: SyncCurriculumPayload }
+  >({
+    mutationFn: ({ courseId, payload }) =>
+      syncCourseCurriculum(courseId, payload),
+    onSuccess: (data, variables) => {
+      // Invalidate cache chi tiết khóa học để lấy lại dữ liệu mới nhất
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.detailById(variables.courseId),
+      });
+      // Cần lấy slug để invalidate? Hoặc invalidate all slugs
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.detailBySlug(undefined),
+      });
+      console.log(`Curriculum synced for course ${variables.courseId}`);
+      // toast.success(data.message || 'Curriculum saved successfully!');
+    },
+    onError: (error) => {
+      console.error('Curriculum sync failed:', error.message);
+      // toast.error(`Failed to save curriculum: ${error.message}`);
+    },
+    ...options,
+  });
+};
+
+// --- Hook Mutation MỚI cho Bulk Reorder Sections ---
+export const useUpdateSectionsOrder = (
+  options?: UseMutationOptions<
+    BulkReorderResponse,
+    Error,
+    { courseId: number; orderedSections: OrderItemData[] }
+  >
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    BulkReorderResponse,
+    Error,
+    { courseId: number; orderedSections: OrderItemData[] }
+  >({
+    mutationFn: ({ courseId, orderedSections }) =>
+      updateSectionsOrderApi(courseId, orderedSections),
+    onSuccess: (data, variables) => {
+      // Invalidate cache chi tiết khóa học để cập nhật thứ tự sections
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.detailById(variables.courseId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.detailBySlug(undefined),
+      });
+      console.log(`Sections order updated for course ${variables.courseId}`);
+      // toast.success(data.message || 'Sections order updated!');
+    },
+    onError: (error) => {
+      console.error('Update sections order failed:', error.message);
+      // toast.error(`Failed to update sections order: ${error.message}`);
+    },
+    ...options,
+  });
+};
+
+// --- Hook Mutation MỚI cho Bulk Reorder Lessons ---
+export const useUpdateLessonsOrder = (
+  options?: UseMutationOptions<
+    BulkReorderResponse,
+    Error,
+    { sectionId: number; orderedLessons: OrderItemData[] }
+  >
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    BulkReorderResponse,
+    Error,
+    { sectionId: number; orderedLessons: OrderItemData[] }
+  >({
+    mutationFn: ({ sectionId, orderedLessons }) =>
+      updateLessonsOrderApi(sectionId, orderedLessons),
+    onSuccess: (data, variables) => {
+      // Invalidate cache chi tiết khóa học chứa section này
+      // Việc này hơi khó vì không có courseId trực tiếp, cách đơn giản là invalidate all course details
+      queryClient.invalidateQueries({ queryKey: courseKeys.details() });
+      console.log(`Lessons order updated for section ${variables.sectionId}`);
+      // toast.success(data.message || 'Lessons order updated!');
+    },
+    onError: (error) => {
+      console.error('Update lessons order failed:', error.message);
+      // toast.error(`Failed to update lessons order: ${error.message}`);
     },
     ...options,
   });

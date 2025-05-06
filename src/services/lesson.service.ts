@@ -44,6 +44,8 @@ export interface CreateLessonData {
   videoUrl?: string; // Có thể ko cần nếu upload sau
   externalVideoId?: string;
   thumbnailUrl?: string;
+  videoSourceType?: 'YOUTUBE' | 'VIMEO' | 'CLOUDINARY'; // Nếu có
+  externalVideoInput?: string; // Nếu có
   videoDurationSeconds?: number;
   textContent?: string;
   isFreePreview?: boolean;

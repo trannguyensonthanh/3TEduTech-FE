@@ -22,17 +22,17 @@ import { UseFormReturn } from 'react-hook-form';
 
 interface BasicInfoTabProps {
   form: UseFormReturn<{
-    courseName: string;
-    slug: string;
-    shortDescription: string;
-    fullDescription: string;
-    originalPrice: string;
-    discountedPrice: string;
-    categoryId: string;
-    levelId: string;
-    language: string;
-    requirements: string;
-    learningOutcomes: string;
+    courseName?: string;
+    slug?: string;
+    shortDescription?: string;
+    fullDescription?: string;
+    originalPrice?: number;
+    discountedPrice?: number;
+    categoryId?: number;
+    levelId?: number;
+    language?: string;
+    requirements?: string;
+    learningOutcomes?: string;
   }>;
   mockCategories: { CategoryID: number; CategoryName: string }[];
   mockLevels: { LevelID: number; LevelName: string }[];
@@ -53,21 +53,26 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         <FormField
           control={form.control}
           name="courseName"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Course Title</FormLabel>
               <FormControl>
                 <Input
                   placeholder="e.g. Complete Web Development Bootcamp"
                   {...field}
-                  onChange={handleTitleChange}
+                  onChange={(e) => {
+                    field.onChange(e); // Gọi onChange của React Hook Form
+                    handleTitleChange(e); // Gọi logic tùy chỉnh của bạn
+                  }}
                 />
               </FormControl>
               <FormDescription>
                 Give your course an attractive title that clearly explains what
                 the course is about.
               </FormDescription>
-              <FormMessage />
+              {fieldState.error && (
+                <FormMessage>{fieldState.error.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />
@@ -75,7 +80,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         <FormField
           control={form.control}
           name="slug"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>URL Slug</FormLabel>
               <FormControl>
@@ -88,7 +93,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
               <FormDescription>
                 The URL slug is automatically generated from your title.
               </FormDescription>
-              <FormMessage />
+              {fieldState.error && (
+                <FormMessage>{fieldState.error.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />
@@ -96,7 +103,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         <FormField
           control={form.control}
           name="shortDescription"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Short Description</FormLabel>
               <FormControl>
@@ -109,7 +116,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
               <FormDescription>
                 This appears in search results and course cards.
               </FormDescription>
-              <FormMessage />
+              {fieldState.error && (
+                <FormMessage>{fieldState.error.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />
@@ -118,12 +127,12 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           <FormField
             control={form.control}
             name="categoryId"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  onValueChange={(value) => field.onChange(Number(value))}
+                  defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -141,7 +150,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                {fieldState.error && (
+                  <FormMessage>{fieldState.error.message}</FormMessage>
+                )}
               </FormItem>
             )}
           />
@@ -149,12 +160,12 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           <FormField
             control={form.control}
             name="levelId"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>Level</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -172,15 +183,16 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                {fieldState.error && (
+                  <FormMessage>{fieldState.error.message}</FormMessage>
+                )}
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="language"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>Language</FormLabel>
                 <Select
@@ -200,7 +212,12 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                {/* Hiển thị lỗi nếu có */}
+                {fieldState.error && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {fieldState.error.message}
+                  </p>
+                )}
               </FormItem>
             )}
           />

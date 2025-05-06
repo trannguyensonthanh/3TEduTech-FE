@@ -22,17 +22,17 @@ import { UseFormReturn } from 'react-hook-form';
 
 interface PricingTabProps {
   form: UseFormReturn<{
-    courseName: string;
-    slug: string;
-    shortDescription: string;
-    fullDescription: string;
-    originalPrice: string;
-    discountedPrice: string;
-    categoryId: string;
-    levelId: string;
-    language: string;
-    requirements: string;
-    learningOutcomes: string;
+    courseName?: string;
+    slug?: string;
+    shortDescription?: string;
+    fullDescription?: string;
+    originalPrice?: number;
+    discountedPrice?: number;
+    categoryId?: number;
+    levelId?: number;
+    language?: string;
+    requirements?: string;
+    learningOutcomes?: string;
   }>;
 }
 const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
@@ -52,7 +52,7 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
               <FormField
                 control={form.control}
                 name="originalPrice"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>Regular Price ($)</FormLabel>
                     <FormControl>
@@ -69,14 +69,17 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
                     <FormDescription>
                       Set a fair price that reflects the value of your course.
                     </FormDescription>
-                    <FormMessage />
+                    {fieldState.error && (
+                      <FormMessage>{fieldState.error.message}</FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="discountedPrice"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>Discounted Price</FormLabel>
                     <FormControl>
@@ -94,7 +97,9 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
                       Provide a discounted price to attract more students. This
                       is optional.
                     </FormDescription>
-                    <FormMessage />
+                    {fieldState.error && (
+                      <FormMessage>{fieldState.error.message}</FormMessage>
+                    )}
                   </FormItem>
                 )}
               />
@@ -130,9 +135,11 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
                     <span className="font-medium">
                       $
                       {parseFloat(
-                        form.watch('discountedPrice') ||
-                          form.watch('originalPrice') ||
-                          '0'
+                        String(
+                          form.watch('discountedPrice') ||
+                            form.watch('originalPrice') ||
+                            '0'
+                        )
                       ).toFixed(2)}
                     </span>
                   </div>
@@ -144,9 +151,11 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
                       -$
                       {(
                         parseFloat(
-                          form.watch('discountedPrice') ||
-                            form.watch('originalPrice') ||
-                            '0'
+                          String(
+                            form.watch('discountedPrice') ||
+                              form.watch('originalPrice') ||
+                              '0'
+                          )
                         ) * 0.3
                       ).toFixed(2)}
                     </span>
@@ -159,9 +168,11 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
                       -$
                       {(
                         parseFloat(
-                          form.watch('discountedPrice') ||
-                            form.watch('originalPrice') ||
-                            '0'
+                          String(
+                            form.watch('discountedPrice') ||
+                              form.watch('originalPrice') ||
+                              '0'
+                          )
                         ) * 0.03
                       ).toFixed(2)}
                     </span>
@@ -173,9 +184,11 @@ const PricingTab: React.FC<PricingTabProps> = ({ form }) => {
                         $
                         {(
                           parseFloat(
-                            form.watch('discountedPrice') ||
-                              form.watch('originalPrice') ||
-                              '0'
+                            String(
+                              form.watch('discountedPrice') ||
+                                form.watch('originalPrice') ||
+                                '0'
+                            )
                           ) * 0.67
                         ).toFixed(2)}
                       </span>

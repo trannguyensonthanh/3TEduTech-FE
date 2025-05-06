@@ -14,17 +14,17 @@ import { UseFormReturn } from 'react-hook-form';
 
 interface DetailsTabProps {
   form: UseFormReturn<{
-    courseName: string;
-    slug: string;
-    shortDescription: string;
-    fullDescription: string;
-    originalPrice: string;
-    discountedPrice: string;
-    categoryId: string;
-    levelId: string;
-    language: string;
-    requirements: string;
-    learningOutcomes: string;
+    courseName?: string;
+    slug?: string;
+    shortDescription?: string;
+    fullDescription?: string;
+    originalPrice?: number;
+    discountedPrice?: number;
+    categoryId?: number;
+    levelId?: number;
+    language?: string;
+    requirements?: string;
+    learningOutcomes?: string;
   }>;
 }
 
@@ -35,7 +35,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
         <FormField
           control={form.control}
           name="fullDescription"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Full Description</FormLabel>
               <FormControl>
@@ -48,7 +48,9 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
               <FormDescription>
                 You can use HTML formatting for rich text.
               </FormDescription>
-              <FormMessage />
+              {fieldState.error && (
+                <FormMessage>{fieldState.error.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />
@@ -56,7 +58,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
         <FormField
           control={form.control}
           name="requirements"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Requirements</FormLabel>
               <FormControl>
@@ -69,7 +71,9 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
               <FormDescription>
                 List any prerequisites or required knowledge.
               </FormDescription>
-              <FormMessage />
+              {fieldState.error && (
+                <FormMessage>{fieldState.error.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />
@@ -77,7 +81,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
         <FormField
           control={form.control}
           name="learningOutcomes"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Learning Outcomes</FormLabel>
               <FormControl>
@@ -90,7 +94,9 @@ const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
               <FormDescription>
                 List key skills students will gain from your course.
               </FormDescription>
-              <FormMessage />
+              {fieldState.error && (
+                <FormMessage>{fieldState.error.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />

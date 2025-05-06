@@ -28,7 +28,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCourses from './pages/instructor/InstructorCourses';
 import CourseCreation from './pages/instructor/CourseCreation';
-import CourseEdit from './pages/instructor/CourseEdit';
+// import CourseEdit from './pages/instructor/CourseEditt';
 import InstructorAnalytics from './pages/instructor/InstructorAnalytics';
 import InstructorStudents from './pages/instructor/InstructorStudents';
 import InstructorEarnings from './pages/instructor/InstructorEarnings';
@@ -55,6 +55,7 @@ import LevelsManagement from './pages/admin/LevelsManagement';
 import CurrenciesManagement from './pages/admin/CurrenciesManagement';
 import PaymentMethodsManagement from './pages/admin/PaymentMethodsManagement';
 import ExchangeRatesManagement from './pages/admin/ExchangeRatesManagement';
+import CourseEdit from '@/pages/instructor/CourseEdit';
 const AppRouter = () => {
   return (
     <BrowserRouter>
@@ -107,7 +108,7 @@ const AppRouter = () => {
         <Route path="/instructor/courses" element={<InstructorCourses />} />
         <Route path="/instructor/courses/create" element={<CourseCreation />} />
         <Route
-          path="/instructor/courses/:courseId/edit"
+          path="/instructor/courses/:courseSlug/edit"
           element={<CourseEdit />}
         />
         <Route path="/instructor/analytics" element={<InstructorAnalytics />} />

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/course.service.ts
+import { Section, SectionOutput } from '@/hooks/useCourseCurriculum';
 import apiHelper, { fetchWithAuth } from './apiHelper';
 
 // --- Kiểu dữ liệu (Ví dụ - cần định nghĩa chi tiết hơn) ---
@@ -132,6 +133,27 @@ export interface ApprovalRequest {
   [key: string]: any;
 }
 
+// --- Interface MỚI cho Sync Curriculum ---
+export interface SyncCurriculumPayload {
+  sections: Section[]; // Gửi toàn bộ cấu trúc sections hiện tại (đã sắp xếp và loại bỏ File objects)
+}
+
+export interface SyncCurriculumResponse {
+  message: string;
+  // Backend có thể trả về curriculum đã cập nhật với ID thật nếu FE cần
+  // updatedCurriculum?: Section[];
+}
+
+// --- Interface MỚI cho Bulk Reorder ---
+export interface OrderItemData {
+  id: number; // SectionID hoặc LessonID
+  order: number;
+}
+
+export interface BulkReorderResponse {
+  message: string;
+}
+
 // --- Hàm gọi API ---
 
 /** Lấy danh sách khóa học */
@@ -224,4 +246,51 @@ export const toggleCourseFeature = async (
   data: ToggleFeatureData
 ): Promise<Course> => {
   return apiHelper.patch(`/courses/${courseId}/feature`, data);
+};
+
+/**
+ * Đồng bộ hóa toàn bộ curriculum của khóa học với backend.
+ * @param courseId ID của khóa học.
+ * @param payload Dữ liệu curriculum mới { sections: Section[] }.
+ * @returns Promise chứa response từ API.
+ */
+export const syncCourseCurriculum = async (
+  courseId: number,
+  payload: SyncCurriculumPayload
+): Promise<SyncCurriculumResponse> => {
+  // Dùng PUT vì mang tính chất thay thế toàn bộ curriculum
+  return apiHelper.put(`/courses/${courseId}/curriculum`, payload);
+};
+
+/**
+ * Cập nhật thứ tự hàng loạt cho các Sections của một Course.
+ * @param courseId ID của khóa học.
+ * @param orderedSections Mảng các object { id: sectionId, order: newOrder }.
+ * @returns Promise chứa response từ API.
+ */
+export const updateSectionsOrderApi = async (
+  courseId: number,
+  orderedSections: OrderItemData[]
+): Promise<BulkReorderResponse> => {
+  return apiHelper.patch(
+    `/courses/${courseId}/sections/order`,
+    orderedSections
+  );
+};
+
+/**
+ * Cập nhật thứ tự hàng loạt cho các Lessons của một Section.
+ * @param sectionId ID của section.
+ * @param orderedLessons Mảng các object { id: lessonId, order: newOrder }.
+ * @returns Promise chứa response từ API.
+ */
+export const updateLessonsOrderApi = async (
+  sectionId: number, // Cần sectionId thật
+  orderedLessons: OrderItemData[]
+): Promise<BulkReorderResponse> => {
+  // API này lồng trong section
+  return apiHelper.patch(
+    `/sections/${sectionId}/lessons/order`,
+    orderedLessons
+  );
 };
