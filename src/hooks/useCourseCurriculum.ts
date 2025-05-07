@@ -6,22 +6,16 @@ export type LessonType = 'VIDEO' | 'TEXT' | 'QUIZ';
 
 export interface QuizOption {
   tempId?: string | number; // FE temp ID
+  optionId?: number; // DB ID
   id?: number; // DB ID
   optionText?: string;
   isCorrectAnswer?: boolean;
   optionOrder?: number; // Sẽ được tính lại
 }
 
-export interface QuizOptionOutput {
-  tempId?: string | number; // FE temp ID
-  OptionID?: number; // DB ID
-  OptionText?: string;
-  IsCorrectAnswer?: boolean;
-  OptionOrder?: number; // Sẽ được tính lại
-}
-
 export interface QuizQuestion {
   tempId?: string | number; // FE temp ID
+  questionId?: number; // DB ID
   id?: number; // DB ID
   questionText: string;
   explanation: string | null;
@@ -29,17 +23,9 @@ export interface QuizQuestion {
   options: QuizOption[];
 }
 
-export interface QuizQuestionOutput {
-  tempId?: string | number; // FE temp ID
-  QuestionID?: number; // DB ID
-  QuestionText?: string;
-  Explanation?: string | null;
-  QuestionOrder?: number; // Sẽ được tính lại
-  options: QuizOptionOutput[];
-}
-
 export interface Attachment {
   tempId?: string | number; // FE temp ID
+  attachmentId?: number; // DB ID
   id?: number; // DB ID
   fileName: string;
   fileUrl?: string; // Blob URL for preview
@@ -48,17 +34,9 @@ export interface Attachment {
   file: File; // The actual file object for upload
 }
 
-export interface AttachmentOutput {
-  tempId?: string | number; // FE temp ID
-  AttachmentID?: number; // DB ID
-  FileName?: string;
-  FileUrl?: string; // Blob URL for preview
-  FileType?: string;
-  FileSize?: number;
-  File?: File; // The actual file object for upload
-}
 export interface Subtitle {
   tempId?: string | number; // FE temp ID
+  subtitleId?: number; // DB ID
   id?: number; // DB ID
   languageCode: string;
   languageName: string;
@@ -66,52 +44,11 @@ export interface Subtitle {
   isDefault: boolean;
   // file?: File; // Nếu cần upload file .vtt
 }
-export interface SubtitleOutput {
-  tempId?: string | number; // FE temp ID
-  SubtitleID?: number; // DB ID
-  LanguageCode: string;
-  LanguageName: string;
-  SubtitleUrl: string; // Can be Blob URL initially or final URL
-  IsDefault: boolean;
-  // file?: File; // Nếu cần upload file .vtt
-}
-
-export interface LessonOutput {
-  id?: number | string; // ID từ BE (kiểu string như "4" hoặc số)
-  tempId?: string | number; // FE temp ID
-  LessonID?: number | string; // ID từ BE (kiểu string như "4" hoặc số)
-  SectionID?: number | string;
-  OriginalID?: number | string | null;
-  CreatedAt?: string;
-  UpdatedAt?: string;
-
-  LessonName?: string;
-  Description?: string | null;
-  LessonOrder?: number;
-  LessonType?: 'VIDEO' | 'TEXT' | 'QUIZ'; // Theo BE là chữ in hoa
-  IsFreePreview?: boolean;
-
-  // Video specific
-  VideoSourceType?: 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO' | null;
-  ExternalVideoID?: string | null;
-  LessonVideo?: File | null;
-  VideoDurationSeconds?: number | null;
-  ThumbnailUrl?: string | null;
-  subtitles?: SubtitleOutput[];
-
-  // Text specific
-  TextContent?: string | null;
-
-  // Quiz specific
-  questions?: QuizQuestionOutput[];
-
-  // Common
-  attachments?: AttachmentOutput[];
-}
 
 export interface Lesson {
   tempId?: string | number; // FE temp ID
   id?: number | string; // DB ID (có thể là string từ backend)
+  lessonId?: number | string; // ID từ BE (kiểu string như "4" hoặc số)
   lessonName: string; // Tên bài học
   description?: string | null; // Mô tả bài học
   lessonOrder?: number; // Thứ tự bài học
@@ -132,9 +69,12 @@ export interface Lesson {
   attachments?: Attachment[]; // Danh sách file đính kèm
   createdAt?: string; // Thời gian tạo
   updatedAt?: string; // Thời gian cập nhật
+  externalVideoId?: string | null; // ID video từ YT/Vimeo (nếu có)
+  lessonVideoFile?: File | null; // File video (nếu có upload)
 }
 
 export interface Section {
+  sectionId?: number; // DB ID
   tempId?: string | number; // FE temp ID
   id?: number; // DB ID
   sectionName: string;
@@ -142,17 +82,8 @@ export interface Section {
   sectionOrder?: number; // Will be recalculated
   lessons: Lesson[];
 }
-export interface SectionOutput {
-  tempId?: string | number; // FE temp ID
-  SectionID?: number; // DB ID
-  SectionName: string;
-  Description?: string | null;
-  SectionOrder?: number; // Will be recalculated
-  lessons: LessonOutput[];
-}
-
 interface CurriculumState {
-  sections: SectionOutput[];
+  sections: Section[];
 }
 
 // --- Actions ---
@@ -207,31 +138,13 @@ const curriculumReducer = (
         lessons: [],
         sectionOrder: state.sections.length,
       };
-      const newSectionOutput: SectionOutput = {
-        tempId: newSection.tempId,
-        SectionID: newSection.id as number | undefined,
-        SectionName: newSection.sectionName,
-        Description: newSection.description,
-        SectionOrder: newSection.sectionOrder,
-        lessons: newSection.lessons.map((lesson) => ({
-          ...lesson,
-          subtitles: lesson.subtitles?.map((subtitle) => ({
-            tempId: subtitle.tempId,
-            SubtitleID: subtitle.id,
-            LanguageCode: subtitle.languageCode,
-            LanguageName: subtitle.languageName,
-            SubtitleUrl: subtitle.subtitleUrl,
-            IsDefault: subtitle.isDefault,
-          })) as SubtitleOutput[], // Ensure type compatibility
-        })),
-      };
-      return { ...state, sections: [...state.sections, newSectionOutput] };
+      return { ...state, sections: [...state.sections, newSection] };
     }
     case 'UPDATE_SECTION': {
       return {
         ...state,
         sections: state.sections.map((s) =>
-          s.SectionID === action.payload.sectionId ||
+          s.id === action.payload.sectionId ||
           s.tempId === action.payload.sectionId
             ? {
                 ...s,
@@ -246,7 +159,7 @@ const curriculumReducer = (
       const updatedSections = state.sections
         .filter(
           (s) =>
-            s.SectionID !== action.payload.sectionId &&
+            s.id !== action.payload.sectionId &&
             s.tempId !== action.payload.sectionId
         )
         .map((s, index) => ({ ...s, sectionOrder: index })); // Reorder
@@ -260,77 +173,63 @@ const curriculumReducer = (
         lessonOrder:
           state.sections.find(
             (s) =>
-              s.SectionID === action.payload.sectionId ||
+              s.id === action.payload.sectionId ||
               s.tempId === action.payload.sectionId
           )?.lessons.length || 0,
       };
       return {
         ...state,
         sections: state.sections.map((s) =>
-          s.SectionID === action.payload.sectionId ||
+          s.id === action.payload.sectionId ||
           s.tempId === action.payload.sectionId
-            ? {
-                ...s,
-                lessons: [
-                  ...s.lessons,
-                  {
-                    ...newLesson,
-                    subtitles: newLesson.subtitles?.map((subtitle) => ({
-                      tempId: subtitle.tempId,
-                      SubtitleID: subtitle.id,
-                      LanguageCode: subtitle.languageCode,
-                      LanguageName: subtitle.languageName,
-                      SubtitleUrl: subtitle.subtitleUrl,
-                      IsDefault: subtitle.isDefault,
-                    })) as SubtitleOutput[], // Ensure type compatibility
-                  },
-                ],
-              }
+            ? { ...s, lessons: [...s.lessons, newLesson] }
             : s
         ),
       };
     }
     case 'UPDATE_LESSON': {
-      return {
-        ...state,
-        sections: state.sections.map((s) => {
-          if (
-            s.SectionID === action.payload.sectionId ||
-            s.tempId === action.payload.sectionId
-          ) {
-            return {
-              ...s,
-              lessons: s.lessons.map((l) =>
-                l.id === action.payload.lesson.id ||
-                l.tempId === action.payload.lesson.tempId
-                  ? {
-                      ...action.payload.lesson,
-                      lessonOrder: l.LessonOrder, // Giữ order cũ khi update
-                      subtitles: (action.payload.lesson.subtitles || []).map(
-                        (subtitle) => ({
-                          tempId: subtitle.tempId,
-                          SubtitleID: subtitle.id,
-                          LanguageCode: subtitle.languageCode,
-                          LanguageName: subtitle.languageName,
-                          SubtitleUrl: subtitle.subtitleUrl,
-                          IsDefault: subtitle.isDefault,
-                        })
-                      ) as SubtitleOutput[], // Chuyển đổi sang SubtitleOutput
-                    }
-                  : l
-              ),
-            };
-          }
-          return s;
-        }),
-      };
+      console.log(
+        '[REDUCER] UPDATE_LESSON - Payload:',
+        JSON.parse(JSON.stringify(action.payload))
+      ); // Log bản sao sâu
+      const targetSectionId = action.payload.sectionId;
+      const updatedLessonData = action.payload.lesson;
+
+      const newSections = state.sections.map((s) => {
+        if (s.id === targetSectionId || s.tempId === targetSectionId) {
+          console.log(`[REDUCER] Found target section: ${s.tempId || s.id}`);
+          const newLessons = s.lessons.map((l) => {
+            if (
+              (l.id && l.id === updatedLessonData.id) ||
+              (l.tempId && l.tempId === updatedLessonData.tempId)
+            ) {
+              // Tạo đối tượng lesson mới hoàn toàn, không chỉ spread nông
+              const lessonWithCorrectFile = {
+                ...updatedLessonData, // Dữ liệu mới từ payload
+                lessonVideoFile:
+                  updatedLessonData.lessonVideoFile instanceof File
+                    ? updatedLessonData.lessonVideoFile
+                    : null, // QUAN TRỌNG: Đảm bảo đây là File hoặc null
+                lessonOrder: l.lessonOrder, // Giữ lessonOrder cũ
+              };
+              return lessonWithCorrectFile;
+            }
+            // console.log(`[REDUCER]   Skipping lesson: ${l.tempId || l.id}`);
+            return l;
+          });
+          return { ...s, lessons: newLessons };
+        }
+        return s;
+      });
+      console.log('[REDUCER] UPDATE_LESSON - New sections state:', newSections);
+      return { ...state, sections: newSections };
     }
     case 'DELETE_LESSON': {
       return {
         ...state,
         sections: state.sections.map((s) => {
           if (
-            s.SectionID === action.payload.sectionId ||
+            s.id === action.payload.sectionId ||
             s.tempId === action.payload.sectionId
           ) {
             const updatedLessons = s.lessons
@@ -350,20 +249,7 @@ const curriculumReducer = (
       const reorderedSections = action.payload.sections.map(
         (section, index) => ({
           ...section,
-          SectionOrder: index,
-          SectionName: section.sectionName,
-          Description: section.description,
-          lessons: section.lessons.map((lesson) => ({
-            ...lesson,
-            subtitles: lesson.subtitles?.map((subtitle) => ({
-              tempId: subtitle.tempId,
-              SubtitleID: subtitle.id,
-              LanguageCode: subtitle.languageCode,
-              LanguageName: subtitle.languageName,
-              SubtitleUrl: subtitle.subtitleUrl,
-              IsDefault: subtitle.isDefault,
-            })) as SubtitleOutput[],
-          })) as LessonOutput[],
+          sectionOrder: index,
         })
       );
       return { ...state, sections: reorderedSections };
@@ -373,73 +259,51 @@ const curriculumReducer = (
         ...state,
         sections: state.sections.map((s) => {
           if (
-            s.SectionID === action.payload.sectionId ||
+            s.id === action.payload.sectionId ||
             s.tempId === action.payload.sectionId
           ) {
             const reorderedLessons = action.payload.lessons.map(
               (lesson, index) => ({
                 ...lesson,
                 lessonOrder: index,
-                subtitles: (lesson.subtitles || []).map((subtitle) => ({
-                  tempId: subtitle.tempId,
-                  SubtitleID: subtitle.id,
-                  LanguageCode: subtitle.languageCode,
-                  LanguageName: subtitle.languageName,
-                  SubtitleUrl: subtitle.subtitleUrl,
-                  IsDefault: subtitle.isDefault,
-                })) as SubtitleOutput[], // Chuyển đổi sang SubtitleOutput
               })
             );
-            return { ...s, lessons: reorderedLessons as LessonOutput[] }; // Đảm bảo kiểu LessonOutput[]
+            return { ...s, lessons: reorderedLessons };
           }
           return s;
         }),
       };
     }
-    case 'SET_CURRICULUM': {
+    case 'SET_CURRICULUM':
+      // eslint-disable-next-line no-case-declarations
       const initialSections = action.payload.sections.map((s) => ({
         ...s,
         tempId: s.tempId || s.id || generateTempId('section'),
-        SectionName: s.sectionName || '',
-        Description: s.description || null,
-        SectionOrder: s.sectionOrder || 0,
         lessons: (s.lessons || []).map((l) => ({
           ...l,
           tempId: l.tempId || l.id || generateTempId('lesson'),
-          LessonName: l.lessonName || '',
-          Description: l.description || null,
-          LessonOrder: l.lessonOrder || 0,
-          questions: (l.questions || []).map((q) => ({
+          questions: (l.questions || [])?.map((q) => ({
             ...q,
             tempId: q.tempId || q.id || generateTempId('question'),
-            QuestionText: q.questionText || '',
-            Explanation: q.explanation || null,
-            QuestionOrder: q.questionOrder || 0,
             options: (q.options || []).map((o) => ({
               ...o,
               tempId: o.tempId || o.id || generateTempId('option'),
-              OptionText: o.optionText || '',
-              IsCorrectAnswer: o.isCorrectAnswer || false,
-              OptionOrder: o.optionOrder || 0,
             })),
           })),
-          attachments: (l.attachments || []).map((a) => ({
+          attachments: (l.attachments || [])?.map((a) => ({
             ...a,
             tempId: a.tempId || a.id || generateTempId('attach'),
-            file: a.file || null,
+            // file object will be missing when loading from DB, handle this if needed
+            file: a.file || null, // Set file to null when loading
           })),
-          subtitles: (l.subtitles || []).map((sub) => ({
+          subtitles: (l.subtitles || [])?.map((sub) => ({
+            ...sub,
             tempId: sub.tempId || sub.id || generateTempId('sub'),
-            SubtitleID: sub.id,
-            LanguageCode: sub.languageCode,
-            LanguageName: sub.languageName,
-            SubtitleUrl: sub.subtitleUrl,
-            IsDefault: sub.isDefault,
           })),
         })),
       }));
       return { sections: initialSections };
-    }
+
     default:
       throw new Error(`Unhandled action type: ${action}`); // Hoặc return state
   }
@@ -511,6 +375,7 @@ export const useCourseCurriculum = (
     (sectionId: number | string, lesson: Lesson) => {
       // Ensure the lesson has a tempId or id before dispatching
       const lessonToUpdate = { ...lesson, tempId: lesson.tempId || lesson.id };
+      console.log('Lesson to update', lessonToUpdate);
       if (!lessonToUpdate.tempId && !lessonToUpdate.id) {
         console.error('Cannot update lesson without id or tempId', lesson);
         toast({

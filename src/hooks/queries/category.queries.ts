@@ -102,7 +102,7 @@ export const useUpdateCategory = (
     onSuccess: (updatedCategory) => {
       // Cập nhật cache chi tiết (nếu có)
       queryClient.setQueryData(
-        categoryKeys.detail(updatedCategory.CategoryID),
+        categoryKeys.detail(updatedCategory.categoryId),
         updatedCategory
       );
       // Invalidate cache danh sách

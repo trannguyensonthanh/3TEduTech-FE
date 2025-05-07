@@ -15,20 +15,15 @@ import {
   BookOpen,
   AlertCircle,
 } from 'lucide-react';
-import {
-  Section,
-  Lesson,
-  SectionOutput,
-  LessonOutput,
-} from '@/hooks/useCourseCurriculum'; // Import types
+import { Section, Lesson } from '@/hooks/useCourseCurriculum'; // Import types
 
 interface CurriculumTabProps {
-  sections: SectionOutput[]; // Nhận từ hook useCourseCurriculum
+  sections: Section[]; // Nhận từ hook useCourseCurriculum
   handleAddSection: () => void; // Callback mở dialog add section
-  handleEditSection: (section: SectionOutput) => void; // Callback mở dialog edit section
+  handleEditSection: (section: Section) => void; // Callback mở dialog edit section
   handleDeleteSection: (sectionId: number | string) => void; // Callback xóa section
   handleAddLesson: (sectionId: number | string) => void; // Callback mở dialog add lesson
-  handleEditLesson: (sectionId: number | string, lesson: LessonOutput) => void; // Callback mở dialog edit lesson
+  handleEditLesson: (sectionId: number | string, lesson: Lesson) => void; // Callback mở dialog edit lesson
   handleDeleteLesson: (
     sectionId: number | string,
     lessonId: number | string
@@ -52,7 +47,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
-
+  console.log('CurriculumTab render', sections); // Debug log
   return (
     <div className="space-y-4">
       {/* Curriculum Tips */}
@@ -76,7 +71,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
             section,
             sectionIndex // Thêm sectionIndex
           ) => (
-            <Card key={section.tempId || section.SectionID}>
+            <Card key={section.tempId || section.sectionId}>
               <CardHeader className="pb-3 flex flex-row justify-between items-center">
                 {' '}
                 {/* Dùng flex */}
@@ -99,11 +94,12 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                     <Edit className="h-4 w-4 mr-1" /> Edit
                   </Button>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() =>
-                      handleDeleteSection(section.tempId || section.SectionID!)
+                      handleDeleteSection(section.tempId || section.sectionId!)
                     }
                   >
                     <Trash className="h-4 w-4 mr-1" /> Delete
@@ -114,9 +110,9 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                 {' '}
                 {/* Thêm padding */}
                 {/* Mô tả section nếu có */}
-                {section.Description && (
+                {section.description && (
                   <p className="text-sm text-muted-foreground mb-3 pl-8">
-                    {section.Description}
+                    {section.description}
                   </p>
                 )}
                 <div className="space-y-3 border-l-2 pl-6 ml-2 border-dashed">
@@ -133,34 +129,34 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                       >
                         <div className="flex items-center space-x-3">
                           {/* Icon based on type */}
-                          {lesson.LessonType === 'VIDEO' && (
+                          {lesson.lessonType === 'VIDEO' && (
                             <Video className="h-4 w-4 text-blue-500 flex-shrink-0" />
                           )}
-                          {lesson.LessonType === 'TEXT' && (
+                          {lesson.lessonType === 'TEXT' && (
                             <FileText className="h-4 w-4 text-green-500 flex-shrink-0" />
                           )}
-                          {lesson.LessonType === 'QUIZ' && (
+                          {lesson.lessonType === 'QUIZ' && (
                             <BookOpen className="h-4 w-4 text-purple-500 flex-shrink-0" />
                           )}{' '}
                           {/* Đổi icon */}
                           <div>
                             <p className="font-medium">{`Lesson ${
                               lessonIndex + 1
-                            }: ${lesson.LessonName}`}</p>
+                            }: ${lesson.lessonName}`}</p>
                             <p className="text-xs text-muted-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
                               {' '}
                               {/* flex-wrap cho mobile */}
-                              {lesson.LessonType === 'VIDEO' &&
-                                lesson.VideoDurationSeconds && (
+                              {lesson.lessonType === 'VIDEO' &&
+                                lesson.videoDurationSeconds && (
                                   <>
                                     <Clock className="h-3 w-3" />{' '}
                                     {formatDuration(
-                                      lesson.VideoDurationSeconds
+                                      lesson.videoDurationSeconds
                                     )}
                                   </>
                                 )}
-                              <span>• {lesson.LessonType}</span>
-                              {lesson.IsFreePreview && (
+                              <span>• {lesson.lessonType}</span>
+                              {lesson.isFreePreview && (
                                 <span className="text-green-600">
                                   • Preview
                                 </span>
@@ -172,7 +168,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                                     {lesson.attachments.length} Attachment(s)
                                   </span>
                                 )}
-                              {lesson.LessonType === 'QUIZ' &&
+                              {lesson.lessonType === 'QUIZ' &&
                                 lesson.questions &&
                                 lesson.questions.length > 0 && (
                                   <span className="flex items-center">
@@ -185,12 +181,13 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                         </div>
                         <div className="flex space-x-1">
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"
                             onClick={() =>
                               handleEditLesson(
-                                section.tempId || section.SectionID!,
+                                section.tempId || section.sectionId!,
                                 lesson
                               )
                             }
@@ -198,12 +195,13 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() =>
                               handleDeleteLesson(
-                                section.tempId || section.SectionID!,
+                                section.tempId || section.sectionId!,
                                 lesson.tempId || lesson.id!
                               )
                             }
@@ -221,11 +219,11 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                     type="button"
                     size="sm"
                     onClick={() =>
-                      handleAddLesson(section.tempId || section.SectionID!)
+                      handleAddLesson(section.tempId || section.sectionId!)
                     }
                   >
                     <Plus className="h-4 w-4 mr-2" /> Add Lesson to "
-                    {section.SectionName}"
+                    {section.sectionName}"
                   </Button>
                 </div>
               </CardContent>

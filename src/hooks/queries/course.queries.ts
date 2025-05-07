@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/queries/course.queries.ts
 import {
   useQuery,
@@ -33,6 +34,7 @@ import {
   syncCourseCurriculum,
   SyncCurriculumPayload,
   SyncCurriculumResponse,
+  getCourseStatuses,
 } from '@/services/course.service'; // Điều chỉnh đường dẫn nếu cần
 
 // Query Key Factory
@@ -124,11 +126,11 @@ export const useUpdateCourse = (
     onSuccess: (updatedCourse) => {
       // Cập nhật cache chi tiết theo ID và Slug
       queryClient.setQueryData(
-        courseKeys.detailById(updatedCourse.CourseID),
+        courseKeys.detailById(updatedCourse.courseId),
         updatedCourse
       );
       queryClient.setQueryData(
-        courseKeys.detailBySlug(updatedCourse.Slug),
+        courseKeys.detailBySlug(updatedCourse.slug),
         updatedCourse
       );
       // Invalidate cache danh sách
@@ -179,11 +181,11 @@ export const useUpdateCourseThumbnail = (
     mutationFn: ({ courseId, file }) => updateCourseThumbnail(courseId, file),
     onSuccess: (updatedCourse) => {
       queryClient.setQueryData(
-        courseKeys.detailById(updatedCourse.CourseID),
+        courseKeys.detailById(updatedCourse.courseId),
         updatedCourse
       );
       queryClient.setQueryData(
-        courseKeys.detailBySlug(updatedCourse.Slug),
+        courseKeys.detailBySlug(updatedCourse.slug),
         updatedCourse
       );
       queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
@@ -208,11 +210,11 @@ export const useUpdateCourseIntroVideo = (
     onSuccess: (updatedCourse) => {
       // Cập nhật cache chi tiết khóa học
       queryClient.setQueryData(
-        courseKeys.detailById(updatedCourse.CourseID),
+        courseKeys.detailById(updatedCourse.courseId),
         updatedCourse
       );
       queryClient.setQueryData(
-        courseKeys.detailBySlug(updatedCourse.Slug),
+        courseKeys.detailBySlug(updatedCourse.slug),
         updatedCourse
       );
       // Invalidate danh sách nếu cần cập nhật URL/thông tin video ở list view
@@ -312,11 +314,11 @@ export const useToggleCourseFeature = (
     mutationFn: ({ courseId, data }) => toggleCourseFeature(courseId, data),
     onSuccess: (updatedCourse) => {
       queryClient.setQueryData(
-        courseKeys.detailById(updatedCourse.CourseID),
+        courseKeys.detailById(updatedCourse.courseId),
         updatedCourse
       );
       queryClient.setQueryData(
-        courseKeys.detailBySlug(updatedCourse.Slug),
+        courseKeys.detailBySlug(updatedCourse.slug),
         updatedCourse
       );
       queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
@@ -429,6 +431,27 @@ export const useUpdateLessonsOrder = (
       console.error('Update lessons order failed:', error.message);
       // toast.error(`Failed to update lessons order: ${error.message}`);
     },
+    ...options,
+  });
+};
+
+/** Hook lấy danh sách trạng thái khóa học */
+export const useCourseStatuses = (
+  options?: Omit<
+    UseQueryOptions<
+      { statusId: string; statusName: string; description: string }[],
+      Error
+    >,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  return useQuery<
+    { statusId: string; statusName: string; description: string }[],
+    Error
+  >({
+    queryKey: ['courseStatuses'], // Key cho cache
+    queryFn: getCourseStatuses, // Hàm gọi API
+    staleTime: 1000 * 60 * 5, // Cache 5 phút
     ...options,
   });
 };

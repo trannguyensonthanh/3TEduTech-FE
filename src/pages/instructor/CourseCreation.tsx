@@ -16,7 +16,7 @@ import MediaTab from '@/components/instructor/courseCreate/MediaTab';
 import CurriculumTab from '@/components/instructor/courseCreate/CurriculumTab';
 import PricingTab from '@/components/instructor/courseCreate/PricingTab';
 import SectionDialog from '@/components/instructor/courseCreate/SectionDialog';
-import LessonDialog from '@/components/instructor/courseCreate/LessonDialog';
+
 import QuizQuestionDialog from '@/components/instructor/courseCreate/QuizQuestionDialog'; // Import nếu LessonDialog không quản lý
 
 // Import Hooks và Types
@@ -53,12 +53,15 @@ import {
 } from '@/services/lesson.service';
 import { CheckCircle, Save } from 'lucide-react';
 import { generateTempId } from '@/components/common/generateTempId';
+import LessonDialog from '@/components/instructor/courseCreate/LessonDialog';
+import DeleteConfirmationDialog from '@/components/instructor/courseCreate/DeleteConfirmationDialog';
 
 // Zod schema cho form chính (Basic Info, Details, Pricing)
 const courseFormSchema = z
   .object({
+    id: z.number().optional(),
     courseName: z.string().min(1, 'Course title is required').max(255),
-    slug: z.string().optional(), // Readonly, generated from title
+    slug: z.string().optional(),
     shortDescription: z
       .string()
       .min(1, 'Short description is required')
@@ -66,9 +69,9 @@ const courseFormSchema = z
     fullDescription: z
       .string()
       .min(1, 'Full description is required')
-      .max(20000), // Tăng giới hạn
+      .max(20000),
     originalPrice: z.preprocess(
-      (val) => (val === '' ? NaN : parseFloat(String(val))), // Chuyển "" thành NaN để bắt lỗi required
+      (val) => (val === '' ? NaN : parseFloat(String(val))), // Chuyển đổi string thành number
       z
         .number({ required_error: 'Original price is required' })
         .min(0, 'Price must be non-negative')
@@ -77,15 +80,15 @@ const courseFormSchema = z
       (val) =>
         val === '' || val === null || val === undefined
           ? null
-          : parseFloat(String(val)), // Giữ null/undefined
+          : parseFloat(String(val)), // Chuyển đổi string thành number hoặc null
       z.number().min(0, 'Price must be non-negative').optional().nullable()
     ),
     categoryId: z.preprocess(
-      (val) => (val ? parseInt(String(val), 10) : undefined), // Chuyển sang number
+      (val) => parseInt(String(val), 10), // Chuyển đổi string thành number
       z.number({ required_error: 'Category is required' }).int().positive()
     ),
     levelId: z.preprocess(
-      (val) => (val ? parseInt(String(val), 10) : undefined), // Chuyển sang number
+      (val) => parseInt(String(val), 10), // Chuyển đổi string thành number
       z.number({ required_error: 'Level is required' }).int().positive()
     ),
     language: z.string().min(1, 'Language is required'),
@@ -101,6 +104,7 @@ const courseFormSchema = z
       path: ['discountedPrice'],
     }
   );
+
 type CourseFormData = z.infer<typeof courseFormSchema>;
 
 // Mock data (nên thay bằng API fetch nếu cần)
@@ -153,7 +157,21 @@ const CourseCreation: React.FC = () => {
   const thumbnailRef = useRef<HTMLInputElement>(null);
   const lessonVideoRef = useRef<HTMLInputElement>(null);
   const attachmentRef = useRef<HTMLInputElement>(null);
-
+  // State mới cho dialog xác nhận xóa
+  const [deleteDialogState, setDeleteDialogState] = useState<{
+    isOpen: boolean;
+    type: 'section' | 'lesson' | null;
+    itemId: number | string | null;
+    sectionIdForLesson?: number | string | null; // Cần cho xóa lesson
+    onConfirm: () => void;
+    itemName?: string;
+  }>({
+    isOpen: false,
+    type: null,
+    itemId: null,
+    onConfirm: () => {},
+    itemName: '',
+  });
   // Fetch static data
   const { data: categoriesData, isLoading: isLoadingCategories } =
     useCategories();
@@ -185,12 +203,12 @@ const CourseCreation: React.FC = () => {
       fullDescription: '',
       originalPrice: 0,
       discountedPrice: null,
-      categoryId: undefined,
-      levelId: undefined,
+      categoryId: 0,
+      levelId: 0,
       language: 'vi',
       requirements: null,
       learningOutcomes: null,
-    },
+    } as CourseFormData,
   });
 
   // Slug generation
@@ -274,13 +292,52 @@ const CourseCreation: React.FC = () => {
     sectionId: number | string,
     lesson: Lesson
   ) => {
+    console.log('Opening edit dialog for lesson:', lesson);
+    if (lesson.lessonVideoFile) {
+      console.log(
+        '  Original lessonVideoFile is File:',
+        lesson.lessonVideoFile instanceof File,
+        lesson.lessonVideoFile?.name
+      );
+    }
+
     setCurrentSectionIdForLesson(sectionId);
-    setEditingLesson(lesson); // Truyền dữ liệu lesson hiện tại vào dialog
+
+    // Tạo bản sao nông cho Lesson. Các thuộc tính object/array sẽ là tham chiếu.
+    const lessonCopy: Lesson = { ...lesson };
+
+    // Nếu LessonDialog sẽ quản lý state riêng cho questions, attachments, subtitles
+    // thì việc sao chép nông các mảng này là đủ, vì dialog sẽ tạo bản sao khi khởi tạo state của nó.
+    // Ví dụ, trong LessonDialog:
+    // const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+    // useEffect(() => { if (initialData) setQuizQuestions(_.cloneDeep(initialData.questions || [])) }, [initialData]);
+
+    // Nếu bạn muốn chắc chắn rằng `lessonCopy` hoàn toàn độc lập cho các mảng đó ngay từ đầu:
+    lessonCopy.questions = (lesson.questions || []).map((q) => ({
+      ...q,
+      options: (q.options || []).map((o) => ({ ...o })),
+    }));
+    lessonCopy.attachments = (lesson.attachments || []).map((a) => ({
+      ...a,
+      // Giữ nguyên tham chiếu 'file' nếu nó là File object
+      // file: a.file // Không cần gán lại nếu ...a đã giữ tham chiếu
+    }));
+    lessonCopy.subtitles = (lesson.subtitles || []).map((s) => ({ ...s }));
+
+    console.log('Setting editingLesson with (copied):', lessonCopy);
+    if (lessonCopy.lessonVideoFile) {
+      console.log(
+        '  Copied lessonVideoFile is File:',
+        lessonCopy.lessonVideoFile instanceof File,
+        lessonCopy.lessonVideoFile?.name
+      );
+    }
+
+    setEditingLesson(lessonCopy);
     setLessonDialogOpen(true);
   };
   const handleSaveLessonDialog = (lessonDataFromDialog: Lesson) => {
     if (!currentSectionIdForLesson) return;
-
     const lessonToSave: Lesson = {
       ...lessonDataFromDialog,
       tempId:
@@ -289,6 +346,13 @@ const CourseCreation: React.FC = () => {
         (editingLesson?.id ? undefined : generateTempId('lesson')),
       id: editingLesson?.id,
       lessonOrder: editingLesson?.lessonOrder, // Giữ order khi edit, hook add sẽ tự tính
+      externalVideoId:
+        lessonDataFromDialog.videoSourceType === 'CLOUDINARY' &&
+        !lessonDataFromDialog.lessonVideoFile &&
+        editingLesson?.externalVideoId
+          ? editingLesson.externalVideoId
+          : lessonDataFromDialog.externalVideoId,
+      lessonVideoFile: lessonDataFromDialog.lessonVideoFile || null,
     };
 
     if (editingLesson) {
@@ -302,39 +366,37 @@ const CourseCreation: React.FC = () => {
     }
     setLessonDialogOpen(false);
   };
-  const handleDeleteLessonCallback = (
-    sectionId: number | string,
-    lessonId: number | string
-  ) => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this lesson and all its content?'
-      )
-    ) {
-      deleteLesson(sectionId, lessonId); // Gọi callback từ hook
-    }
-  };
+  // const handleDeleteLessonCallback = (
+  //   sectionId: number | string,
+  //   lessonId: number | string
+  // ) => {
+  //   if (
+  //     window.confirm(
+  //       'Are you sure you want to delete this lesson and all its content?'
+  //     )
+  //   ) {
+  //     deleteLesson(sectionId, lessonId); // Gọi callback từ hook
+  //   }
+  // };
 
   // --- MAIN SUBMIT LOGIC ---
   const onSubmit = async (formData: CourseFormData) => {
     let createdCourseId: number | null = null;
     setSaveStatus('saving');
     setIsLoading(true);
-    console.log('Submitting Form Data:', formData);
-    console.log('Submitting Curriculum State:', sections);
-    console.log('Submitting Thumbnail File:', thumbnail);
-    console.log('Submitting Promo Video URL:', promoVideoUrl);
 
     try {
       // --- Step 1: Create Draft Course ---
       console.log('Step 1: Creating draft course...');
       const coursePayload = {
         courseName: formData.courseName,
-        // Lấy slug đã tạo
+        slug: form.getValues('slug'), // Lấy slug đã tạo
         shortDescription: formData.shortDescription,
         fullDescription: formData.fullDescription,
         originalPrice: formData.originalPrice || 0,
-        discountedPrice: formData.discountedPrice || null,
+        discountedPrice: formData.discountedPrice
+          ? formData.discountedPrice
+          : null,
         categoryId: formData.categoryId,
         levelId: formData.levelId,
         language: formData.language,
@@ -344,7 +406,8 @@ const CourseCreation: React.FC = () => {
         introVideoUrl: promoVideoUrl || null, // Dùng URL từ state
       };
       const courseResponse = await createCourseMutateAsync(coursePayload);
-      createdCourseId = courseResponse.CourseID;
+      console.log('courseResponse:', courseResponse);
+      createdCourseId = Number(courseResponse.courseId);
       console.log(`Step 1 Success: Course created with ID: ${createdCourseId}`);
 
       // --- Step 2: Update Thumbnail (if exists) ---
@@ -385,7 +448,8 @@ const CourseCreation: React.FC = () => {
           courseId: createdCourseId,
           data: sectionPayload,
         });
-        const createdSectionId = sectionResponse.SectionID;
+        console.log('sectionResponse:', sectionResponse);
+        const createdSectionId = Number(sectionResponse.sectionId);
         console.log(
           `    Section ${sectionIndex + 1} created with ID: ${createdSectionId}`
         );
@@ -402,10 +466,16 @@ const CourseCreation: React.FC = () => {
             lessonType: lesson.lessonType,
             isFreePreview: lesson.isFreePreview || false,
             description: lesson.description || null,
-            videoSourceType: lesson.videoSourceType,
-            externalVideoInput: lesson.externalVideoInput, // Đã đổi tên
-            textContent: lesson.textContent || null,
-            // lessonOrder: currentLessonOrder, // Backend tự xử lý khi tạo hoặc cần API cập nhật order riêng
+            videoSourceType:
+              lesson.lessonType === 'VIDEO'
+                ? lesson.videoSourceType
+                : undefined,
+            externalVideoInput:
+              lesson.lessonType === 'VIDEO'
+                ? lesson.externalVideoInput
+                : undefined,
+            textContent:
+              lesson.lessonType === 'TEXT' ? lesson.textContent : undefined,
           };
 
           const lessonResponse = await createLessonMutateAsync({
@@ -413,7 +483,7 @@ const CourseCreation: React.FC = () => {
             sectionId: createdSectionId,
             data: lessonPayload,
           });
-          const createdLessonId = lessonResponse.LessonID;
+          const createdLessonId = Number(lessonResponse.lessonId);
           console.log(
             `        Lesson ${
               currentLessonOrder + 1
@@ -607,6 +677,76 @@ const CourseCreation: React.FC = () => {
     }
   };
 
+  const handleDeleteSectionRequest = (sectionId: number | string) => {
+    setDeleteDialogState({
+      isOpen: true,
+      type: 'section',
+      itemId: sectionId,
+      onConfirm: async () => {
+        try {
+          await deleteSection(sectionId); // Gọi hàm xóa từ hook useCourseCurriculum
+          toast({
+            title: 'Section deleted',
+            description: 'The section and all its lessons have been deleted.',
+            variant: 'default',
+          });
+        } catch (error) {
+          console.error('Failed to delete section:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to delete the section. Please try again.',
+            variant: 'destructive',
+          });
+        } finally {
+          setDeleteDialogState({
+            isOpen: false,
+            type: null,
+            itemId: null,
+            onConfirm: () => {},
+          }); // Đóng dialog
+        }
+      },
+      itemName: `section and all its lessons`,
+    });
+  };
+
+  const handleDeleteLessonRequest = (
+    sectionIdForLesson: number | string,
+    lessonId: number | string
+  ) => {
+    setDeleteDialogState({
+      isOpen: true,
+      type: 'lesson',
+      itemId: lessonId,
+      sectionIdForLesson: sectionIdForLesson,
+      onConfirm: async () => {
+        try {
+          await deleteLesson(sectionIdForLesson, lessonId); // Gọi hàm xóa từ hook useCourseCurriculum
+          toast({
+            title: 'Lesson deleted',
+            description: 'The lesson and all its content have been deleted.',
+            variant: 'default',
+          });
+        } catch (error) {
+          console.error('Failed to delete lesson:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to delete the lesson. Please try again.',
+            variant: 'destructive',
+          });
+        } finally {
+          setDeleteDialogState({
+            isOpen: false,
+            type: null,
+            itemId: null,
+            onConfirm: () => {},
+          }); // Đóng dialog
+        }
+      },
+      itemName: `lesson and all its content`,
+    });
+  };
+
   // --- Render ---
   if (isLoadingCategories || isLoadingLevels) {
     return <FullScreenLoader />;
@@ -627,8 +767,17 @@ const CourseCreation: React.FC = () => {
             <div className="flex items-center space-x-2 flex-shrink-0">
               {/* Save Draft Button */}
               <Button
-                variant={saveStatus === 'saved' ? 'secondary' : 'default'} // Thêm variant success nếu có
-                onClick={form.handleSubmit(onSubmit)}
+                // Thêm variant success nếu có
+                onClick={form.handleSubmit(onSubmit, (errors) => {
+                  console.error('Form validation errors:', errors);
+                  console.log('Form values:', form.getValues());
+                  toast({
+                    title: 'Validation Error',
+                    description:
+                      'Please fix the errors in the form before saving.',
+                    variant: 'destructive',
+                  });
+                })}
                 disabled={saveStatus === 'saving' || isLoading}
                 size="sm" // Giảm kích thước nút
               >
@@ -704,13 +853,10 @@ const CourseCreation: React.FC = () => {
                   sections={sections}
                   handleAddSection={handleOpenAddSectionDialog}
                   handleEditSection={handleOpenEditSectionDialog}
-                  handleDeleteSection={(id) => {
-                    if (window.confirm('Delete section and all its lessons?'))
-                      deleteSection(id);
-                  }}
+                  handleDeleteSection={handleDeleteSectionRequest}
                   handleAddLesson={handleOpenAddLessonDialog}
                   handleEditLesson={handleOpenEditLessonDialog}
-                  handleDeleteLesson={handleDeleteLessonCallback}
+                  handleDeleteLesson={handleDeleteLessonRequest}
                 />
               </TabsContent>
               <TabsContent value="pricing">
@@ -740,7 +886,38 @@ const CourseCreation: React.FC = () => {
             />
           )}
           {/* Loading Overlay */}
-          {isLoading && <FullScreenLoader />}
+          {/* {isLoading && <FullScreenLoader />} */}
+          <DeleteConfirmationDialog
+            open={deleteDialogState.isOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                // Nếu người dùng đóng dialog (bằng nút Cancel hoặc click ra ngoài)
+                setDeleteDialogState({
+                  isOpen: false,
+                  type: null,
+                  itemId: null,
+                  onConfirm: () => {},
+                });
+              }
+            }}
+            onConfirm={deleteDialogState.onConfirm}
+            itemName={deleteDialogState.itemName}
+            // Bạn có thể tùy chỉnh title và description nếu muốn dựa trên deleteDialogState.type
+            title={
+              deleteDialogState.type === 'section'
+                ? 'Delete Section?'
+                : deleteDialogState.type === 'lesson'
+                ? 'Delete Lesson?'
+                : 'Are you sure?'
+            }
+            description={
+              deleteDialogState.type === 'section'
+                ? 'This will permanently delete the section and all lessons within it. This action cannot be undone.'
+                : deleteDialogState.type === 'lesson'
+                ? 'This will permanently delete the lesson and all its content (videos, quizzes, attachments). This action cannot be undone.'
+                : 'This action cannot be undone. This will permanently delete the selected item.'
+            }
+          />
         </div>
       </div>
     </InstructorLayout>

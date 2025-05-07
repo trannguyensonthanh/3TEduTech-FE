@@ -21,12 +21,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'; // Import Form components
+} from '@/components/ui/form';
 
-// Schema validation cho section
+// Schema validation chuẩn FE camelCase
 const sectionFormSchema = z.object({
-  SectionName: z.string().min(1, 'Section name is required').max(255),
-  Description: z.string().max(4000).optional().nullable(),
+  sectionName: z.string().min(1, 'Section name is required').max(255),
+  description: z.string().max(4000).optional().nullable(),
 });
 
 type SectionFormData = z.infer<typeof sectionFormSchema>;
@@ -34,8 +34,8 @@ type SectionFormData = z.infer<typeof sectionFormSchema>;
 interface SectionDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: SectionFormData) => void; // Callback trả về dữ liệu form
-  initialData?: { SectionName: string; Description?: string | null } | null;
+  onSave: (data: SectionFormData) => void;
+  initialData?: { sectionName: string; description?: string | null } | null;
   isEditing: boolean;
 }
 
@@ -49,20 +49,19 @@ const SectionDialog: React.FC<SectionDialogProps> = ({
   const form = useForm<SectionFormData>({
     resolver: zodResolver(sectionFormSchema),
     defaultValues: {
-      SectionName: '',
-      Description: null,
+      sectionName: '',
+      description: null,
     },
   });
 
-  // Reset form khi mở dialog hoặc initialData thay đổi
   useEffect(() => {
     if (open) {
-      form.reset(initialData || { SectionName: '', Description: null });
+      form.reset(initialData || { sectionName: '', description: null });
     }
   }, [open, initialData, form]);
 
   const handleDialogSubmit = (data: SectionFormData) => {
-    onSave(data); // Gọi callback onSave từ CourseCreation
+    onSave(data);
   };
 
   return (
@@ -86,21 +85,26 @@ const SectionDialog: React.FC<SectionDialogProps> = ({
           >
             <FormField
               control={form.control}
-              name="SectionName"
-              render={({ field }) => (
+              name="sectionName"
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>Section Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Introduction" {...field} />
+                    <Input
+                      placeholder="e.g. Introduction"
+                      {...field}
+                      className={fieldState.error ? 'border-red-500' : ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
-              name="Description"
-              render={({ field }) => (
+              name="description"
+              render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
@@ -108,7 +112,9 @@ const SectionDialog: React.FC<SectionDialogProps> = ({
                       placeholder="What this section covers..."
                       {...field}
                       value={field.value ?? ''}
-                      className="min-h-[80px]"
+                      className={`min-h-[80px] ${
+                        fieldState.error ? 'border-red-500' : ''
+                      }`}
                     />
                   </FormControl>
                   <FormMessage />

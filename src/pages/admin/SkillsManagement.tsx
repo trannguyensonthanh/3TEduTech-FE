@@ -204,7 +204,7 @@ const SkillsManagement: React.FC = () => {
   };
 
   const handleDeleteSkill = (skillId: number) => {
-    const skill = skills.find((s) => s.SkillID === skillId);
+    const skill = skills.find((s) => s.skillId === skillId);
     if (skill) {
       setSkillToDelete(skill);
       setIsDeleteDialogOpen(true);
@@ -213,23 +213,23 @@ const SkillsManagement: React.FC = () => {
 
   // Xử lý submit thêm hoặc chỉnh sửa kỹ năng
   const handleSubmitSkill = async (data: {
-    SkillName: string;
-    Description: string | null;
+    skillName: string;
+    description: string | null;
   }) => {
     if (skillToEdit) {
       // Cập nhật kỹ năng
       updateSkillMutation.mutate({
-        skillId: skillToEdit.SkillID,
+        skillId: skillToEdit.skillId,
         data: {
-          skillName: data.SkillName,
-          description: data.Description,
+          skillName: data.skillName,
+          description: data.description,
         },
       });
     } else {
       // Thêm kỹ năng mới
       createSkillMutation.mutate({
-        skillName: data.SkillName,
-        description: data.Description,
+        skillName: data.skillName,
+        description: data.description,
       });
     }
   };
@@ -237,7 +237,7 @@ const SkillsManagement: React.FC = () => {
   // Xử lý xác nhận xóa kỹ năng
   const handleConfirmDelete = async () => {
     if (skillToDelete) {
-      deleteSkillMutation.mutate(skillToDelete.SkillID);
+      deleteSkillMutation.mutate(skillToDelete.skillId);
     }
   };
 
@@ -308,7 +308,7 @@ const SkillsManagement: React.FC = () => {
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           onConfirm={handleConfirmDelete}
-          skillName={skillToDelete.SkillName}
+          skillName={skillToDelete.skillName}
         />
       )}
     </AdminLayout>

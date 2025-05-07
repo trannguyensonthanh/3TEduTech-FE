@@ -1,11 +1,17 @@
 // src/services/level.service.ts
 import apiHelper from './apiHelper';
 
+// export interface Level {
+//   LevelID: number;
+//   LevelName: string;
+//   CreatedAt: string;
+//   UpdatedAt: string;
+// }
 export interface Level {
-  LevelID: number;
-  LevelName: string;
-  CreatedAt: string;
-  UpdatedAt: string;
+  levelId: number;
+  levelName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LevelListData {

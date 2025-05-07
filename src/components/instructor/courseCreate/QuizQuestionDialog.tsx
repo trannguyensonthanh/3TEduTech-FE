@@ -26,11 +26,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Trash, Plus } from 'lucide-react';
-import {
-  QuizQuestion,
-  QuizOption,
-  QuizQuestionOutput,
-} from '@/hooks/useCourseCurriculum'; // Import types
+import { QuizQuestion, QuizOption } from '@/hooks/useCourseCurriculum'; // Import types
 import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 import { toast } from '@/hooks/use-toast';
 
@@ -38,7 +34,7 @@ import { toast } from '@/hooks/use-toast';
 const optionFormSchema = z.object({
   tempId: z.union([z.string(), z.number()]).optional(),
   id: z.number().optional(),
-  optionText: z.string().min(1, 'Option text is required').max(500),
+  optionText: z.string().min(0, 'Option text is required').max(500),
   isCorrectAnswer: z.boolean().default(false),
 });
 
@@ -70,7 +66,7 @@ interface QuizQuestionDialogProps {
       questionOrder?: number;
     }
   ) => void;
-  initialData: QuizQuestionOutput | null; // Dữ liệu gốc khi edit
+  initialData: QuizQuestion | null; // Dữ liệu gốc khi edit
   isEditing: boolean;
 }
 
@@ -104,16 +100,16 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
     if (open) {
       if (isEditing && initialData) {
         form.reset({
-          questionText: initialData.QuestionText,
-          explanation: initialData.Explanation,
+          questionText: initialData.questionText,
+          explanation: initialData.explanation,
           // Map options, gán tempId để quản lý key
           options:
             initialData.options?.map((opt) => ({
               ...opt,
               tempId:
                 opt.tempId || opt.id || `option-${Date.now()}-${Math.random()}`,
-              isCorrectAnswer: opt.IsCorrectAnswer,
-              optionText: opt.OptionText,
+              isCorrectAnswer: opt.isCorrectAnswer,
+              optionText: opt.optionText,
             })) || [],
         });
       } else {
@@ -141,7 +137,7 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
       // Giữ lại id/tempId/order của question gốc nếu đang edit
       tempId: initialData?.tempId,
       id: initialData?.id,
-      questionOrder: initialData?.QuestionOrder,
+      questionOrder: initialData?.questionOrder,
     };
     onSave(finalData);
   };

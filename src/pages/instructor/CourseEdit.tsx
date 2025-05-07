@@ -23,8 +23,6 @@ import {
   Section,
   Lesson,
   LessonType,
-  SectionOutput,
-  LessonOutput,
 } from '@/hooks/useCourseCurriculum';
 import { useCategories } from '@/hooks/queries/category.queries';
 import { useLevels } from '@/hooks/queries/level.queries';
@@ -53,11 +51,12 @@ import _ from 'lodash'; // Ensure lodash is installed and imported
 import { generateTempId } from '@/components/common/generateTempId';
 import LessonDialog from '@/components/instructor/courseCreate/LessonDialog';
 import { Form } from '@/components/ui/form';
+import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries';
 
 // Zod schema (Thêm ID)
 const courseFormSchema = z
   .object({
-    id: z.number().optional(), // ID của course khi edit
+    id: z.number().optional(),
     courseName: z.string().min(1, 'Course title is required').max(255),
     slug: z.string().optional(),
     shortDescription: z
@@ -69,7 +68,7 @@ const courseFormSchema = z
       .min(1, 'Full description is required')
       .max(20000),
     originalPrice: z.preprocess(
-      (val) => (val === '' ? NaN : parseFloat(String(val))), // Chuyển "" thành NaN để bắt lỗi required
+      (val) => (val === '' ? NaN : parseFloat(String(val))), // Chuyển đổi string thành number
       z
         .number({ required_error: 'Original price is required' })
         .min(0, 'Price must be non-negative')
@@ -78,15 +77,15 @@ const courseFormSchema = z
       (val) =>
         val === '' || val === null || val === undefined
           ? null
-          : parseFloat(String(val)), // Giữ null/undefined
+          : parseFloat(String(val)), // Chuyển đổi string thành number hoặc null
       z.number().min(0, 'Price must be non-negative').optional().nullable()
     ),
     categoryId: z.preprocess(
-      (val) => (val ? parseInt(String(val), 10) : undefined), // Chuyển sang number
+      (val) => parseInt(String(val), 10), // Chuyển đổi string thành number
       z.number({ required_error: 'Category is required' }).int().positive()
     ),
     levelId: z.preprocess(
-      (val) => (val ? parseInt(String(val), 10) : undefined), // Chuyển sang number
+      (val) => parseInt(String(val), 10), // Chuyển đổi string thành number
       z.number({ required_error: 'Level is required' }).int().positive()
     ),
     language: z.string().min(1, 'Language is required'),
@@ -142,10 +141,8 @@ const CourseEdit: React.FC = () => {
   // State for Dialogs
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<SectionOutput | null>(
-    null
-  );
-  const [editingLesson, setEditingLesson] = useState<LessonOutput | null>(null);
+  const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentSectionIdForLesson, setCurrentSectionIdForLesson] = useState<
     number | string | null
@@ -184,9 +181,9 @@ const CourseEdit: React.FC = () => {
       shortDescription: '',
       fullDescription: '',
       originalPrice: 0,
-      discountedPrice: null,
-      categoryId: 1,
-      levelId: 1,
+      discountedPrice: 0,
+      categoryId: 0,
+      levelId: 0,
       language: 'vi',
       requirements: null,
       learningOutcomes: null,
@@ -201,37 +198,37 @@ const CourseEdit: React.FC = () => {
       ); // Store initial course data for comparison
 
       form.reset({
-        id: Number(fetchedCourseData.CourseID) || undefined,
-        courseName: fetchedCourseData.CourseName || '',
-        slug: fetchedCourseData.Slug || '',
-        shortDescription: fetchedCourseData.ShortDescription || '',
-        fullDescription: fetchedCourseData.FullDescription || '',
-        originalPrice: Number(fetchedCourseData.OriginalPrice) || 0,
+        id: Number(fetchedCourseData.courseId) || undefined,
+        courseName: fetchedCourseData.courseName || '',
+        slug: fetchedCourseData.slug || '',
+        shortDescription: fetchedCourseData.shortDescription || '',
+        fullDescription: fetchedCourseData.fullDescription || '',
+        originalPrice: fetchedCourseData.originalPrice || 0,
         discountedPrice:
-          fetchedCourseData.DiscountedPrice !== null
-            ? Number(fetchedCourseData.DiscountedPrice)
+          fetchedCourseData.discountedPrice !== null
+            ? fetchedCourseData.discountedPrice
             : null,
-        categoryId: Number(fetchedCourseData.CategoryID) || 0,
-        levelId: Number(fetchedCourseData.LevelID) || 0,
-        language: fetchedCourseData.Language || 'vi',
-        requirements: fetchedCourseData.Requirements || null,
-        learningOutcomes: fetchedCourseData.LearningOutcomes || null,
+        categoryId: fetchedCourseData.categoryId || 0,
+        levelId: fetchedCourseData.levelId || 0,
+        language: fetchedCourseData.language || 'vi',
+        requirements: fetchedCourseData.requirements || null,
+        learningOutcomes: fetchedCourseData.learningOutcomes || null,
       });
       // *** Gọi setCurriculum để khởi tạo state từ dữ liệu fetch về ***
       setCurriculum(
         (fetchedCourseData.sections || []).map((section) => ({
           ...section,
-          sectionName: section.SectionName || 'Untitled Section', // Provide a default value if necessary
+          sectionName: section.sectionName || 'Untitled Section', // Provide a default value if necessary
           lessons: (section.lessons || []).map((lesson) => ({
             ...lesson,
-            lessonName: lesson.LessonName || 'Untitled Lesson', // Provide a default value
-            lessonType: (lesson.LessonType as LessonType) || 'VIDEO', // Default to "video" or another valid type
-            isFreePreview: lesson.IsFreePreview || false, // Default to false
+            lessonName: lesson.lessonName || 'Untitled Lesson', // Provide a default value
+            lessonType: (lesson.lessonType as LessonType) || 'VIDEO', // Default to "video" or another valid type
+            isFreePreview: lesson.isFreePreview || false, // Default to false
           })),
         }))
       );
-      setThumbnailPreview(fetchedCourseData.ThumbnailUrl || null);
-      setPromoVideoUrl(fetchedCourseData.IntroVideoUrl || '');
+      setThumbnailPreview(fetchedCourseData.thumbnailUrl || null);
+      setPromoVideoUrl(fetchedCourseData.introVideoUrl || '');
       setThumbnail(null);
       setIsInitializing(false);
       setSaveStatus('idle'); // Reset save status sau khi load xong
@@ -255,16 +252,16 @@ const CourseEdit: React.FC = () => {
 
   const hasCurriculumChanged = !_.isEqual(
     sections.map((section) => {
-      const { SectionName, tempId, ...restSection } = section; // Exclude sectionName and tempId
+      const { sectionName, tempId, ...restSection } = section; // Exclude sectionName and tempId
       return {
         ...restSection,
         lessons: section.lessons.map((lesson) => {
-          const { LessonName, tempId, ...restLesson } = lesson; // Exclude lessonName and tempId
+          const { lessonName, tempId, ...restLesson } = lesson; // Exclude lessonName and tempId
           return {
             ...restLesson,
             attachments: lesson.attachments?.map((att) => ({
               ...att,
-              file: att.File || null, // Normalize file property
+              file: att.file || null, // Normalize file property
             })),
             questions: lesson.questions?.map((q) => {
               const { tempId, ...restQuestion } = q; // Exclude tempId
@@ -274,7 +271,7 @@ const CourseEdit: React.FC = () => {
                   .map(({ tempId, ...restOption }) => ({
                     ...restOption,
                   }))
-                  .sort((a, b) => (a.OptionOrder ?? 0) - (b.OptionOrder ?? 0)),
+                  .sort((a, b) => (a.optionOrder ?? 0) - (b.optionOrder ?? 0)),
               };
             }),
           };
@@ -311,6 +308,8 @@ const CourseEdit: React.FC = () => {
   } = useSyncCourseCurriculum(); // Hook sync mới
   const { mutateAsync: deleteCourseMutateAsync, isPending: isDeletingCourse } =
     useDeleteCourse(); // Vẫn cần nếu có nút xóa course
+  // Hook to fetch signed URL for private lesson video
+
   // Bỏ các hook lẻ cho section/lesson CUD nếu dùng sync
   // const { mutateAsync: createSectionMutateAsync, isPending: isCreatingSection } = useCreateSection();
   // const { mutateAsync: updateSectionMutateAsync, isPending: isUpdatingSection } = useUpdateSection();
@@ -378,22 +377,22 @@ const CourseEdit: React.FC = () => {
     setEditingSection(null);
     setSectionDialogOpen(true);
   };
-  const handleOpenEditSectionDialog = (section: SectionOutput) => {
+  const handleOpenEditSectionDialog = (section: Section) => {
     setEditingSection(section);
     setSectionDialogOpen(true);
   };
   const handleSaveSectionDialog = (data: {
-    SectionName: string;
-    Description?: string | null;
+    sectionName: string;
+    description?: string | null;
   }) => {
     if (editingSection) {
       updateSection(
-        editingSection.tempId || editingSection.SectionID!,
-        data.SectionName,
-        data.Description
+        editingSection.tempId || editingSection.sectionId!,
+        data.sectionName,
+        data.description
       );
     } else {
-      addSection(data.SectionName, data.Description ?? undefined);
+      addSection(data.sectionName, data.description ?? undefined);
     }
     setSectionDialogOpen(false);
     form.setValue('courseName', form.getValues('courseName'), {
@@ -408,10 +407,50 @@ const CourseEdit: React.FC = () => {
   };
   const handleOpenEditLessonDialog = (
     sectionId: number | string,
-    lesson: LessonOutput
+    lesson: Lesson
   ) => {
+    console.log('Opening edit dialog for lesson:', lesson);
+    if (lesson.lessonVideoFile) {
+      console.log(
+        '  Original lessonVideoFile is File:',
+        lesson.lessonVideoFile instanceof File,
+        lesson.lessonVideoFile?.name
+      );
+    }
+
     setCurrentSectionIdForLesson(sectionId);
-    setEditingLesson(lesson);
+
+    // Tạo bản sao nông cho Lesson. Các thuộc tính object/array sẽ là tham chiếu.
+    const lessonCopy: Lesson = { ...lesson };
+
+    // Nếu LessonDialog sẽ quản lý state riêng cho questions, attachments, subtitles
+    // thì việc sao chép nông các mảng này là đủ, vì dialog sẽ tạo bản sao khi khởi tạo state của nó.
+    // Ví dụ, trong LessonDialog:
+    // const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+    // useEffect(() => { if (initialData) setQuizQuestions(_.cloneDeep(initialData.questions || [])) }, [initialData]);
+
+    // Nếu bạn muốn chắc chắn rằng `lessonCopy` hoàn toàn độc lập cho các mảng đó ngay từ đầu:
+    lessonCopy.questions = (lesson.questions || []).map((q) => ({
+      ...q,
+      options: (q.options || []).map((o) => ({ ...o })),
+    }));
+    lessonCopy.attachments = (lesson.attachments || []).map((a) => ({
+      ...a,
+      // Giữ nguyên tham chiếu 'file' nếu nó là File object
+      // file: a.file // Không cần gán lại nếu ...a đã giữ tham chiếu
+    }));
+    lessonCopy.subtitles = (lesson.subtitles || []).map((s) => ({ ...s }));
+
+    console.log('Setting editingLesson with (copied):', lessonCopy);
+    if (lessonCopy.lessonVideoFile) {
+      console.log(
+        '  Copied lessonVideoFile is File:',
+        lessonCopy.lessonVideoFile instanceof File,
+        lessonCopy.lessonVideoFile?.name
+      );
+    }
+
+    setEditingLesson(lessonCopy);
     setLessonDialogOpen(true);
   };
   const handleSaveLessonDialog = (lessonDataFromDialog: Lesson) => {
@@ -423,31 +462,38 @@ const CourseEdit: React.FC = () => {
         lessonDataFromDialog.tempId ||
         (editingLesson?.id ? undefined : generateTempId('lesson')),
       id: editingLesson?.id,
-      lessonOrder: editingLesson?.LessonOrder, // Giữ order khi edit, hook add sẽ tự tính
+      lessonOrder: editingLesson?.lessonOrder, // Giữ order khi edit, hook add sẽ tự tính
+      externalVideoId:
+        lessonDataFromDialog.videoSourceType === 'CLOUDINARY' &&
+        !lessonDataFromDialog.lessonVideoFile &&
+        editingLesson?.externalVideoId
+          ? editingLesson.externalVideoId
+          : lessonDataFromDialog.externalVideoId,
+      lessonVideoFile: lessonDataFromDialog.lessonVideoFile || null,
     };
+
     if (editingLesson) {
       updateLesson(currentSectionIdForLesson, lessonToSave);
     } else {
-      const { id, tempId, lessonOrder, ...lessonPayload } = lessonToSave;
+      const { id, tempId, lessonOrder, ...lessonPayload } = lessonToSave; // Bỏ các trường ko cần khi add
       addLesson(
         currentSectionIdForLesson,
         lessonPayload as Omit<Lesson, 'id' | 'tempId' | 'lessonOrder'>
       );
     }
     setLessonDialogOpen(false);
-    form.trigger(); // Mark the form as dirty when curriculum changes
   };
 
   // --- Delete Callbacks (Chỉ cập nhật state local) ---
   const handleDeleteSectionCallback = useCallback(
     (sectionId: number | string) => {
       const sectionToDelete = sections.find(
-        (s) => s.SectionID === sectionId || s.tempId === sectionId
+        (s) => s.sectionId === sectionId || s.tempId === sectionId
       );
       if (!sectionToDelete) return;
       if (
         window.confirm(
-          `Mark section "${sectionToDelete.SectionName}" and all its lessons for deletion? Changes will be saved when you click 'Save Changes'.`
+          `Mark section "${sectionToDelete.sectionName}" and all its lessons for deletion? Changes will be saved when you click 'Save Changes'.`
         )
       ) {
         deleteSection(sectionId); // Gọi hook để xóa khỏi state local
@@ -462,7 +508,7 @@ const CourseEdit: React.FC = () => {
   const handleDeleteLessonCallback = useCallback(
     (sectionId: number | string, lessonId: number | string) => {
       const section = sections.find(
-        (s) => s.SectionID === sectionId || s.tempId === sectionId
+        (s) => s.sectionId === sectionId || s.tempId === sectionId
       );
       const lessonToDelete = section?.lessons.find(
         (l) => l.id === lessonId || l.tempId === lessonId
@@ -470,7 +516,7 @@ const CourseEdit: React.FC = () => {
       if (!lessonToDelete) return;
       if (
         window.confirm(
-          `Mark lesson "${lessonToDelete.LessonName}" for deletion? Changes will be saved when you click 'Save Changes'.`
+          `Mark lesson "${lessonToDelete.lessonName}" for deletion? Changes will be saved when you click 'Save Changes'.`
         )
       ) {
         deleteLesson(sectionId, lessonId); // Gọi hook để xóa khỏi state local
@@ -481,17 +527,18 @@ const CourseEdit: React.FC = () => {
     },
     [sections, deleteLesson, form]
   );
+  console.log('fetchedCourseData', fetchedCourseData);
 
   // --- MAIN SAVE CHANGES LOGIC (Uses Sync API) ---
   const handleSaveChanges = async (formData: CourseFormData) => {
     if (!fetchedCourseData) return;
-    const courseId = Number(fetchedCourseData.CourseID);
+    const courseId = Number(fetchedCourseData.courseId);
     setSaveStatus('saving');
     setLoading(true);
     console.log('Saving changes for course:', courseId);
 
     try {
-      console.log('vào try rr');
+      console.log('Form Data:', formData);
       // --- Step 1: Update Basic Course Info & Promo URL ---
       const courseUpdatePayload: UpdateCourseData = {
         courseName: formData.courseName,
@@ -499,7 +546,9 @@ const CourseEdit: React.FC = () => {
         shortDescription: formData.shortDescription,
         fullDescription: formData.fullDescription,
         originalPrice: formData.originalPrice || 0,
-        discountedPrice: formData.discountedPrice || null,
+        discountedPrice: formData.discountedPrice
+          ? formData.discountedPrice
+          : null,
         categoryId: formData.categoryId,
         levelId: formData.levelId,
         language: formData.language,
@@ -530,73 +579,74 @@ const CourseEdit: React.FC = () => {
       console.log('Step 3: Syncing curriculum...');
       // Sắp xếp lại theo order trước khi gửi
       const sortedSections = [...sections].sort(
-        (a, b) => (a.SectionOrder ?? 0) - (b.SectionOrder ?? 0)
+        (a, b) => (a.sectionOrder ?? 0) - (b.sectionOrder ?? 0)
       );
       const curriculumPayload: SyncCurriculumPayload = {
         sections: sortedSections.map((section, sectionIndex) => ({
-          id: section.SectionID || null,
+          id: section.sectionId || null,
           tempId: section.tempId || generateTempId('section'),
-          sectionName: section.SectionName, // Corrected property name
-          description: section.Description || null,
+          sectionName: section.sectionName,
+          description: section.description || null,
           sectionOrder: sectionIndex,
           lessons: (section.lessons || [])
-            .sort((a, b) => (a.LessonOrder ?? 0) - (b.LessonOrder ?? 0))
+            .sort((a, b) => (a.lessonOrder ?? 0) - (b.lessonOrder ?? 0))
             .map((lesson, lessonIndex) => ({
-              id: lesson.LessonID || null,
+              id: lesson.lessonId || null,
               tempId: lesson.tempId || generateTempId('lesson'),
-              lessonName: lesson.LessonName,
-              description: lesson.Description || null,
+              lessonName: lesson.lessonName,
+              description: lesson.description || null,
               lessonOrder: lessonIndex,
-              lessonType: lesson.LessonType,
-              isFreePreview: lesson.IsFreePreview,
+              lessonType: lesson.lessonType,
+              isFreePreview: lesson.isFreePreview,
               videoSourceType:
-                lesson.LessonType === 'VIDEO'
-                  ? lesson.VideoSourceType
+                lesson.lessonType === 'VIDEO'
+                  ? lesson.videoSourceType
                   : undefined,
               externalVideoInput:
-                lesson.LessonType === 'VIDEO'
-                  ? lesson.ExternalVideoID
+                lesson.lessonType === 'VIDEO'
+                  ? lesson.externalVideoInput
                   : undefined,
               textContent:
-                lesson.LessonType === 'TEXT' ? lesson.TextContent : undefined,
+                lesson.lessonType === 'TEXT' ? lesson.textContent : undefined,
               questions:
-                lesson.LessonType === 'QUIZ'
+                lesson.lessonType === 'QUIZ'
                   ? (lesson.questions || []).map((question, questionIndex) => ({
-                      id: question.QuestionID || null,
+                      id: question.questionId || null,
                       tempId: question.tempId || generateTempId('question'),
-                      questionText: question.QuestionText,
-                      explanation: question.Explanation || null,
+                      questionText: question.questionText,
+                      explanation: question.explanation || null,
                       questionOrder: questionIndex,
                       options: (question.options || [])
                         .sort(
-                          (a, b) => (a.OptionOrder ?? 0) - (b.OptionOrder ?? 0)
+                          (a, b) => (a.optionOrder ?? 0) - (b.optionOrder ?? 0)
                         )
                         .map((option, optionIndex) => ({
-                          id: option.OptionID || null,
-                          optionText: option.OptionText,
-                          isCorrectAnswer: option.IsCorrectAnswer,
+                          id: option.optionId || null,
+                          optionText: option.optionText,
+                          isCorrectAnswer: option.isCorrectAnswer,
                           optionOrder: optionIndex,
                         })),
                     }))
                   : undefined,
               attachments: (lesson.attachments || []).map((attachment) => ({
-                id: attachment.AttachmentID || null,
-                fileName: attachment.FileName,
-                file: attachment.File || null,
+                id: attachment.attachmentId || null,
+                fileName: attachment.fileName,
+                file: attachment.file || null,
               })),
               subtitles:
-                lesson.LessonType === 'VIDEO'
+                lesson.lessonType === 'VIDEO'
                   ? (lesson.subtitles || []).map((subtitle) => ({
-                      id: subtitle.SubtitleID || null,
-                      languageCode: subtitle.LanguageCode,
-                      languageName: subtitle.LanguageName,
-                      subtitleUrl: subtitle.SubtitleUrl,
-                      isDefault: subtitle.IsDefault,
+                      id: subtitle.subtitleId || null,
+                      languageCode: subtitle.languageCode,
+                      languageName: subtitle.languageName,
+                      subtitleUrl: subtitle.subtitleUrl,
+                      isDefault: subtitle.isDefault,
                     }))
                   : undefined,
             })),
         })),
       };
+
       console.log('Curriculum Payload:', {
         courseId,
         payload: curriculumPayload,
@@ -717,14 +767,14 @@ const CourseEdit: React.FC = () => {
                   </h1>
                   <span
                     className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                      fetchedCourseData.StatusID === 'PUBLISHED'
+                      fetchedCourseData.statusId === 'PUBLISHED'
                         ? 'bg-green-100 text-green-800'
-                        : fetchedCourseData.StatusID === 'DRAFT'
+                        : fetchedCourseData.statusId === 'DRAFT'
                         ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
-                    {fetchedCourseData.StatusID}
+                    {fetchedCourseData.statusId}
                   </span>
                 </div>
 

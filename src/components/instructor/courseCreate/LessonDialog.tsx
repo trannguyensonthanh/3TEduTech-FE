@@ -57,12 +57,11 @@ import {
   Attachment,
   Subtitle,
   QuizOption,
-  LessonOutput,
-  QuizQuestionOutput,
-  AttachmentOutput,
 } from '@/hooks/useCourseCurriculum';
 import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 import { generateTempId } from '@/components/common/generateTempId';
+import TiptapEditor from '@/components/editor/TiptapEditor';
+import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries';
 // --- Zod Schema ---
 const quizOptionSchemaFE = z.object({
   tempId: z.union([z.string(), z.number()]).optional(),
@@ -159,7 +158,7 @@ interface LessonDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (data: Lesson) => void;
-  initialData: LessonOutput | null;
+  initialData: Lesson | null;
   isEditing: boolean;
   lessonVideoRef: React.RefObject<HTMLInputElement>;
   attachmentRef: React.RefObject<HTMLInputElement>;
@@ -188,15 +187,15 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
     },
   });
 
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionOutput[]>([]);
-  const [attachments, setAttachments] = useState<AttachmentOutput[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
   const [lessonVideoPreview, setLessonVideoPreview] = useState<string | null>(
     null
   );
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [editingQuizQuestion, setEditingQuizQuestion] =
-    useState<QuizQuestionOutput | null>(null);
+    useState<QuizQuestion | null>(null);
   const [newSubtitle, setNewSubtitle] = useState<
     Omit<Subtitle, 'id' | 'tempId'>
   >({
@@ -205,25 +204,79 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
     subtitleUrl: '',
     isDefault: false,
   });
-
+  const { data: lessonVideoData, isLoading: isLoadingLessonVideo } =
+    useLessonVideoUrl(initialData ? Number(initialData.lessonId) : undefined);
   console.log('LessonDialog initialData:', initialData);
+  console.log('lessonVideoData:', lessonVideoData);
 
   useEffect(() => {
+    if (lessonVideoPreview?.startsWith('blob:')) {
+      console.log(
+        'Revoking previous blob preview on effect run:',
+        lessonVideoPreview
+      );
+      URL.revokeObjectURL(lessonVideoPreview);
+    }
+
+    form.resetField('lessonVideo');
+    let newPreviewUrl: string | null = null;
+    let shouldRevokeOldPreview = true; // Mặc định là revoke preview cũ
     if (open) {
       if (isEditing && initialData) {
         form.reset({
-          lessonName: initialData.LessonName || '',
-          description: initialData.Description || null,
-          lessonType: initialData.LessonType || 'VIDEO',
-          isFreePreview: initialData.IsFreePreview || false,
-          videoSourceType: initialData.VideoSourceType || 'CLOUDINARY',
+          lessonName: initialData.lessonName,
+          description: initialData.description || null,
+          lessonType: initialData.lessonType,
+          isFreePreview: initialData.isFreePreview,
+          videoSourceType:
+            initialData.videoSourceType ||
+            (initialData.lessonType === 'VIDEO' ? 'CLOUDINARY' : null),
           externalVideoInput:
-            initialData.VideoSourceType !== 'CLOUDINARY'
-              ? initialData.ExternalVideoID
-              : null, // Only prefill for YT/Vimeo
-          lessonVideo: null,
-          textContent: initialData.TextContent || null,
+            initialData.videoSourceType === 'YOUTUBE'
+              ? `https://youtube.com/watch?v=${initialData.externalVideoId}`
+              : initialData.videoSourceType === 'VIMEO'
+              ? `https://vimeo.com/${initialData.externalVideoId}`
+              : null,
+          textContent: initialData.textContent || null,
+          lessonVideo: initialData.lessonVideoFile || null,
         });
+        if (initialData.lessonType === 'VIDEO') {
+          if (initialData.videoSourceType === 'CLOUDINARY') {
+            if (initialData.lessonVideoFile instanceof File) {
+              // Nếu có File object, tạo Blob URL mới
+              console.log(
+                '[useEffect] Editing, Cloudinary type, found lessonVideoFile. Creating new Blob URL.'
+              );
+              newPreviewUrl = URL.createObjectURL(initialData.lessonVideoFile);
+              // Nếu Blob URL mới giống hệt Blob URL cũ đang hiển thị (ít khả năng, nhưng để an toàn)
+              // thì không cần revoke cái cũ rồi set lại cái giống hệt.
+              // Tuy nhiên, việc luôn tạo mới và revoke cũ có thể an toàn hơn về mặt quản lý resource.
+              if (lessonVideoPreview === newPreviewUrl) {
+                shouldRevokeOldPreview = false; // Không revoke nếu URL giống hệt
+              }
+            } else if (initialData?.externalVideoId === undefined) {
+              // Trường hợp: Đã upload lên Cloudinary, sử dụng signedUrl từ lessonVideoData
+              newPreviewUrl = lessonVideoData?.signedUrl;
+              console.log(
+                '[useEffect] Editing, Cloudinary type, using signedUrl from lessonVideoData:',
+                newPreviewUrl
+              );
+              // Nếu URL mới giống với preview hiện tại, không cần làm gì
+              if (lessonVideoPreview === newPreviewUrl) {
+                shouldRevokeOldPreview = false;
+              }
+            }
+          } else if (
+            initialData.videoSourceType === 'YOUTUBE' ||
+            initialData.videoSourceType === 'VIMEO'
+          ) {
+            // Xử lý cho YouTube/Vimeo nếu bạn có cách hiển thị preview đặc biệt
+            // Hiện tại, bạn chỉ có input cho link, nên không cần preview ở đây
+            console.log(
+              'Editing: YouTube/Vimeo link, no direct preview in dialog for now.'
+            );
+          }
+        }
         // Add tempIds for proper key management and editing
         // *** FIX: Cập nhật state cho quiz, attachments, subtitles ***
         setQuizQuestions(
@@ -257,13 +310,13 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
         setLessonVideoPreview(null);
         // Display existing Cloudinary video info (if editing)
         if (
-          initialData.VideoSourceType === 'CLOUDINARY' &&
-          initialData.ExternalVideoID
+          initialData.videoSourceType === 'CLOUDINARY' &&
+          initialData.externalVideoId === undefined
         ) {
           // You might want to display a placeholder or the public ID instead of trying to preview
           console.log(
             'Existing Cloudinary Video ID:',
-            initialData.ExternalVideoID
+            initialData.externalVideoId
           );
         }
       } else {
@@ -282,62 +335,119 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
       setEditingQuizQuestion(null); // Reset cả câu hỏi đang sửa
       setQuizDialogOpen(false); // Đảm bảo dialog quiz đóng
     }
+    // Dọn dẹp Blob URL cũ *trước khi* set cái mới nếu cần
+    if (shouldRevokeOldPreview && lessonVideoPreview?.startsWith('blob:')) {
+      console.log('[useEffect] Revoking old blob preview:', lessonVideoPreview);
+      URL.revokeObjectURL(lessonVideoPreview);
+    }
+
+    // Cập nhật state preview
+    // Chỉ cập nhật nếu newPreviewUrl khác với lessonVideoPreview hiện tại để tránh vòng lặp vô hạn nếu lessonVideoPreview nằm trong dependency array
+    // (Mặc dù hiện tại nó không nằm trong dependency array của useEffect này)
+    if (lessonVideoPreview !== newPreviewUrl) {
+      console.log('[useEffect] Setting lessonVideoPreview to:', newPreviewUrl);
+      setLessonVideoPreview(newPreviewUrl);
+    }
+    // Quan trọng: Không reset form.setValue('lessonVideo', null) ở đây nữa.
+    // Trường 'lessonVideo' của RHF sẽ chỉ được set khi người dùng chọn file mới trong handleVideoFileChange.
   }, [open, isEditing, initialData, form]);
 
-  // Clean up Blob URL on unmount or when preview changes
+  // Dọn dẹp Blob URL cuối cùng khi component unmount (dialog đóng hoàn toàn)
+  // useEffect dọn dẹp khi component unmount
   useEffect(() => {
-    const currentPreview = lessonVideoPreview;
     return () => {
-      if (currentPreview?.startsWith('blob:')) {
-        URL.revokeObjectURL(currentPreview);
+      if (lessonVideoPreview?.startsWith('blob:')) {
+        console.log(
+          '[useEffect Cleanup] Revoking blob preview on unmount:',
+          lessonVideoPreview
+        );
+        URL.revokeObjectURL(lessonVideoPreview);
       }
     };
-  }, [lessonVideoPreview]);
-
+  }, [lessonVideoPreview]); // Chỉ chạy khi lessonVideoPreview thay đổi
   const handleFormSubmit = (formData: LessonFormData) => {
+    const newSelectedFile = form.getValues('lessonVideo'); // File | null
+    console.log('New selected file:', newSelectedFile);
+    console.log(' initialData.lessonVideoFile:', initialData?.lessonVideoFile);
+    console.log(newSelectedFile instanceof File);
+    // Xác định File object cuối cùng
+    let finalFileObject: File | null = null;
+    if (newSelectedFile instanceof File) {
+      finalFileObject = newSelectedFile;
+    } else if (isEditing && initialData?.lessonVideoFile instanceof File) {
+      finalFileObject = initialData.lessonVideoFile;
+    }
+
+    // Xác định externalVideoId cuối cùng
+    let finalExternalVideoId: string | null | undefined = undefined;
+    if (formData.videoSourceType === 'CLOUDINARY') {
+      if (finalFileObject) {
+        // Nếu có file mới hoặc giữ file cũ (chưa upload), externalId sẽ do backend xử lý khi upload
+        finalExternalVideoId = null;
+      } else if (
+        isEditing &&
+        initialData?.videoSourceType === 'CLOUDINARY' &&
+        initialData?.externalVideoId
+      ) {
+        finalExternalVideoId = initialData.externalVideoId; // Giữ ID Cloudinary cũ nếu không có file mới
+      }
+    } else {
+      // YouTube, Vimeo
+      finalExternalVideoId = formData.externalVideoInput;
+    }
+    console.log('finalFileObject:', finalFileObject);
     const finalLessonData: Lesson = {
-      lessonType: formData.lessonType, // Ensure lessonType is included
-      lessonName: formData.lessonName, // Ensure lessonName is included
-      isFreePreview: formData.isFreePreview, // Ensure isFreePreview is included
-      ...(initialData || {}),
+      // ID và order luôn lấy từ initialData nếu đang edit
       tempId:
         initialData?.tempId ||
-        (initialData?.id ? undefined : generateTempId('lesson')),
-      id: initialData?.id,
+        (isEditing && initialData?.id ? undefined : generateTempId('lesson')),
+      id: isEditing ? initialData?.id : undefined,
+      lessonOrder: isEditing ? initialData?.lessonOrder : undefined,
 
-      lessonOrder: initialData?.LessonOrder,
-      ...formData,
-      lessonVideo: formData.lessonVideo,
-      questions: quizQuestions,
-      attachments: attachments.map((a) => {
-        return {
-          ...a,
-          id: a.id,
-          file: a.File,
-          tempId: a.tempId || a.id || generateTempId('attach'),
-          fileName: a.FileName,
-          fileSize: a.FileSize,
-          fileType: a.FileType,
-        };
-      }),
-      subtitles: subtitles,
-      externalVideoInput:
-        formData.videoSourceType !== 'CLOUDINARY'
-          ? formData.externalVideoInput
-          : initialData?.VideoSourceType === 'CLOUDINARY'
-          ? initialData.ExternalVideoID
-          : null, // Keep old public_id for Cloudinary if not replaced
+      // Các trường từ form
+      lessonName: formData.lessonName,
+      description: formData.description,
+      lessonType: formData.lessonType,
+      isFreePreview: formData.isFreePreview,
+      videoSourceType: formData.videoSourceType,
+      textContent: formData.textContent,
+      externalVideoInput: formData.externalVideoInput, // Giữ lại để form có thể hiển thị, nhưng externalVideoId mới là cái quan trọng
+
+      // Các trường đã xử lý
+      lessonVideoFile: finalFileObject,
+      lessonVideo: finalFileObject, // Giữ lại để form có thể hiển thị, nhưng lessonVideoFile mới là cái quan trọng
+      externalVideoId: finalExternalVideoId,
+
+      // Các mảng từ state của dialog
+      questions:
+        formData.lessonType === 'QUIZ'
+          ? quizQuestions
+          : isEditing
+          ? initialData?.questions
+          : [],
+      attachments: attachments,
+      subtitles:
+        formData.lessonType === 'VIDEO'
+          ? subtitles
+          : isEditing
+          ? initialData?.subtitles
+          : [],
+
+      // Dọn dẹp (có thể gộp vào logic trên nếu muốn)
       ...(formData.lessonType !== 'VIDEO' && {
         videoSourceType: undefined,
-        externalVideoInput: undefined,
-        lessonVideo: undefined,
+        externalVideoId: undefined,
+        lessonVideoFile: undefined,
         subtitles: undefined,
-        videoDurationSeconds: undefined,
-        thumbnailUrl: undefined,
       }),
       ...(formData.lessonType !== 'TEXT' && { textContent: undefined }),
       ...(formData.lessonType !== 'QUIZ' && { questions: undefined }),
     };
+    console.log('finalLessonData:', finalLessonData);
+    console.log(
+      '[LessonDialog] Final lesson data to save:',
+      JSON.parse(JSON.stringify(finalLessonData))
+    );
     onSave(finalLessonData);
   };
 
@@ -346,6 +456,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
     if (lessonVideoPreview?.startsWith('blob:')) {
       URL.revokeObjectURL(lessonVideoPreview);
     }
+    setLessonVideoPreview(null); // Reset
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       form.setValue('lessonVideo', file, { shouldValidate: true });
@@ -354,7 +465,6 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
       toast({ title: 'Video Selected', description: file.name });
     } else {
       form.setValue('lessonVideo', null);
-      setLessonVideoPreview(null);
     }
   };
 
@@ -363,12 +473,12 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
   ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const newAttachment: AttachmentOutput = {
+      const newAttachment: Attachment = {
         tempId: generateTempId('attach'),
-        FileName: file.name,
-        FileType: file.type,
-        FileSize: file.size,
-        File: file,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        file: file,
         // fileUrl: URL.createObjectURL(file) // Create blob URL for preview if needed
       };
       setAttachments((prev) => [...prev, newAttachment]);
@@ -385,8 +495,8 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
       const attachmentToRemove = attachments.find(
         (a) => a.id === attachmentId || a.tempId === attachmentId
       );
-      if (attachmentToRemove?.FileUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(attachmentToRemove.FileUrl);
+      if (attachmentToRemove?.fileUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(attachmentToRemove.fileUrl);
       }
       setAttachments((prev) =>
         prev.filter((a) => a.id !== attachmentId && a.tempId !== attachmentId)
@@ -400,7 +510,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
     setEditingQuizQuestion(null);
     setQuizDialogOpen(true);
   };
-  const openEditQuizDialog = (question: QuizQuestionOutput) => {
+  const openEditQuizDialog = (question: QuizQuestion) => {
     setEditingQuizQuestion(question);
     setQuizDialogOpen(true);
   };
@@ -412,7 +522,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
         questionDataFromDialog.tempId ||
         (editingQuizQuestion?.id ? undefined : generateTempId('question')),
       id: editingQuizQuestion?.id,
-      questionOrder: editingQuizQuestion?.QuestionOrder ?? quizQuestions.length,
+      questionOrder: editingQuizQuestion?.questionOrder ?? quizQuestions.length,
       options: questionDataFromDialog.options.map(
         (opt: any, index: number) => ({
           ...opt,
@@ -517,7 +627,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
     );
     toast({ title: 'Default Subtitle Set' });
   };
-
+  console.log(!form.formState.isValid || form.formState.isSubmitting);
   // --- RENDER ---
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -689,45 +799,83 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                                 onChange={handleVideoFileChange}
                               />
                               {lessonVideoPreview ? (
-                                <div className="relative group">
+                                <div className="relative group aspect-video">
+                                  {' '}
+                                  {/* Giữ aspect-video để duy trì tỷ lệ */}
                                   <video
+                                    key={lessonVideoPreview}
                                     src={lessonVideoPreview}
-                                    controls
-                                    className="w-full rounded-md aspect-video bg-black"
+                                    controls // Vẫn giữ controls gốc của trình duyệt
+                                    className="w-full h-full rounded-md bg-black object-contain" // object-contain để không bị cắt nếu tỷ lệ khác
+                                    onError={(e) => {
+                                      // Xảy ra khi URL không hợp lệ (ví dụ Blob URL hết hạn, hoặc URL Cloudinary sai)
+                                      console.error(
+                                        'Video preview error:',
+                                        e,
+                                        lessonVideoPreview
+                                      );
+                                      toast({
+                                        title: 'Video Preview Error',
+                                        description:
+                                          'Could not load video preview.',
+                                        variant: 'destructive',
+                                      });
+                                      // Có thể reset preview ở đây
+                                      // setLessonVideoPreview(null);
+                                      // form.setValue('lessonVideo', null);
+                                    }}
                                   />
-                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                                  {/* Nút điều khiển đặt ở góc trên bên phải */}
+                                  <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                                    {/* Nút Edit/Replace */}
                                     <Button
                                       type="button"
-                                      variant="secondary"
+                                      variant="secondary" // Hoặc "outline" tùy style
                                       size="icon"
-                                      className="h-9 w-9 rounded-full"
+                                      className="h-8 w-8 rounded-full shadow" // Kích thước nhỏ hơn
+                                      title="Replace Video"
                                       onClick={() =>
                                         lessonVideoRef.current?.click()
                                       }
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="icon"
-                                      className="h-9 w-9 rounded-full"
-                                      onClick={() => {
-                                        form.setValue('lessonVideo', null);
-                                        setLessonVideoPreview(null);
-                                      }}
-                                    >
-                                      <Trash className="h-4 w-4" />
-                                    </Button>
+                                    {/* Nút Delete chỉ hiển thị cho Blob URL */}
+                                    {lessonVideoPreview?.startsWith(
+                                      'blob:'
+                                    ) && (
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full shadow" // Kích thước nhỏ hơn
+                                        title="Remove Selected Video"
+                                        onClick={() => {
+                                          if (
+                                            lessonVideoPreview?.startsWith(
+                                              'blob:'
+                                            )
+                                          ) {
+                                            URL.revokeObjectURL(
+                                              lessonVideoPreview
+                                            );
+                                          }
+                                          setLessonVideoPreview(null);
+                                          form.setValue('lessonVideo', null);
+                                        }}
+                                      >
+                                        <Trash className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               ) : isEditing &&
-                                initialData?.VideoSourceType === 'CLOUDINARY' &&
-                                initialData?.ExternalVideoID ? (
+                                initialData?.videoSourceType === 'CLOUDINARY' &&
+                                initialData?.externalVideoId ? (
                                 <div className="border rounded p-3 text-sm text-muted-foreground flex items-center justify-between">
                                   <span>
                                     Video previously uploaded (ID:{' '}
-                                    {initialData.ExternalVideoID.substring(
+                                    {initialData.externalVideoId.substring(
                                       0,
                                       15
                                     )}
@@ -968,23 +1116,44 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
               {/* Text Fields */}
               {form.watch('lessonType') === 'TEXT' && (
                 <FormField
-                  control={form.control}
-                  name="textContent"
-                  render={({ field }) => (
+                  control={form.control} // 'form.control' phải được truyền từ React Hook Form instance
+                  name="textContent" // Tên của field trong form data
+                  render={(
+                    { fieldState } // field không cần trực tiếp ở đây khi dùng Controller
+                  ) => (
                     <FormItem className="border rounded-md p-4 bg-muted/20">
-                      <FormLabel className="font-semibold text-base flex items-center mb-2">
+                      <FormLabel className="font-semibold text-base flex items-center mb-3">
+                        {' '}
+                        {/* Tăng mb một chút */}
                         <FileText className="h-5 w-5 mr-2 text-primary" /> Text
                         Content *
                       </FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Enter lesson content here. You can use markdown..."
-                          {...field}
-                          value={field.value ?? ''}
-                          className="min-h-[300px] bg-background"
+                        {/* Sử dụng Controller để tích hợp TiptapEditor */}
+                        <Controller
+                          name="textContent" // Tên field phải khớp
+                          control={form.control} // Truyền control vào Controller
+                          render={(
+                            { field: controllerField } // field từ Controller
+                          ) => (
+                            <TiptapEditor
+                              initialContent={controllerField.value || ''} // Giá trị ban đầu từ RHF
+                              onContentChange={(htmlContent) => {
+                                controllerField.onChange(htmlContent); // Cập nhật giá trị cho RHF
+                              }}
+                              // onBlur={controllerField.onBlur} // Tùy chọn: nếu TiptapEditor có hỗ trợ và bạn cần trigger validation onBlur
+                              // Bạn có thể truyền thêm props để tùy chỉnh TiptapEditor nếu cần
+                              // ví dụ: minHeight="300px" nếu TiptapEditor hỗ trợ prop đó
+                            />
+                          )}
                         />
                       </FormControl>
-                      <FormMessage />
+                      {/* 
+                      FormDescription có thể không cần thiết nếu TiptapEditor đã đủ rõ ràng
+                      hoặc bạn có thể thêm mô tả phù hợp cho TiptapEditor.
+                      Ví dụ: <FormDescription>Use the rich text editor to format your content.</FormDescription>
+                    */}
+                      <FormMessage /> {/* Hiển thị lỗi validation nếu có */}
                     </FormItem>
                   )}
                 />
@@ -1018,7 +1187,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                             <p className="font-medium text-sm">
                               Question {index + 1}:{' '}
                               <span className="font-normal">
-                                {q.QuestionText}
+                                {q.questionText}
                               </span>
                             </p>
                             <div className="flex space-x-1 flex-shrink-0">
@@ -1050,13 +1219,13 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                               <li
                                 key={opt.tempId || opt.id}
                                 className={`text-xs ${
-                                  opt.IsCorrectAnswer
+                                  opt.isCorrectAnswer
                                     ? 'text-green-600 font-medium'
                                     : 'text-muted-foreground'
                                 }`}
                               >
-                                {opt.OptionText}{' '}
-                                {opt.IsCorrectAnswer && '(Correct)'}
+                                {opt.optionText}{' '}
+                                {opt.isCorrectAnswer && '(Correct)'}
                               </li>
                             ))}
                           </ul>
@@ -1116,13 +1285,13 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                           <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <span
                             className="text-sm font-medium truncate"
-                            title={att.FileName}
+                            title={att.fileName}
                           >
-                            {att.FileName}
+                            {att.fileName}
                           </span>
-                          {att.FileSize && (
+                          {att.fileSize && (
                             <span className="text-xs text-muted-foreground flex-shrink-0">
-                              ({(att.FileSize / 1024 / 1024).toFixed(2)} MB)
+                              ({(att.fileSize / 1024 / 1024).toFixed(2)} MB)
                             </span>
                           )}
                         </div>

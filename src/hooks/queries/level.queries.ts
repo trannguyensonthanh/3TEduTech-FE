@@ -92,7 +92,7 @@ export const useUpdateLevel = (
     mutationFn: ({ levelId, data }) => updateLevel(levelId, data),
     onSuccess: (updatedLevel) => {
       queryClient.setQueryData(
-        levelKeys.detail(updatedLevel.LevelID),
+        levelKeys.detail(updatedLevel.levelId),
         updatedLevel
       );
       queryClient.invalidateQueries({ queryKey: levelKeys.lists() });

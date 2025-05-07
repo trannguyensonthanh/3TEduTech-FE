@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 import {
   Form,
   FormField,
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { UseFormReturn } from 'react-hook-form';
+import TiptapEditor from '@/components/editor/TiptapEditor';
 
 interface BasicInfoTabProps {
   form: UseFormReturn<{
@@ -34,8 +35,8 @@ interface BasicInfoTabProps {
     requirements?: string;
     learningOutcomes?: string;
   }>;
-  mockCategories: { CategoryID: number; CategoryName: string }[];
-  mockLevels: { LevelID: number; LevelName: string }[];
+  mockCategories: { categoryId: number; categoryName: string }[];
+  mockLevels: { levelId: number; levelName: string }[];
   mockLanguages: { id: number; name: string }[];
   handleTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -47,9 +48,10 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
   mockLanguages,
   handleTitleChange,
 }) => {
+  const { control } = form; // Lấy control từ form
   return (
     <Form {...form}>
-      <form className="space-y-6">
+      <form className="space-y-6 relative">
         <FormField
           control={form.control}
           name="courseName"
@@ -101,20 +103,33 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
         />
 
         <FormField
-          control={form.control}
+          control={control}
           name="shortDescription"
-          render={({ field, fieldState }) => (
+          render={(
+            { field, fieldState } // field ở đây là của FormField
+          ) => (
             <FormItem>
               <FormLabel>Short Description</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Write a compelling summary of your course (150-200 characters)"
-                  className="resize-none"
-                  {...field}
+                <Controller
+                  name="shortDescription" // Tên field phải khớp
+                  control={control}
+                  render={(
+                    { field: controllerField } // Đổi tên field từ Controller để tránh nhầm lẫn
+                  ) => (
+                    <TiptapEditor
+                      initialContent={controllerField.value || ''} // Giá trị ban đầu từ RHF
+                      onContentChange={(htmlContent) => {
+                        controllerField.onChange(htmlContent); // Cập nhật giá trị cho RHF
+                      }}
+                      // onBlur={controllerField.onBlur} // Có thể thêm nếu cần
+                    />
+                  )}
                 />
               </FormControl>
               <FormDescription>
-                This appears in search results and course cards.
+                This appears in search results and course cards. Write a
+                compelling summary. (Tiptap editor)
               </FormDescription>
               {fieldState.error && (
                 <FormMessage>{fieldState.error.message}</FormMessage>
@@ -142,10 +157,10 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                   <SelectContent>
                     {mockCategories?.map((category) => (
                       <SelectItem
-                        key={category.CategoryID}
-                        value={category.CategoryID.toString()}
+                        key={category.categoryId}
+                        value={category?.categoryId?.toString()}
                       >
-                        {category.CategoryName}
+                        {category.categoryName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -175,10 +190,10 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                   <SelectContent>
                     {mockLevels?.map((level) => (
                       <SelectItem
-                        key={level.LevelID}
-                        value={level.LevelID.toString()}
+                        key={level.levelId}
+                        value={level?.levelId?.toString()}
                       >
-                        {level.LevelName}
+                        {level.levelName}
                       </SelectItem>
                     ))}
                   </SelectContent>

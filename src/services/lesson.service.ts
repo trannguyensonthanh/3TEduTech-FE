@@ -1,35 +1,79 @@
 // src/services/lesson.service.ts
+import { QuizQuestion, Subtitle } from '@/hooks/useCourseCurriculum';
 import apiHelper, { fetchWithAuth } from './apiHelper'; // Import fetchWithAuth nếu cần cho upload
 
+// export interface Lesson {
+//   LessonID: number;
+//   SectionID: number;
+//   LessonName: string;
+//   Description?: string | null;
+//   LessonOrder: number;
+//   LessonType: 'VIDEO' | 'TEXT' | 'QUIZ';
+//   VideoUrl?: string | null;
+//   ExternalVideoID?: string | null;
+//   ThumbnailUrl?: string | null;
+//   VideoDurationSeconds?: number | null;
+//   TextContent?: string | null;
+//   IsFreePreview: boolean;
+//   VideoPublicId?: string | null; // Thêm để quản lý xóa video
+//   CreatedAt: string;
+//   UpdatedAt: string;
+//   // Có thể có attachments hoặc quiz info nếu API trả về
+//   attachments?: Attachment[];
+// }
 export interface Lesson {
-  LessonID: number;
-  SectionID: number;
-  LessonName: string;
-  Description?: string | null;
-  LessonOrder: number;
-  LessonType: 'VIDEO' | 'TEXT' | 'QUIZ';
-  VideoUrl?: string | null;
-  ExternalVideoID?: string | null;
-  ThumbnailUrl?: string | null;
-  VideoDurationSeconds?: number | null;
-  TextContent?: string | null;
-  IsFreePreview: boolean;
-  VideoPublicId?: string | null; // Thêm để quản lý xóa video
-  CreatedAt: string;
-  UpdatedAt: string;
+  tempId: string; // ID tạm để FE quản lý local
+  lessonId?: number; // optional: có nếu đang edit
+  sectionId: number;
+  lessonName: string;
+  description?: string | null;
+  lessonOrder: number;
+  lessonType: 'VIDEO' | 'TEXT' | 'QUIZ';
+  isFreePreview: boolean;
+
+  // VIDEO-related
+  videoSourceType?: 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO';
+  externalVideoInput?: string | null; // nếu dùng YT/Vimeo
+  lessonVideo?: File | null; // file upload nếu dùng Cloudinary
+  lessonVideoPreview?: string | null; // URL preview
+
+  videoPublicId?: string | null; // nếu edit lại video Cloudinary
+  videoDurationSeconds?: number | null;
+
+  // TEXT-related
+  textContent?: string | null;
+
+  // QUIZ-related
+  quizQuestions?: QuizQuestion[]; // nếu là bài quiz
+
+  // SUBTITLES (nếu dùng video + phụ đề)
+  subtitles?: Subtitle[];
+  createdAt: string;
+  updatedAt: string;
   // Có thể có attachments hoặc quiz info nếu API trả về
   attachments?: Attachment[];
 }
 
+// export interface Attachment {
+//   AttachmentID: number;
+//   LessonID: number;
+//   FileName: string;
+//   FileURL: string;
+//   FileType?: string | null;
+//   FileSize?: number | null;
+//   CloudStorageID?: string | null; // Quan trọng để xóa
+//   UploadedAt: string;
+// }
 export interface Attachment {
-  AttachmentID: number;
-  LessonID: number;
-  FileName: string;
-  FileURL: string;
-  FileType?: string | null;
-  FileSize?: number | null;
-  CloudStorageID?: string | null; // Quan trọng để xóa
-  UploadedAt: string;
+  attachmentId: number;
+  lessonId: number;
+  fileName: string;
+  fileUrl?: string;
+  file?: File | null; // file mới upload
+  fileType?: string | null;
+  fileSize?: number | null;
+  cloudStorageId?: string | null; // Quan trọng để xóa
+  uploadedAt: string;
 }
 
 export interface LessonListData {
@@ -173,21 +217,21 @@ export const deleteLessonAttachment = async (
 // --- Quiz Question APIs (Quản lý bởi Instructor) ---
 // Các hàm này sẽ gọi đến endpoints quản lý quiz questions, có thể là lồng trong lesson hoặc đứng riêng
 
-export interface QuizQuestion {
-  QuestionID: number;
-  LessonID: number;
-  QuestionText: string;
-  Explanation?: string | null;
-  QuestionOrder: number;
-  options: QuizOption[];
-}
-export interface QuizOption {
-  OptionID: number;
-  QuestionID: number;
-  OptionText: string;
-  IsCorrectAnswer: boolean;
-  OptionOrder: number;
-}
+// export interface QuizQuestion {
+//   QuestionID: number;
+//   LessonID: number;
+//   QuestionText: string;
+//   Explanation?: string | null;
+//   QuestionOrder: number;
+//   options: QuizOption[];
+// }
+// export interface QuizOption {
+//   OptionID: number;
+//   QuestionID: number;
+//   OptionText: string;
+//   IsCorrectAnswer: boolean;
+//   OptionOrder: number;
+// }
 export interface CreateQuestionData {
   questionText: string;
   explanation?: string;

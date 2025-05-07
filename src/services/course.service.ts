@@ -1,39 +1,80 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/course.service.ts
-import { Section, SectionOutput } from '@/hooks/useCourseCurriculum';
+import { Section } from '@/hooks/useCourseCurriculum';
 import apiHelper, { fetchWithAuth } from './apiHelper';
 
 // --- Kiểu dữ liệu (Ví dụ - cần định nghĩa chi tiết hơn) ---
+// export interface Course {
+//   CourseID: number;
+//   CourseName: string;
+//   Slug: string;
+//   ShortDescription: string;
+//   FullDescription: string;
+//   Requirements?: string | null;
+//   LearningOutcomes?: string | null;
+//   ThumbnailUrl?: string | null;
+//   ThumbnailPublicId?: string | null; // Thêm nếu cần quản lý xóa
+//   IntroVideoUrl?: string | null;
+//   OriginalPrice: number;
+//   DiscountedPrice?: number | null;
+//   InstructorID: number;
+//   CategoryID: number;
+//   LevelID: number;
+//   Language: string;
+//   StatusID: string; // CourseStatus Enum
+//   PublishedAt?: string | null; // ISO Date string
+//   IsFeatured: boolean;
+//   CreatedAt: string; // ISO Date string
+//   UpdatedAt: string; // ISO Date string
+//   // Thông tin join (từ API response)
+//   CategoryName?: string;
+//   LevelName?: string;
+//   StatusName?: string;
+//   InstructorName?: string;
+//   InstructorAvatar?: string | null;
+//   AverageRating?: number | null;
+//   ReviewCount?: number;
+//   // Thông tin lồng nhau (từ API get detail)
+//   sections?: SectionWithLessons[];
+//   isEnrolled?: boolean;
+//   userProgress?: Record<
+//     number,
+//     { isCompleted: boolean; lastWatchedPosition: number | null }
+//   >;
+// }
+
 export interface Course {
-  CourseID: number;
-  CourseName: string;
-  Slug: string;
-  ShortDescription: string;
-  FullDescription: string;
-  Requirements?: string | null;
-  LearningOutcomes?: string | null;
-  ThumbnailUrl?: string | null;
-  ThumbnailPublicId?: string | null; // Thêm nếu cần quản lý xóa
-  IntroVideoUrl?: string | null;
-  OriginalPrice: number;
-  DiscountedPrice?: number | null;
-  InstructorID: number;
-  CategoryID: number;
-  LevelID: number;
-  Language: string;
-  StatusID: string; // CourseStatus Enum
-  PublishedAt?: string | null; // ISO Date string
-  IsFeatured: boolean;
-  CreatedAt: string; // ISO Date string
-  UpdatedAt: string; // ISO Date string
+  courseId: number;
+  courseName: string;
+  slug: string;
+  shortDescription: string;
+  fullDescription: string;
+  requirements?: string | null;
+  learningOutcomes?: string | null;
+  thumbnailUrl?: string | null;
+  thumbnailPublicId?: string | null; // Thêm nếu cần quản lý xóa
+  introVideoUrl?: string | null;
+  originalPrice?: number;
+  discountedPrice?: number;
+  instructorId: number;
+  categoryId: number;
+  levelId: number;
+  language: string;
+  statusId: string; // CourseStatus Enum
+  publishedAt?: string | null; // ISO Date string
+  isFeatured: 0 | 1 | null;
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
+
   // Thông tin join (từ API response)
-  CategoryName?: string;
-  LevelName?: string;
-  StatusName?: string;
-  InstructorName?: string;
-  InstructorAvatar?: string | null;
-  AverageRating?: number | null;
-  ReviewCount?: number;
+  categoryName?: string;
+  levelName?: string;
+  statusName?: string;
+  instructorName?: string;
+  instructorAvatar?: string | null;
+  averageRating?: number | null;
+  reviewCount?: number;
+  studentCount?: number; // Thêm nếu cần
   // Thông tin lồng nhau (từ API get detail)
   sections?: SectionWithLessons[];
   isEnrolled?: boolean;
@@ -41,23 +82,42 @@ export interface Course {
     number,
     { isCompleted: boolean; lastWatchedPosition: number | null }
   >;
+  instructorAccountId?: number; // Thêm nếu cần
 }
 
+// export interface SectionWithLessons {
+//   SectionID: number;
+//   SectionName: string;
+//   SectionOrder: number;
+//   Description?: string | null;
+//   lessons: Lesson[]; // Lesson type cần định nghĩa ở lesson.service
+// }
 export interface SectionWithLessons {
-  SectionID: number;
-  SectionName: string;
-  SectionOrder: number;
-  Description?: string | null;
-  lessons: Lesson[]; // Lesson type cần định nghĩa ở lesson.service
+  sectionId: number;
+  sectionName: string;
+  sectionOrder: number;
+  description?: string | null;
+  lessons: Lesson[]; // dùng đúng Lesson được import
 }
+
+// export interface Lesson {
+//   // Định nghĩa tạm ở đây, nên có ở lesson.service
+//   LessonID: number;
+//   LessonName: string;
+//   LessonType: string; // LessonType Enum
+//   IsFreePreview: boolean;
+//   VideoDurationSeconds?: number | null;
+//   // Các trường nội dung (VideoUrl, TextContent) có thể bị ẩn
+//   [key: string]: any;
+// }
 
 export interface Lesson {
   // Định nghĩa tạm ở đây, nên có ở lesson.service
-  LessonID: number;
-  LessonName: string;
-  LessonType: string; // LessonType Enum
-  IsFreePreview: boolean;
-  VideoDurationSeconds?: number | null;
+  lessonId: number;
+  lessonName: string;
+  lessonType: string; // LessonType Enum
+  isFreePreview: boolean;
+  videoDurationSeconds?: number | null;
   // Các trường nội dung (VideoUrl, TextContent) có thể bị ẩn
   [key: string]: any;
 }
@@ -78,7 +138,7 @@ export interface CourseQueryParams {
   levelId?: number;
   instructorId?: number;
   statusId?: string; // CourseStatus Enum hoặc 'ALL'
-  isFeatured?: boolean;
+  isFeatured?: 0 | 1 | null;
   sortBy?: string; // e.g., 'CreatedAt:desc'
 }
 
@@ -161,6 +221,13 @@ export const getCourses = async (
   params?: CourseQueryParams
 ): Promise<CourseListResponse> => {
   return apiHelper.get('/courses', undefined, params);
+};
+
+/** Lấy danh sách trạng thái khóa học */
+export const getCourseStatuses = async (): Promise<
+  { statusId: string; statusName: string; description: string }[]
+> => {
+  return apiHelper.get('/courses/course-statuses/statuses');
 };
 
 /** Instructor: Tạo khóa học mới */

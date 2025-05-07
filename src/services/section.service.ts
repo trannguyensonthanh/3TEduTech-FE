@@ -2,14 +2,24 @@
 // src/services/section.service.ts
 import apiHelper from './apiHelper';
 
+// export interface Section {
+//   SectionID: number;
+//   CourseID: number;
+//   SectionName: string;
+//   SectionOrder: number;
+//   Description?: string | null;
+//   CreatedAt?: string;
+//   UpdatedAt?: string;
+//   lessons?: any[]; // Kiểu Lesson đầy đủ nếu API trả về
+// }
 export interface Section {
-  SectionID: number;
-  CourseID: number;
-  SectionName: string;
-  SectionOrder: number;
-  Description?: string | null;
-  CreatedAt?: string;
-  UpdatedAt?: string;
+  sectionId: number;
+  courseId: number;
+  sectionName: string;
+  sectionOrder: number;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   lessons?: any[]; // Kiểu Lesson đầy đủ nếu API trả về
 }
 

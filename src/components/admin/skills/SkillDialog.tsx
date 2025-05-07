@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Skill } from '@/services/skill.service';
 const skillFormSchema = z.object({
-  SkillName: z
+  skillName: z
     .string()
     .min(2, {
       message: 'Skill name must be at least 2 characters.',
@@ -30,7 +30,7 @@ const skillFormSchema = z.object({
     .max(100, {
       message: 'Skill name must not exceed 100 characters.',
     }),
-  Description: z
+  description: z
     .string()
     .max(500, {
       message: 'Description must not exceed 500 characters.',
@@ -57,21 +57,21 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
   const form = useForm<SkillFormValues>({
     resolver: zodResolver(skillFormSchema),
     defaultValues: {
-      SkillName: skill?.SkillName || '',
-      Description: skill?.Description || '',
+      skillName: skill?.skillName || '',
+      description: skill?.description || '',
     },
   });
 
   React.useEffect(() => {
     if (skill) {
       form.reset({
-        SkillName: skill.SkillName,
-        Description: skill.Description,
+        skillName: skill.skillName,
+        description: skill.description,
       });
     } else {
       form.reset({
-        SkillName: '',
-        Description: '',
+        skillName: '',
+        description: '',
       });
     }
   }, [skill, form]);
@@ -94,7 +94,7 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
           >
             <FormField
               control={form.control}
-              name="SkillName"
+              name="skillName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Skill Name</FormLabel>
@@ -107,7 +107,7 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
             />
             <FormField
               control={form.control}
-              name="Description"
+              name="description"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>

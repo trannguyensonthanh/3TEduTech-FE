@@ -1,14 +1,23 @@
 // src/services/category.service.ts
 import apiHelper from './apiHelper';
 
+// export interface Category {
+//   CategoryID: number;
+//   CategoryName: string;
+//   Slug: string;
+//   Description?: string | null;
+//   IconUrl?: string | null;
+//   CreatedAt: string;
+//   UpdatedAt: string;
+// }
 export interface Category {
-  CategoryID: number;
-  CategoryName: string;
-  Slug: string;
-  Description?: string | null;
-  IconUrl?: string | null;
-  CreatedAt: string;
-  UpdatedAt: string;
+  categoryId: number;
+  categoryName: string;
+  slug: string;
+  description?: string | null;
+  iconUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CategoryListData {

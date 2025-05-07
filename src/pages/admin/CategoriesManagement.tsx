@@ -176,7 +176,7 @@ const CategoriesManagement = () => {
 
   const categories = data?.categories || [];
   const totalPages = data?.totalPages || 1;
-
+  console.log('Categories:', categories);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category>(null);
@@ -193,10 +193,10 @@ const CategoriesManagement = () => {
   const editForm = useForm({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      categoryName: selectedCategory?.CategoryName || '',
-      slug: selectedCategory?.Slug || '',
-      iconUrl: selectedCategory?.IconUrl || '',
-      description: selectedCategory?.Description || null,
+      categoryName: selectedCategory?.categoryName || '',
+      slug: selectedCategory?.slug || '',
+      iconUrl: selectedCategory?.iconUrl || '',
+      description: selectedCategory?.description || null,
     },
   });
   // Sử dụng các mutation hooks
@@ -249,7 +249,7 @@ const CategoriesManagement = () => {
   }) => {
     if (selectedCategory) {
       updateCategoryMutation.mutate({
-        categoryId: selectedCategory.CategoryID,
+        categoryId: selectedCategory.categoryId,
         data,
       });
     }
@@ -266,10 +266,10 @@ const CategoriesManagement = () => {
     setIsEditDialogOpen(true);
     console.log('Selected category:', category);
     editForm.reset({
-      categoryName: category.CategoryName,
-      slug: category.Slug,
-      iconUrl: category.IconUrl,
-      description: category.Description,
+      categoryName: category.categoryName,
+      slug: category.slug,
+      iconUrl: category.iconUrl,
+      description: category.description,
     });
   };
 
@@ -405,7 +405,7 @@ const CategoriesManagement = () => {
                             <Input
                               placeholder="e.g., Web Development"
                               {...field}
-                              defaultValue={selectedCategory.CategoryName}
+                              defaultValue={selectedCategory.categoryName}
                             />
                           </FormControl>
                           <FormMessage />
@@ -423,7 +423,7 @@ const CategoriesManagement = () => {
                             <Input
                               placeholder="e.g., web-development"
                               {...field}
-                              defaultValue={selectedCategory.Slug}
+                              defaultValue={selectedCategory.slug}
                             />
                           </FormControl>
                           <FormMessage />
@@ -441,7 +441,7 @@ const CategoriesManagement = () => {
                             <Input
                               placeholder="e.g., 💻"
                               {...field}
-                              defaultValue={selectedCategory.IconUrl}
+                              defaultValue={selectedCategory.iconUrl}
                             />
                           </FormControl>
                           <FormMessage />
@@ -459,7 +459,7 @@ const CategoriesManagement = () => {
                             <Input
                               placeholder="abc"
                               {...field}
-                              defaultValue={selectedCategory.Description}
+                              defaultValue={selectedCategory.description}
                             />
                           </FormControl>
                           <FormMessage />
@@ -524,34 +524,34 @@ const CategoriesManagement = () => {
                 </TableRow>
               ) : categories.length > 0 ? (
                 categories.map((category) => (
-                  <TableRow key={category.CategoryID}>
+                  <TableRow key={category.categoryId}>
                     <TableCell className="text-center text-xl">
                       <img
                         src={
-                          category.IconUrl || 'https://i.imgur.com/Fv9X0sX.jpeg'
+                          category.iconUrl || 'https://i.imgur.com/Fv9X0sX.jpeg'
                         }
-                        alt={category.CategoryName}
+                        alt={category.categoryName}
                         className="inline-block h-6 w-6"
                       />
                     </TableCell>
                     <TableCell className="font-medium">
-                      {category.CategoryName}
+                      {category.categoryName}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {category.Slug}
+                      {category.slug || '-'}
                     </TableCell>
                     <TableCell className="text-center">
                       {/* {category?.coursesCount || 0} */}0
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {category.Description || '-'}
+                      {category.description || '-'}
                     </TableCell>
                     <TableCell>
-                      {new Date(category.CreatedAt).toLocaleDateString()}
+                      {new Date(category.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      {category.UpdatedAt
-                        ? new Date(category.UpdatedAt).toLocaleDateString()
+                      {category.updatedAt
+                        ? new Date(category.updatedAt).toLocaleDateString()
                         : '-'}
                     </TableCell>
                     <TableCell className="text-right">
@@ -568,7 +568,7 @@ const CategoriesManagement = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() =>
-                            handleDeleteCategory(category.CategoryID)
+                            handleDeleteCategory(category.categoryId)
                           }
                         >
                           <Icons.trash className="h-4 w-4" />

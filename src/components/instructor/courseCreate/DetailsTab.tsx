@@ -10,7 +10,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { UseFormReturn } from 'react-hook-form';
+import { Controller, UseFormReturn } from 'react-hook-form';
+import TiptapEditor from '@/components/editor/TiptapEditor';
 
 interface DetailsTabProps {
   form: UseFormReturn<{
@@ -29,76 +30,60 @@ interface DetailsTabProps {
 }
 
 const DetailsTab: React.FC<DetailsTabProps> = ({ form }) => {
+  const { control } = form;
+
+  // Helper component để tránh lặp code cho TiptapEditor FormField
+  const TiptapFormField = ({ name, label, description }) => (
+    <FormField
+      control={control}
+      name={name}
+      render={(
+        { fieldState } // field không cần ở đây vì Controller sẽ cung cấp
+      ) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Controller
+              name={name}
+              control={control}
+              render={({ field: controllerField }) => (
+                <TiptapEditor
+                  initialContent={controllerField.value || ''}
+                  onContentChange={(htmlContent) => {
+                    controllerField.onChange(htmlContent);
+                  }}
+                  // onBlur={controllerField.onBlur} // Optional
+                />
+              )}
+            />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          {fieldState.error && (
+            <FormMessage>{fieldState.error.message}</FormMessage>
+          )}
+        </FormItem>
+      )}
+    />
+  );
   return (
     <Form {...form}>
       <form className="space-y-6">
-        <FormField
-          control={form.control}
+        <TiptapFormField
           name="fullDescription"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Full Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Provide a detailed description of your course"
-                  className="min-h-[200px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                You can use HTML formatting for rich text.
-              </FormDescription>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
-            </FormItem>
-          )}
+          label="Full Description"
+          description="Provide a detailed description of your course. You can use rich text formatting."
         />
 
-        <FormField
-          control={form.control}
+        <TiptapFormField
           name="requirements"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Requirements</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="What do students need to know before taking this course?"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                List any prerequisites or required knowledge.
-              </FormDescription>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
-            </FormItem>
-          )}
+          label="Requirements"
+          description="List any prerequisites or required knowledge students need before taking this course."
         />
 
-        <FormField
-          control={form.control}
+        <TiptapFormField
           name="learningOutcomes"
-          render={({ field, fieldState }) => (
-            <FormItem>
-              <FormLabel>Learning Outcomes</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="What will students learn in this course?"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                List key skills students will gain from your course.
-              </FormDescription>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
-            </FormItem>
-          )}
+          label="Learning Outcomes"
+          description="List key skills and knowledge students will gain from your course."
         />
       </form>
     </Form>
