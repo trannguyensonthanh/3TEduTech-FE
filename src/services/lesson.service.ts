@@ -1,79 +1,54 @@
 // src/services/lesson.service.ts
-import { QuizQuestion, Subtitle } from '@/hooks/useCourseCurriculum';
-import apiHelper, { fetchWithAuth } from './apiHelper'; // Import fetchWithAuth nếu cần cho upload
 
-// export interface Lesson {
-//   LessonID: number;
-//   SectionID: number;
-//   LessonName: string;
-//   Description?: string | null;
-//   LessonOrder: number;
-//   LessonType: 'VIDEO' | 'TEXT' | 'QUIZ';
-//   VideoUrl?: string | null;
-//   ExternalVideoID?: string | null;
-//   ThumbnailUrl?: string | null;
-//   VideoDurationSeconds?: number | null;
-//   TextContent?: string | null;
-//   IsFreePreview: boolean;
-//   VideoPublicId?: string | null; // Thêm để quản lý xóa video
-//   CreatedAt: string;
-//   UpdatedAt: string;
-//   // Có thể có attachments hoặc quiz info nếu API trả về
-//   attachments?: Attachment[];
-// }
+import { Subtitle } from '@/services/subtitle.service';
+import apiHelper, { fetchWithAuth } from './apiHelper'; // Import fetchWithAuth nếu cần cho upload
+import { QuizQuestion } from '@/services/quiz.service';
+
+export type IsoDateTimeString = string; // Dùng cho DATETIME2
+export type IsoDateString = string; // Dùng cho DATE
+
+export type LessonType = 'VIDEO' | 'TEXT' | 'QUIZ';
+export type VideoSourceType = 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO';
+
 export interface Lesson {
-  tempId: string; // ID tạm để FE quản lý local
-  lessonId?: number; // optional: có nếu đang edit
-  sectionId: number;
+  lessonId?: number | string; // Hoặc string nếu API trả về string
+  tempId?: string | number; // FE temp ID khi tạo mới
+  sectionId?: number; // Hoặc string
   lessonName: string;
   description?: string | null;
-  lessonOrder: number;
-  lessonType: 'VIDEO' | 'TEXT' | 'QUIZ';
-  isFreePreview: boolean;
-
-  // VIDEO-related
-  videoSourceType?: 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO';
-  externalVideoInput?: string | null; // nếu dùng YT/Vimeo
-  lessonVideo?: File | null; // file upload nếu dùng Cloudinary
-  lessonVideoPreview?: string | null; // URL preview
-
-  videoPublicId?: string | null; // nếu edit lại video Cloudinary
+  lessonOrder?: number;
+  lessonType?: LessonType;
+  videoSourceType?: VideoSourceType | null;
+  externalVideoInput?: string | null; // URL từ YT/Vimeo
+  externalVideoId?: string | null; // ID từ YT/Vimeo HOẶC Public ID từ Cloudinary
+  thumbnailUrl?: string | null;
   videoDurationSeconds?: number | null;
-
-  // TEXT-related
-  textContent?: string | null;
-
-  // QUIZ-related
-  quizQuestions?: QuizQuestion[]; // nếu là bài quiz
-
-  // SUBTITLES (nếu dùng video + phụ đề)
+  textContent?: string | null; // Cho lesson type TEXT
+  isFreePreview: boolean;
+  originalId?: number | null; // Cho việc sao chép khóa học
+  createdAt?: IsoDateTimeString;
+  updatedAt?: IsoDateTimeString;
+  // --- Dữ liệu lồng nhau (quan trọng cho FE state) ---
   subtitles?: Subtitle[];
-  createdAt: string;
-  updatedAt: string;
-  // Có thể có attachments hoặc quiz info nếu API trả về
+  questions?: QuizQuestion[];
   attachments?: Attachment[];
+  // --- Thuộc tính chỉ dùng ở FE khi tạo/sửa ---
+  lessonVideoFile?: File | null; // File object khi upload lên Cloudinary
+  // externalVideoInput?: string | null; // Có thể dùng làm trường nhập liệu cho YT/Vimeo URL/ID
 }
 
-// export interface Attachment {
-//   AttachmentID: number;
-//   LessonID: number;
-//   FileName: string;
-//   FileURL: string;
-//   FileType?: string | null;
-//   FileSize?: number | null;
-//   CloudStorageID?: string | null; // Quan trọng để xóa
-//   UploadedAt: string;
-// }
 export interface Attachment {
-  attachmentId: number;
-  lessonId: number;
+  attachmentId?: number;
+  tempId?: string | number; // FE temp ID
+  lessonId: number; // Hoặc string
   fileName: string;
-  fileUrl?: string;
-  file?: File | null; // file mới upload
+  fileUrl: string; // URL công khai để tải/hiển thị
   fileType?: string | null;
-  fileSize?: number | null;
-  cloudStorageId?: string | null; // Quan trọng để xóa
-  uploadedAt: string;
+  fileSize?: number | null; // bytes
+  cloudStorageId?: string | null; // Để backend xóa nếu cần
+  uploadedAt?: IsoDateTimeString;
+  // --- Thuộc tính chỉ dùng ở FE khi upload ---
+  file?: File | null; // File object thực tế khi upload
 }
 
 export interface LessonListData {

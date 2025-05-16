@@ -15,7 +15,6 @@ import {
   Subtitle,
   AddSubtitleData,
 } from '@/services/subtitle.service'; // Điều chỉnh đường dẫn
-import { lessonKeys } from './lesson.queries'; // Import lesson keys để invalidate
 
 // Query Key Factory
 const subtitleKeys = {

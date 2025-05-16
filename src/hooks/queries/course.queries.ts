@@ -25,7 +25,7 @@ import {
   SubmitCourseData,
   ReviewCourseData,
   ToggleFeatureData,
-  ApprovalRequest,
+  ApprovalRequestListItem,
   updateCourseIntroVideo,
   BulkReorderResponse,
   updateLessonsOrderApi,
@@ -35,6 +35,10 @@ import {
   SyncCurriculumPayload,
   SyncCurriculumResponse,
   getCourseStatuses,
+  getApprovalRequests, // *** Import hàm service mới ***
+  getApprovalRequestDetails, // *** Import hàm service mới ***
+  ApprovalRequestListResponse, // *** Import kiểu dữ liệu mới ***
+  ApprovalRequestQueryParams, // *** Import kiểu dữ liệu mới ***
 } from '@/services/course.service'; // Điều chỉnh đường dẫn nếu cần
 
 // Query Key Factory
@@ -47,7 +51,14 @@ export const courseKeys = {
     [...courseKeys.details(), 'slug', slug] as const,
   detailById: (id: number | undefined) =>
     [...courseKeys.details(), 'id', id] as const,
-  // Thêm key cho approval requests nếu có API riêng
+  // --- Keys mới cho Approval Requests ---
+  approvalRequests: ['approvalRequests'] as const,
+  approvalRequestLists: (params?: ApprovalRequestQueryParams) =>
+    [...courseKeys.approvalRequests, 'list', params || {}] as const,
+  approvalRequestDetails: () =>
+    [...courseKeys.approvalRequests, 'detail'] as const,
+  approvalRequestDetail: (id: number | undefined) =>
+    [...courseKeys.approvalRequestDetails(), id] as const,
 };
 
 // --- Queries ---
@@ -233,14 +244,14 @@ export const useUpdateCourseIntroVideo = (
 /** Hook gửi duyệt khóa học (Instructor) */
 export const useSubmitCourseForApproval = (
   options?: UseMutationOptions<
-    { message: string; request: ApprovalRequest },
+    { message: string; request: ApprovalRequestListItem },
     Error,
     { courseId: number; data?: SubmitCourseData }
   >
 ) => {
   const queryClient = useQueryClient();
   return useMutation<
-    { message: string; request: ApprovalRequest },
+    { message: string; request: ApprovalRequestListItem },
     Error,
     { courseId: number; data?: SubmitCourseData }
   >({
@@ -267,14 +278,14 @@ export const useSubmitCourseForApproval = (
 /** Hook duyệt/từ chối khóa học (Admin) */
 export const useReviewCourseApproval = (
   options?: UseMutationOptions<
-    { message: string; request: ApprovalRequest },
+    { message: string; request: ApprovalRequestListItem },
     Error,
     { requestId: number; data: ReviewCourseData }
   >
 ) => {
   const queryClient = useQueryClient();
   return useMutation<
-    { message: string; request: ApprovalRequest },
+    { message: string; request: ApprovalRequestListItem },
     Error,
     { requestId: number; data: ReviewCourseData }
   >({
@@ -293,6 +304,40 @@ export const useReviewCourseApproval = (
       console.error('Course review failed:', error.message);
       // toast.error(error.message || 'Xử lý yêu cầu duyệt thất bại.');
     },
+    ...options,
+  });
+};
+
+/** Hook Admin lấy danh sách yêu cầu phê duyệt */
+export const useAdminGetApprovalRequests = (
+  params?: ApprovalRequestQueryParams,
+  options?: Omit<
+    UseQueryOptions<ApprovalRequestListResponse, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  const queryKey = courseKeys.approvalRequestLists(params);
+  return useQuery<ApprovalRequestListResponse, Error>({
+    queryKey: queryKey,
+    queryFn: () => getApprovalRequests(params),
+    placeholderData: undefined,
+    ...options,
+  });
+};
+
+/** Hook Admin lấy chi tiết yêu cầu phê duyệt */
+export const useAdminGetApprovalRequestDetail = (
+  requestId: number | undefined,
+  options?: Omit<
+    UseQueryOptions<ApprovalRequestListItem, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  const queryKey = courseKeys.approvalRequestDetail(requestId);
+  return useQuery<ApprovalRequestListItem, Error>({
+    queryKey: queryKey,
+    queryFn: () => getApprovalRequestDetails(requestId!),
+    enabled: !!requestId,
     ...options,
   });
 };
@@ -455,3 +500,20 @@ export const useCourseStatuses = (
     ...options,
   });
 };
+
+// /** Hook Admin lấy danh sách khóa học chờ duyệt */
+// export const useAdminGetPendingCourses = (
+//   params?: PendingCourseQueryParams,
+//   options?: Omit<
+//     UseQueryOptions<PendingCourseListResponse, Error>,
+//     'queryKey' | 'queryFn'
+//   >
+// ) => {
+//   const queryKey = courseKeys.adminPending(params);
+//   return useQuery<PendingCourseListResponse, Error>({
+//     queryKey: queryKey,
+//     queryFn: () => getPendingCoursesForAdmin(params),
+//     placeholderData: undefined, // Giữ lại data cũ khi đang fetch trang/sort mới
+//     ...options,
+//   });
+// };

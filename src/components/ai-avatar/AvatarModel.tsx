@@ -1,8 +1,8 @@
 // src/components/ai-avatar/AvatarModel.tsx
-import React, { useRef, useEffect, useState } from "react";
-import { useGLTF, useAnimations } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
+import React, { useRef, useEffect, useState } from 'react';
+import { useGLTF, useAnimations } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface AvatarModelProps {
   animationName: string;
@@ -11,12 +11,12 @@ interface AvatarModelProps {
   rotation?: [number, number, number];
 }
 
-const modelPath = "/models/avatar.glb";
+const modelPath = '/models/avatar.glb';
 
 export const AvatarModel: React.FC<AvatarModelProps> = ({
   animationName,
   position = [0, 0, 0],
-  scale = 1,
+  scale = 0.7,
   rotation = [0, 0, 0],
 }) => {
   // Không cần group ref nữa nếu dùng primitive trực tiếp
@@ -40,8 +40,8 @@ export const AvatarModel: React.FC<AvatarModelProps> = ({
 
   useEffect(() => {
     // Log này giờ quan trọng hơn để xem actions có thực sự rỗng không
-    console.log("[AvatarModel Effect] Initial available actions:", actions);
-    console.log("[AvatarModel Effect] Initial available names:", names);
+    console.log('[AvatarModel Effect] Initial available actions:', actions);
+    console.log('[AvatarModel Effect] Initial available names:', names);
   }, [actions, names]); // Chạy một lần khi actions/names được tạo
 
   // useEffect xử lý chuyển đổi animation
@@ -72,7 +72,7 @@ export const AvatarModel: React.FC<AvatarModelProps> = ({
       console.warn(
         `[AvatarModel Anim Change] Action "${animationName}" not found. Trying fallback 'idle'.`
       );
-      const idleAction = actions ? actions["idle"] : undefined; // Kiểm tra actions tồn tại
+      const idleAction = actions ? actions['idle'] : undefined; // Kiểm tra actions tồn tại
       if (idleAction && idleAction !== activeAction) {
         activeAction?.fadeOut(0.5);
         console.log(

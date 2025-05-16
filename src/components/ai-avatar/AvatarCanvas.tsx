@@ -1,257 +1,143 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/ai-avatar/AvatarCanvas.tsx
-import React, { Suspense, useState, useRef } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
-import { AvatarModel } from "./AvatarModel";
-import { speakText } from "../../lib/ai/ttsService";
-// interface AvatarCanvasProps {
-//   // Có thể thêm props sau này để điều khiển từ bên ngoài
-// }
-const DEFAULT_ANIMATION = "Idle";
-const TALKING_ANIMATION = "Talking";
-export const AvatarCanvas: React.FC<any> = () => {
-  const [currentAnimation, setCurrentAnimation] =
-    useState<string>(DEFAULT_ANIMATION);
-  // --- 3. Thêm State mới ---
-  const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false); // Trạng thái chờ AI (giả lập)
-  const [isSpeaking, setIsSpeaking] = useState<boolean>(false); // Trạng thái đang nói
-  const inputTextRef = useRef<HTMLInputElement>(null); // Ref cho ô input
+import React, { Suspense, useState, useRef, useEffect } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Environment, Html } from '@react-three/drei'; // Thêm Html nếu cần hiển thị text trên canvas
+import { AvatarModel } from './AvatarModel'; // Model 3D của bạn
+import { cancelSpeech, speakText } from '../../lib/ai/ttsService'; // Dịch vụ TTS của bạn
+import { Loader2 } from 'lucide-react'; // Icon loading
 
-  // --- 4. Hàm xử lý gửi yêu cầu (Giả Lập AI + Gọi TTS) ---
-  const handleProcessInput = async () => {
-    if (
-      !inputTextRef.current ||
-      !inputTextRef.current.value ||
-      isLoadingAI ||
-      isSpeaking
-    ) {
-      return; // Không xử lý nếu đang bận hoặc không có input
+interface AvatarCanvasProps {
+  animationName?: string; // Tên animation hiện tại (Idle, Talking, Thinking, etc.)
+  textToSpeak?: string | null; // Text mà avatar cần nói
+  onSpeakingStateChange?: (isSpeaking: boolean) => void; // Callback báo lại trạng thái nói
+  // Thêm các props khác để tùy chỉnh camera, ánh sáng nếu cần
+}
+const DEFAULT_ANIMATION = 'Idle'; // Định nghĩa animation mặc định
+const TALKING_ANIMATION = 'Talking'; // Định nghĩa animation nói
+export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
+  animationName = 'Idle', // Animation mặc định
+  textToSpeak,
+  onSpeakingStateChange,
+}) => {
+  const [currentAnimationInternal, setCurrentAnimationInternal] =
+    useState(animationName);
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Để quản lý audio TTS
+
+  useEffect(() => {
+    setCurrentAnimationInternal(animationName);
+  }, [animationName]);
+
+  useEffect(() => {
+    let isMounted = true; // Để tránh set state trên component đã unmount
+
+    if (textToSpeak && textToSpeak.trim() !== '') {
+      console.log('[AvatarCanvas] Received text to speak:', textToSpeak);
+      // Hủy TTS đang chạy trước đó (nếu có)
+      cancelSpeech(); // Gọi hàm cancel từ ttsService
+
+      speakText(
+        textToSpeak,
+        () => {
+          // onStart callback
+          if (isMounted) {
+            console.log(
+              '[AvatarCanvas] TTS started, setting animation to Talking'
+            );
+            setCurrentAnimationInternal('Talking'); // Chuyển animation sang "Talking"
+            onSpeakingStateChange?.(true);
+          }
+        },
+        () => {
+          // onEnd callback (khi nói xong hoặc có lỗi bị coi là end)
+          if (isMounted) {
+            console.log(
+              '[AvatarCanvas] TTS ended, setting animation to Idle (or prop default)'
+            );
+            setCurrentAnimationInternal(
+              animationName === 'Talking' ? 'Idle' : animationName
+            ); // Quay về Idle hoặc animation gốc từ prop
+            onSpeakingStateChange?.(false);
+          }
+        },
+        (errorEvent) => {
+          // onError (khi có lỗi từ SpeechSynthesis)
+          if (isMounted) {
+            console.error(
+              '[AvatarCanvas] TTS Error in speakText:',
+              errorEvent.error
+            );
+            setCurrentAnimationInternal(
+              animationName === TALKING_ANIMATION
+                ? DEFAULT_ANIMATION
+                : animationName
+            );
+            onSpeakingStateChange?.(false);
+          }
+        }
+      );
+    } else {
+      // Nếu không có textToSpeak, đảm bảo dừng TTS và quay về Idle (nếu đang Talking)
+      cancelSpeech();
+      if (currentAnimationInternal === 'Talking' && isMounted) {
+        setCurrentAnimationInternal(animationName); // Quay về animation gốc từ prop (thường là Idle)
+      }
+      if (isMounted) onSpeakingStateChange?.(false);
     }
 
-    const prompt = inputTextRef.current.value;
-    inputTextRef.current.value = ""; // Xóa input sau khi lấy giá trị
-    setIsLoadingAI(true);
-    setCurrentAnimation("Idle"); // Có thể thêm animation 'Thinking' nếu có
-
-    console.log(`Processing prompt: "${prompt}"`);
-
-    // ----- GIẢ LẬP GỌI AI -----
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // Chờ 1.5 giây
-    const aiResponseText = `Đây là câu trả lời cho "${prompt}". Tôi đang nói đây!`;
-    // ----- KẾT THÚC GIẢ LẬP -----
-
-    setIsLoadingAI(false);
-
-    // Gọi hàm TTS để nói
-    speakText(
-      aiResponseText,
-      () => {
-        // onStart Callback
-        setIsSpeaking(true);
-        setCurrentAnimation(TALKING_ANIMATION); // <<<--- Chuyển sang animation nói
-      },
-      () => {
-        // onEnd Callback
-        setIsSpeaking(false);
-        setCurrentAnimation(DEFAULT_ANIMATION); // <<<--- Quay về animation mặc định
-      }
-    );
-  };
-
-  const changeAnimation = (name: string) => {
-    console.log("Changing animation to:", name);
-    setCurrentAnimation(name);
-  };
+    return () => {
+      isMounted = false;
+      // Khi component unmount hoặc textToSpeak thay đổi, hủy TTS
+      console.log(
+        '[AvatarCanvas] Cleanup: Cancelling speech for text:',
+        textToSpeak
+      );
+      cancelSpeech();
+      if (isMounted) onSpeakingStateChange?.(false); // Đảm bảo state được cập nhật đúng
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textToSpeak]); // Chỉ chạy khi textToSpeak thay đổi (animationName sẽ được xử lý riêng ở trên)
 
   return (
-    // Thêm position relative để các nút có thể định vị tuyệt đối bên trong
-    <div
-      style={{
-        position: "relative",
-        height: "100vh",
-        width: "100%",
-        background: "#f9f9f9",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        boxSizing: "border-box",
-      }}
-    >
-      {/* ----- GIAO DIỆN TƯƠNG TÁC ----- */}
-      <div
-        style={{
-          position: "absolute",
-          top: "20px",
-          left: "20px",
-          zIndex: 10,
-          background: "rgba(255, 255, 255, 0.9)",
-          padding: "15px",
-          borderRadius: "8px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          minWidth: "300px",
-        }}
-      >
-        {/* Input và Nút Gửi */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: "10px",
-          }}
-        >
-          <input
-            ref={inputTextRef}
-            type="text"
-            placeholder="Nói gì đó với avatar..."
-            disabled={isLoadingAI || isSpeaking}
-            style={{
-              flex: 1,
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              marginRight: "10px",
-              fontSize: "14px",
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleProcessInput();
-            }}
-          />
-          <button
-            onClick={handleProcessInput}
-            disabled={isLoadingAI || isSpeaking}
-            style={{
-              padding: "10px 15px",
-              backgroundColor: "#007bff",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: isLoadingAI || isSpeaking ? "not-allowed" : "pointer",
-              opacity: isLoadingAI || isSpeaking ? 0.6 : 1,
-            }}
-          >
-            Gửi
-          </button>
-        </div>
-
-        {/* Trạng thái */}
-        <p
-          style={{
-            margin: "5px 0",
-            fontSize: "14px",
-            color: "#555",
-          }}
-        >
-          <strong>Trạng thái:</strong>{" "}
-          {isLoadingAI
-            ? "Đang xử lý..."
-            : isSpeaking
-            ? "Đang nói..."
-            : "Sẵn sàng"}
-        </p>
-
-        {/* Nút Test Animation */}
-        <div style={{ marginTop: "10px" }}>
-          <span
-            style={{
-              fontSize: "14px",
-              fontWeight: "bold",
-              marginRight: "10px",
-            }}
-          >
-            Test Anim:
-          </span>
-          {[
-            "Idle",
-            "Walking",
-            "Salute",
-            "Nodding",
-            "Thumbsup",
-            "Talking",
-            "Pointing",
-            "Clapping",
-          ].map((anim) => (
-            <button
-              key={anim}
-              onClick={() => changeAnimation(anim)}
-              style={{
-                marginRight: "5px",
-                backgroundColor: "#007bff",
-                color: "#fff",
-                border: "none",
-                padding: "5px 10px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "12px",
-              }}
-            >
-              {anim}
-            </button>
-          ))}
-        </div>
-        <p style={{ marginTop: "10px", fontSize: "14px", color: "#555" }}>
-          <strong>Current Animation:</strong> {currentAnimation}
-        </p>
-      </div>
-
-      {/* ----- CANVAS ----- */}
+    <div style={{ height: '100%', width: '100%', position: 'relative' }}>
       <Canvas
         shadows
-        camera={{ position: [0, 0.8, 2.5], fov: 50 }}
-        style={{
-          width: "100%",
-          height: "100%",
-          borderRadius: "8px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-        }}
+        camera={{ position: [0, 0.9, 2.2], fov: 45 }} // Điều chỉnh camera cho phù hợp
+        style={{ background: 'transparent' }} // Nền trong suốt để hòa vào dialog
       >
-        {/* Ánh sáng */}
-        <ambientLight intensity={0.6} />
+        <ambientLight intensity={0.8} />
         <directionalLight
-          position={[5, 5, -5]}
+          position={[3, 5, 2]}
           intensity={1.5}
           castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-left={-2}
-          shadow-camera-right={2}
-          shadow-camera-top={2}
-          shadow-camera-bottom={-2}
-          shadow-camera-near={0.5}
-          shadow-camera-far={50}
+          shadow-mapSize={[1024, 1024]}
         />
-
-        {/* OrbitControls */}
-        <OrbitControls
-          enableZoom={true}
-          enablePan={false}
-          target={[0, 0.8, 0]}
-          maxPolarAngle={Math.PI / 1.9}
-          minPolarAngle={Math.PI / 3}
-          enableRotate={true}
-        />
-
-        {/* Môi trường HDRI */}
-        <Environment preset="city" />
-
-        {/* Model */}
-        <Suspense fallback={null}>
+        <Environment preset="studio" /> {/* Hoặc "city", "sunset" tùy bạn */}
+        <Suspense
+          fallback={
+            <Html center>
+              <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
+            </Html>
+          }
+        >
           <AvatarModel
-            animationName={currentAnimation}
-            position={[0, -1, 0]}
-            scale={1}
+            animationName={currentAnimationInternal}
+            position={[0, -0.95, 0]} // Điều chỉnh vị trí avatar
+            scale={0.7} // Điều chỉnh kích thước
           />
-          <mesh
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, -1, 0]}
-            receiveShadow
-          >
+          {/* <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]} receiveShadow>
             <planeGeometry args={[10, 10]} />
-            <meshStandardMaterial color="#e0e0e0" />
-          </mesh>
+            <meshStandardMaterial color="#777" transparent opacity={0.2}/>
+          </mesh> */}
         </Suspense>
+        <OrbitControls
+          enableZoom={false} // Tắt zoom để giữ kích thước cố định
+          enablePan={false}
+          target={[0, 0.9, 0]} // Target vào phần đầu avatar
+          maxPolarAngle={Math.PI / 1.9}
+          minPolarAngle={Math.PI / 2.1}
+          minAzimuthAngle={-Math.PI / 8} // Giới hạn xoay ngang nhẹ
+          maxAzimuthAngle={Math.PI / 8}
+        />
       </Canvas>
     </div>
   );

@@ -4,27 +4,27 @@ import apiHelper from './apiHelper';
 
 // --- Kiểu dữ liệu (Ví dụ) ---
 export interface UserProfile {
-  AccountID: number; // ID tài khoản
-  Email: string; // Email của người dùng
-  RoleID: string; // Vai trò của người dùng (e.g., 'ADMIN', 'INSTRUCTOR', 'STUDENT')
-  Status: string; // Trạng thái tài khoản (e.g., 'ACTIVE', 'INACTIVE', 'PENDING_VERIFICATION')
-  FullName: string; // Họ và tên đầy đủ
-  AvatarUrl?: string | null; // URL ảnh đại diện (có thể null)
-  Gender?: 'MALE' | 'FEMALE' | 'OTHER' | null; // Giới tính
-  BirthDate?: string | null; // Ngày sinh (YYYY-MM-DD)
-  PhoneNumber?: string | null; // Số điện thoại
-  Location?: string | null; // Địa chỉ hoặc vị trí
-  ProfessionalTitle?: string | null; // Chức danh chuyên môn
-  Bio?: string | null; // Tiểu sử ngắn
-  AboutMe?: string | null; // Thông tin chi tiết về bản thân
-  BankAccountNumber?: string | null; // Số tài khoản ngân hàng
-  BankName?: string | null; // Tên ngân hàng
-  BankAccountHolderName?: string | null; // Tên chủ tài khoản ngân hàng
-  Skills?: any; // Danh sách kỹ năng
-  SocialLinks?: any; // Danh sách liên kết mạng xã hội
-  CreatedAt?: string; // Thời gian tạo tài khoản
-  UpdatedAt?: string; // Thời gian cập nhật tài khoản
-  Courses?: number; // Số lượng khóa học đã tạo (nếu là giảng viên)
+  accountId: number; // ID tài khoản
+  email: string; // Email của người dùng
+  roleId: string; // Vai trò của người dùng (e.g., 'ADMIN', 'INSTRUCTOR', 'STUDENT')
+  status: string; // Trạng thái tài khoản (e.g., 'ACTIVE', 'INACTIVE', 'PENDING_VERIFICATION')
+  fullName: string; // Họ và tên đầy đủ
+  avatarUrl?: string | null; // URL ảnh đại diện (có thể null)
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | null; // Giới tính
+  birthDate?: string | null; // Ngày sinh (YYYY-MM-DD)
+  phoneNumber?: string | null; // Số điện thoại
+  location?: string | null; // Địa chỉ hoặc vị trí
+  professionalTitle?: string | null; // Chức danh chuyên môn
+  bio?: string | null; // Tiểu sử ngắn
+  aboutMe?: string | null; // Thông tin chi tiết về bản thân
+  bankAccountNumber?: string | null; // Số tài khoản ngân hàng
+  bankName?: string | null; // Tên ngân hàng
+  bankAccountHolderName?: string | null; // Tên chủ tài khoản ngân hàng
+  skills?: any; // Danh sách kỹ năng
+  socialLinks?: any; // Danh sách liên kết mạng xã hội
+  createdAt?: string; // Thời gian tạo tài khoản
+  updatedAt?: string; // Thời gian cập nhật tài khoản
+  courses?: number; // Số lượng khóa học đã tạo (nếu là giảng viên)
 }
 
 // Định nghĩa kiểu cho liên kết mạng xã hội
@@ -55,7 +55,7 @@ export interface UserListResponse {
 export interface UserQueryParams {
   page?: number;
   limit?: number;
-  search?: string;
+  searchTerm?: string;
   role?: string;
   status?: string;
 }

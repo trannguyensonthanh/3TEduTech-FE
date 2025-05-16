@@ -10,7 +10,6 @@ import { useCourseFilters } from '@/hooks/useCourseFilters'; // Import hook mớ
 import { useCourses, useCourseStatuses } from '@/hooks/queries/course.queries'; // Hook để fetch courses từ API
 import { useCategories } from '@/hooks/queries/category.queries'; // Fetch categories
 import { useLevels } from '@/hooks/queries/level.queries'; // Fetch levels
-import { InstructorCourseStatus } from '@/types/common.types'; // Import Course type
 import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 import {
   Book,
@@ -74,7 +73,7 @@ const InstructorCourses = () => {
   const courses = coursesData?.courses || [];
   const totalCourses = coursesData?.total || 0;
   const totalPages = Math.ceil(totalCourses / limit);
-
+  console.log('courses', courses);
   // Set tab mặc định khi component mount
   useEffect(() => {
     setActiveTab('all', currentInstructorId); // Mặc định hiển thị tab "All"
@@ -157,8 +156,8 @@ const InstructorCourses = () => {
                 type="search"
                 placeholder="Search courses..."
                 className="pl-8"
-                value={filterParams.search}
-                onChange={(e) => updateFilter('search', e.target.value)}
+                value={filterParams.searchTerm || ''}
+                onChange={(e) => updateFilter('searchTerm', e.target.value)}
               />
             </div>
             {/* Filter Button */}
@@ -488,26 +487,27 @@ const CoursesGrid: React.FC<CoursesGridProps> = ({
   courses,
   currentInstructorId,
 }) => {
+  console.log('coursescourses', courses);
   // Nếu không có courses nào (sau khi đã lọc), hiển thị thông báo ở đây
   // đã được xử lý ở component cha
-  // if (courses.length === 0) {
-  //   return (
-  //     <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-10">
-  //       <Book className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-  //       <h3 className="text-lg font-medium">No courses found</h3>
-  //       <p className="mt-2 text-sm text-muted-foreground">
-  //         Try adjusting your filters or create your first course.
-  //       </p>
-  //        <div className="mt-6">
-  //           <Link to="/instructor/courses/create">
-  //             <Button>
-  //               <Plus className="mr-2 h-4 w-4" /> Create Course
-  //             </Button>
-  //           </Link>
-  //         </div>
-  //     </div>
-  //   );
-  // }
+  if (courses.length === 0) {
+    return (
+      <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-10">
+        <Book className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <h3 className="text-lg font-medium">No courses found</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Try adjusting your filters or create your first course.
+        </p>
+        <div className="mt-6">
+          <Link to="/instructor/courses/create">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Create Course
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

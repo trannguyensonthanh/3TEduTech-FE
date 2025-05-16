@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/queries/lesson.queries.ts
 import {
   useMutation,
@@ -17,18 +18,21 @@ import {
   deleteLessonAttachment,
   getQuizQuestionsForLesson,
   createQuizQuestion, // Import thêm hàm quiz
-  Lesson,
   Attachment,
   LessonListData,
   CreateLessonData,
   UpdateLessonData,
   LessonOrderData,
-  QuizQuestion,
   CreateQuestionData,
   getLessonVideoSignedUrl,
+  UpdateQuestionData,
+  updateQuizQuestion,
+  deleteQuizQuestion,
 } from '@/services/lesson.service'; // Đảm bảo service export đủ
 import { courseKeys } from './course.queries'; // Cần để invalidate course detail
-
+import { toast } from '@/hooks/use-toast'; // Import toast nếu muốn dùng trong
+import { Lesson } from '@/types/common.types';
+import { QuizQuestion } from '@/services/quiz.service';
 // Query Key Factory
 const lessonKeys = {
   all: ['lessons'] as const,
@@ -118,8 +122,9 @@ export const useCreateLesson = (
       queryClient.invalidateQueries({
         queryKey: courseKeys.detailById(variables.courseId),
       });
+
       queryClient.invalidateQueries({
-        queryKey: courseKeys.detailBySlug(undefined),
+        queryKey: ['courses', 'detail', 'slug'],
       });
       console.log('Lesson created successfully.');
     },
@@ -176,16 +181,18 @@ export const useUpdateLesson = (
     Error,
     { lessonId: number; data: UpdateLessonData }
   >({
-    mutationFn: ({ lessonId, data }) => updateLesson(lessonId, data),
+    mutationFn: ({ lessonId, data }) => {
+      console.log('Updating lesson with ID:', lessonId, 'and data:', data);
+      return updateLesson(lessonId, data);
+    },
     onSuccess: (updatedLesson) => {
       queryClient.setQueryData(
-        lessonKeys.detail(updatedLesson.LessonID),
+        lessonKeys.detail(Number(updatedLesson.lessonId)),
         updatedLesson
       );
       // Invalidate course detail chứa lesson này
       // Cần lấy courseId từ lesson? Hơi phức tạp. Tạm invalidate all course details
       queryClient.invalidateQueries({ queryKey: courseKeys.details() });
-      console.log('Lesson updated successfully.');
     },
     onError: (error) => {
       console.error('Lesson update failed:', error.message);
@@ -238,7 +245,7 @@ export const useUpdateLessonVideo = (
     mutationFn: ({ lessonId, file }) => updateLessonVideo(lessonId, file),
     onSuccess: (updatedLesson) => {
       queryClient.setQueryData(
-        lessonKeys.detail(updatedLesson.LessonID),
+        lessonKeys.detail(Number(updatedLesson.lessonId)),
         updatedLesson
       );
       queryClient.invalidateQueries({ queryKey: courseKeys.details() }); // Invalidate course chứa lesson
@@ -330,4 +337,97 @@ export const useCreateQuizQuestion = (
     },
     ...options,
   });
+};
+
+/** Hook cập nhật câu hỏi quiz */
+export const useUpdateQuizQuestion = (
+  options?: UseMutationOptions<
+    QuizQuestion,
+    Error,
+    { questionId: number; data: UpdateQuestionData }
+  >
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    QuizQuestion,
+    Error,
+    { questionId: number; data: UpdateQuestionData }
+  >({
+    mutationFn: ({ questionId, data }) => updateQuizQuestion(questionId, data),
+    onSuccess: (data, variables) => {
+      // Invalidate danh sách câu hỏi của lesson chứa câu hỏi này
+      queryClient.invalidateQueries({
+        queryKey: lessonKeys.quizQuestions(data.lessonId),
+      });
+      console.log('Quiz question updated successfully.');
+    },
+    onError: (error) => {
+      console.error('Quiz question update failed:', error.message);
+    },
+    ...options,
+  });
+};
+
+/** Hook xóa câu hỏi quiz */
+export const useDeleteQuizQuestion = (
+  options?: UseMutationOptions<
+    void,
+    Error,
+    { questionId: number; lessonId: number }
+  >
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { questionId: number; lessonId: number }>({
+    mutationFn: ({ questionId }) => deleteQuizQuestion(questionId),
+    onSuccess: (_, variables) => {
+      // Invalidate danh sách câu hỏi của lesson chứa câu hỏi này
+      queryClient.invalidateQueries({
+        queryKey: lessonKeys.quizQuestions(variables.lessonId),
+      });
+      console.log('Quiz question deleted successfully.');
+    },
+    onError: (error) => {
+      console.error('Quiz question deletion failed:', error.message);
+    },
+    ...options,
+  });
+};
+
+// Mock cho useCreateQuizQuestion
+export const useMockCreateQuizQuestion = () => {
+  console.warn('useCreateQuizQuestion hook is not available. Using mock.');
+  return {
+    mutateAsync: async (args: any) => {
+      console.error('Mock createQuestionMutateAsync called with:', args);
+      toast({
+        title: 'Error',
+        description: 'Create question function not implemented.',
+        variant: 'destructive',
+      });
+      throw new Error('Create function not implemented');
+    },
+    isPending: false,
+    // Thêm các trạng thái khác nếu cần để tránh lỗi undefined
+    error: null,
+    status: 'idle',
+  };
+};
+
+// Mock cho useUpdateQuestion
+export const useMockUpdateQuestion = () => {
+  console.warn('useUpdateQuestion hook is not available. Using mock.');
+  return {
+    mutateAsync: async (args: any) => {
+      console.error('Mock updateQuestionMutateAsync called with:', args);
+      toast({
+        title: 'Error',
+        description: 'Update question function not implemented.',
+        variant: 'destructive',
+      });
+      throw new Error('Update function not implemented');
+    },
+    isPending: false,
+    error: null,
+    status: 'idle',
+  };
 };

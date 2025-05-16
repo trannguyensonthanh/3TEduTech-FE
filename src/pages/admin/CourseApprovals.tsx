@@ -1,307 +1,207 @@
-import { useState } from 'react';
+// src/pages/admin/CourseApprovals.tsx
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom'; // Sử dụng slug từ URL nếu có
 import AdminLayout from '@/components/layout/AdminLayout';
-import { useToast } from '@/hooks/use-toast';
-import CourseDetailView from '@/components/admin/approvals/CourseDetailView';
-import ApprovalsList from '@/components/admin/approvals/ApprovalsList';
+import ApprovalsListContainer from '@/components/admin/approvals/ApprovalsListContainer'; // Component danh sách mới
+import CourseDetailView from '@/components/admin/approvals/CourseDetailView'; // Component chi tiết
 import {
   VideoPreviewDialog,
   TextContentDialog,
   QuizContentDialog,
-} from '@/components/admin/approvals/LessonDialogs';
+} from '@/components/admin/approvals/LessonDialogs'; // Dialog xem trước lesson
+import {
+  useReviewCourseApproval,
+  useCourseDetailBySlug,
+} from '@/hooks/queries/course.queries'; // Import hook query/mutation
+import { useToast } from '@/hooks/use-toast';
+import FullScreenLoader from '@/components/common/FullScreenLoader';
+import {
+  AdminCourseView,
+  ReviewCourseData,
+  Lesson,
+} from '@/types/common.types'; // Import types
+import { Button } from '@/components/ui/button';
 
-// Mock data for demonstration
-const mockApprovals = Array.from({ length: 30 }).map((_, i) => ({
-  id: i + 1,
-  courseName: `Course ${i + 1}: Learn Something Amazing`,
-  slug: `course-${i + 1}-learn-something-amazing`,
-  instructorName: `Instructor ${Math.floor(i / 3) + 1}`,
-  submittedAt: new Date(Date.now() - Math.floor(Math.random() * 10000000000))
-    .toISOString()
-    .split('T')[0],
-  type: ['NEW_COURSE', 'COURSE_UPDATE'][Math.floor(Math.random() * 2)],
-  status: ['PENDING', 'APPROVED', 'REJECTED'][Math.floor(Math.random() * 3)],
-  notes: Math.random() > 0.5 ? 'Please review this course for approval.' : null,
-  categoryName: ['Programming', 'Design', 'Business', 'Marketing'][
-    Math.floor(Math.random() * 4)
-  ],
-  price: Math.floor(Math.random() * 150) + 9.99,
-  lessons: Math.floor(Math.random() * 30) + 5,
-  totalDuration: Math.floor(Math.random() * 20) + 2 + ' hours',
-  hasFreePreview: Math.random() > 0.4,
-  thumbnailUrl: `https://via.placeholder.com/640x360?text=Course+${i + 1}`,
-  curriculum: [
-    {
-      id: 1,
-      title: 'Section 1: Introduction',
-      lessons: [
-        {
-          id: 1,
-          title: 'Welcome to the Course',
-          duration: '05:30',
-          type: 'VIDEO',
-          isPreview: true,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-        {
-          id: 2,
-          title: 'Course Overview',
-          duration: '10:15',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-        {
-          id: 3,
-          title: 'Course Content Overview',
-          duration: 'N/A',
-          type: 'TEXT',
-          isPreview: false,
-          content:
-            '<p>In this course, you will learn about:</p><ul><li>Basic concepts</li><li>Advanced techniques</li><li>Best practices</li></ul>',
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: 'Section 2: Getting Started',
-      lessons: [
-        {
-          id: 4,
-          title: 'Setting Up Your Environment',
-          duration: '15:45',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-        {
-          id: 5,
-          title: 'Basic Concepts',
-          duration: '12:30',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-        {
-          id: 6,
-          title: 'First Quiz',
-          duration: 'N/A',
-          type: 'QUIZ',
-          isPreview: false,
-          questions: [
-            {
-              id: 1,
-              question: 'Which of the following is NOT a JavaScript data type?',
-              options: ['String', 'Number', 'Boolean', 'Float'],
-              correctAnswer: 'Float',
-            },
-            {
-              id: 2,
-              question: 'What does HTML stand for?',
-              options: [
-                'Hyper Text Markup Language',
-                'High Tech Machine Learning',
-                'Hybrid Text Mining Language',
-                'Home Tool Markup Language',
-              ],
-              correctAnswer: 'Hyper Text Markup Language',
-            },
-          ],
-        },
-        {
-          id: 7,
-          title: 'Your First Project',
-          duration: '20:15',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: 'Section 3: Advanced Topics',
-      lessons: [
-        {
-          id: 8,
-          title: 'Advanced Techniques',
-          duration: '18:20',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-        {
-          id: 9,
-          title: 'Important Concepts',
-          duration: 'N/A',
-          type: 'TEXT',
-          isPreview: false,
-          content:
-            '<h3>Key Concepts to Remember</h3><p>Here are some important points to keep in mind when working on your projects:</p><ul><li>Always back up your work</li><li>Test frequently</li><li>Document your code</li></ul>',
-        },
-        {
-          id: 10,
-          title: 'Best Practices',
-          duration: '14:10',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-        {
-          id: 11,
-          title: 'Final Quiz',
-          duration: 'N/A',
-          type: 'QUIZ',
-          isPreview: false,
-          questions: [
-            {
-              id: 1,
-              question: 'Which of the following is a benefit of using React?',
-              options: [
-                'Virtual DOM for better performance',
-                'Only works with NoSQL databases',
-                'Requires manual DOM manipulation',
-                'Cannot be used for single page applications',
-              ],
-              correctAnswer: 'Virtual DOM for better performance',
-            },
-            {
-              id: 2,
-              question: 'What does CSS stand for?',
-              options: [
-                'Creative Style Sheets',
-                'Computer Style Sheets',
-                'Cascading Style Sheets',
-                'Colorful Style Sheets',
-              ],
-              correctAnswer: 'Cascading Style Sheets',
-            },
-            {
-              id: 3,
-              question: 'Which of these is NOT a CSS box model component?',
-              options: ['Border', 'Margin', 'Padding', 'Element'],
-              correctAnswer: 'Element',
-            },
-          ],
-        },
-        {
-          id: 12,
-          title: 'Final Project',
-          duration: '25:30',
-          type: 'VIDEO',
-          isPreview: false,
-          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        },
-      ],
-    },
-  ],
-}));
-
-const CourseApprovals = () => {
+const CourseApprovalsPage: React.FC = () => {
   const { toast } = useToast();
-  const [selectedApproval, setSelectedApproval] = useState<number | null>(null);
+  const navigate = useNavigate();
+  // State để lưu slug của khóa học đang được chọn để xem chi tiết
+  // Hoặc có thể lấy từ URL param nếu bạn muốn URL tường minh: /admin/approvals/{courseSlug}?requestId={id}
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(
+    null
+  );
+
+  // State cho các dialog xem trước lesson
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [textContentDialogOpen, setTextContentDialogOpen] = useState(false);
+  const [quizDialogOpen, setQuizDialogOpen] = useState(false);
+  const [currentLessonForPreview, setCurrentLessonForPreview] =
+    useState<Lesson | null>(null);
+
+  // Fetch chi tiết khóa học khi có selectedSlug
+  const {
+    data: courseDetails,
+    isLoading: isLoadingDetail,
+    isError: isDetailError,
+    error: detailError,
+  } = useCourseDetailBySlug(selectedSlug ?? undefined, {
+    enabled: !!selectedSlug, // Chỉ fetch khi có slug
+  });
+
+  // Mutation để Approve/Reject
+  const { mutate: reviewCourseMutate, isPending: isReviewing } =
+    useReviewCourseApproval();
+
+  // State cho ghi chú của admin
   const [adminNotes, setAdminNotes] = useState('');
 
-  // State for expanded sections in curriculum
-  const [expandedSections, setExpandedSections] = useState<number[]>([]);
+  // Hàm được gọi khi click nút "Review" trong danh sách
+  const handleSelectApproval = (slug: string, requestId: number) => {
+    console.log(
+      `Selecting approval for slug: ${slug}, requestId: ${requestId}`
+    );
+    setSelectedSlug(slug);
+    setSelectedRequestId(requestId);
+    setAdminNotes(''); // Reset notes khi chọn cái mới
+  };
 
-  // State for viewing lesson content
-  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [textDialogOpen, setTextDialogOpen] = useState(false);
-  const [quizDialogOpen, setQuizDialogOpen] = useState(false);
-  const [currentPreviewLesson, setCurrentPreviewLesson] = useState(null);
-  const [currentTextLesson, setCurrentTextLesson] = useState(null);
-  const [currentQuizLesson, setCurrentQuizLesson] = useState(null);
+  // Hàm quay lại danh sách
+  const handleBackToList = () => {
+    setSelectedSlug(null);
+    setSelectedRequestId(null);
+  };
 
-  // Get selected approval details
-  const selectedApprovalDetails = selectedApproval
-    ? mockApprovals.find((approval) => approval.id === selectedApproval)
-    : null;
-
+  // Hàm xử lý Approve
   const handleApprove = () => {
-    // Here you would handle the approval logic
-    console.log(
-      'Approving course',
-      selectedApproval,
-      'with notes:',
-      adminNotes
+    if (!selectedRequestId || isReviewing) return;
+    const reviewData: ReviewCourseData = {
+      decision: 'APPROVED', // Trạng thái mới
+      adminNotes: adminNotes || undefined, // Gửi notes nếu có
+    };
+    reviewCourseMutate(
+      { requestId: selectedRequestId, data: reviewData },
+      {
+        onSuccess: (data) => {
+          console.log('Course approved successfully:', data);
+          toast({
+            title: 'Success',
+            description: data.message || `Course approved successfully.`,
+          });
+          handleBackToList(); // Quay lại danh sách sau khi thành công
+        },
+        onError: (error) => {
+          toast({
+            title: 'Error',
+            description: `Failed to approve course: ${error.message}`,
+            variant: 'destructive',
+          });
+        },
+      }
     );
-
-    toast({
-      title: 'Course approved',
-      description: 'The course has been approved and published.',
-    });
-
-    setSelectedApproval(null);
-    setAdminNotes('');
   };
 
+  // Hàm xử lý Reject
   const handleReject = () => {
-    // Here you would handle the rejection logic
-    console.log(
-      'Rejecting course',
-      selectedApproval,
-      'with notes:',
-      adminNotes
+    if (!selectedRequestId || isReviewing) return;
+    if (!adminNotes?.trim()) {
+      // Bắt buộc nhập notes khi reject
+      toast({
+        title: 'Notes Required',
+        description: 'Please provide feedback notes before rejecting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const reviewData: ReviewCourseData = {
+      decision: 'REJECTED',
+      adminNotes: adminNotes,
+    };
+    reviewCourseMutate(
+      { requestId: selectedRequestId, data: reviewData },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Course Rejected',
+            description: `Course review submitted.`,
+          });
+          handleBackToList();
+        },
+        onError: (error) => {
+          toast({
+            title: 'Error',
+            description: `Failed to reject course: ${error.message}`,
+            variant: 'destructive',
+          });
+        },
+      }
     );
-
-    toast({
-      title: 'Course rejected',
-      description: 'The course has been rejected with feedback.',
-    });
-
-    setSelectedApproval(null);
-    setAdminNotes('');
   };
 
-  const toggleSectionExpand = (sectionId: number) => {
-    if (expandedSections.includes(sectionId)) {
-      setExpandedSections(expandedSections.filter((id) => id !== sectionId));
-    } else {
-      setExpandedSections([...expandedSections, sectionId]);
+  // --- Handlers mở dialog preview lesson ---
+  const handlePreviewLesson = (lesson: Lesson) => {
+    if (lesson.lessonType === 'VIDEO') {
+      setCurrentLessonForPreview(lesson);
+      setPreviewDialogOpen(true);
+    }
+  };
+  const handleViewTextLesson = (lesson: Lesson) => {
+    if (lesson.lessonType === 'TEXT') {
+      setCurrentLessonForPreview(lesson);
+      setTextContentDialogOpen(true);
+    }
+  };
+  const handleViewQuizLesson = (lesson: Lesson) => {
+    if (lesson.lessonType === 'QUIZ') {
+      setCurrentLessonForPreview(lesson);
+      setQuizDialogOpen(true);
     }
   };
 
-  const handlePreviewLesson = (lesson) => {
-    setCurrentPreviewLesson(lesson);
-    setPreviewDialogOpen(true);
-  };
-
-  const handleViewTextLesson = (lesson) => {
-    setCurrentTextLesson(lesson);
-    setTextDialogOpen(true);
-  };
-
-  const handleViewQuizLesson = (lesson) => {
-    setCurrentQuizLesson(lesson);
-    setQuizDialogOpen(true);
-  };
-
+  // --- Render ---
   return (
     <AdminLayout>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Course Approval Requests</h1>
-        </div>
-
-        {selectedApprovalDetails ? (
-          <CourseDetailView
-            courseDetails={selectedApprovalDetails}
-            expandedSections={expandedSections}
-            toggleSectionExpand={toggleSectionExpand}
-            onPreviewLesson={handlePreviewLesson}
-            onViewTextLesson={handleViewTextLesson}
-            onViewQuizLesson={handleViewQuizLesson}
-            onBack={() => setSelectedApproval(null)}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            adminNotes={adminNotes}
-            setAdminNotes={setAdminNotes}
-          />
+      <div className="container mx-auto px-4 py-8">
+        {selectedSlug ? (
+          // Hiển thị chi tiết khóa học
+          isLoadingDetail ? (
+            <FullScreenLoader />
+          ) : isDetailError ? (
+            <div className="text-center text-destructive">
+              Error loading course details:{' '}
+              {detailError?.message || 'Unknown error'}
+              <Button
+                variant="outline"
+                onClick={handleBackToList}
+                className="ml-4"
+              >
+                Back to List
+              </Button>
+            </div>
+          ) : courseDetails ? (
+            <CourseDetailView
+              courseDetails={courseDetails} // Dữ liệu chi tiết fetch được
+              // expandedSections và toggleSectionExpand cần state riêng nếu muốn giữ trạng thái expand
+              // expandedSections={[]}
+              // toggleSectionExpand={() => {}}
+              onPreviewLesson={handlePreviewLesson}
+              onViewTextLesson={handleViewTextLesson}
+              onViewQuizLesson={handleViewQuizLesson}
+              onBack={handleBackToList}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              adminNotes={adminNotes}
+              setAdminNotes={setAdminNotes}
+              isProcessing={isReviewing} // Thêm cờ loading cho nút Approve/Reject
+            />
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Course details not found.
+            </div>
+          )
         ) : (
-          <ApprovalsList
-            approvals={mockApprovals}
-            onReview={setSelectedApproval}
-          />
+          // Hiển thị danh sách chờ duyệt
+          <ApprovalsListContainer onSelectApproval={handleSelectApproval} />
         )}
       </div>
 
@@ -309,22 +209,20 @@ const CourseApprovals = () => {
       <VideoPreviewDialog
         open={previewDialogOpen}
         onOpenChange={setPreviewDialogOpen}
-        lesson={currentPreviewLesson}
+        lesson={currentLessonForPreview}
       />
-
       <TextContentDialog
-        open={textDialogOpen}
-        onOpenChange={setTextDialogOpen}
-        lesson={currentTextLesson}
+        open={textContentDialogOpen}
+        onOpenChange={setTextContentDialogOpen}
+        lesson={currentLessonForPreview}
       />
-
       <QuizContentDialog
         open={quizDialogOpen}
         onOpenChange={setQuizDialogOpen}
-        lesson={currentQuizLesson}
+        lesson={currentLessonForPreview}
       />
     </AdminLayout>
   );
 };
 
-export default CourseApprovals;
+export default CourseApprovalsPage;

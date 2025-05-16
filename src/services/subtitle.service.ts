@@ -1,21 +1,20 @@
 // src/services/subtitle.service.ts
+import { IsoDateTimeString } from '@/types/common.types';
 import apiHelper, { fetchWithAuth } from './apiHelper'; // Import fetchWithAuth nếu upload file vtt
 
 // --- Kiểu dữ liệu ---
 export interface Subtitle {
-  SubtitleID: number;
-  LessonID: number;
-  LanguageCode: string; // vd: 'vi', 'en'
-  LanguageName: string; // vd: 'Tiếng Việt', 'English'
-  SubtitleUrl: string; // URL công khai đến file .vtt (hoặc signed URL nếu private)
-  // SubtitlePublicId?: string | null; // Nếu lưu private trên Cloudinary
-  IsDefault: boolean;
-  UploadedAt: string; // ISO Date string
+  subtitleId?: number; // Có thể không cần id nếu FE chỉ quản lý qua tempId
+  tempId?: string | number; // FE temp ID
+  lessonId?: number; // Hoặc string nếu LessonID là string
+  languageCode: string;
+  subtitleUrl: string;
+  isDefault: boolean;
+  uploadedAt?: IsoDateTimeString; // Có thể không cần ở FE nếu chỉ thêm/xóa
 }
 
 export interface AddSubtitleData {
   languageCode: string;
-  languageName: string;
   subtitleUrl?: string; // Cần URL nếu không upload file
   // file?: File; // Hoặc gửi file nếu upload trực tiếp
   isDefault?: boolean;

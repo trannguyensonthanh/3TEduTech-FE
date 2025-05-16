@@ -1,87 +1,84 @@
 import { useReducer, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast'; // Hoặc thư viện toast của bạn
+import { Lesson } from '@/types/common.types';
+import { Section } from '@/services/section.service';
 
 // --- Types ---
 export type LessonType = 'VIDEO' | 'TEXT' | 'QUIZ';
 
-export interface QuizOption {
-  tempId?: string | number; // FE temp ID
-  optionId?: number; // DB ID
-  id?: number; // DB ID
-  optionText?: string;
-  isCorrectAnswer?: boolean;
-  optionOrder?: number; // Sẽ được tính lại
-}
+// export interface QuizOption {
+//   tempId?: string | number; // FE temp ID
+//   optionId?: number; // DB ID
+//   optionText?: string;
+//   isCorrectAnswer?: boolean;
+//   optionOrder?: number; // Sẽ được tính lại
+// }
 
-export interface QuizQuestion {
-  tempId?: string | number; // FE temp ID
-  questionId?: number; // DB ID
-  id?: number; // DB ID
-  questionText: string;
-  explanation: string | null;
-  questionOrder?: number; // Sẽ được tính lại
-  options: QuizOption[];
-}
+// export interface QuizQuestion {
+//   tempId?: string | number; // FE temp ID
+//   questionId?: number; // DB ID
+//   questionText: string;
+//   explanation: string | null;
+//   questionOrder?: number; // Sẽ được tính lại
+//   options: QuizOption[];
+//   lessonId?: number; // ID bài học (có thể là string từ backend)
+// }
 
-export interface Attachment {
-  tempId?: string | number; // FE temp ID
-  attachmentId?: number; // DB ID
-  id?: number; // DB ID
-  fileName: string;
-  fileUrl?: string; // Blob URL for preview
-  fileType?: string;
-  fileSize?: number;
-  file: File; // The actual file object for upload
-}
+// export interface Attachment {
+//   tempId?: string | number; // FE temp ID
+//   attachmentId?: number; // DB ID
+//   fileName: string;
+//   fileUrl?: string; // Blob URL for preview
+//   fileType?: string;
+//   fileSize?: number;
+//   file?: File; // The actual file object for upload
+// }
 
-export interface Subtitle {
-  tempId?: string | number; // FE temp ID
-  subtitleId?: number; // DB ID
-  id?: number; // DB ID
-  languageCode: string;
-  languageName: string;
-  subtitleUrl: string; // Can be Blob URL initially or final URL
-  isDefault: boolean;
-  // file?: File; // Nếu cần upload file .vtt
-}
+// export interface Subtitle {
+//   tempId?: string | number; // FE temp ID
+//   subtitleId?: number; // DB ID
+//   languageCode: string;
+//   languageName: string;
+//   subtitleUrl: string; // Can be Blob URL initially or final URL
+//   isDefault: boolean;
+//   // file?: File; // Nếu cần upload file .vtt
+// }
 
-export interface Lesson {
-  tempId?: string | number; // FE temp ID
-  id?: number | string; // DB ID (có thể là string từ backend)
-  lessonId?: number | string; // ID từ BE (kiểu string như "4" hoặc số)
-  lessonName: string; // Tên bài học
-  description?: string | null; // Mô tả bài học
-  lessonOrder?: number; // Thứ tự bài học
-  lessonType: LessonType; // Loại bài học (VIDEO, TEXT, QUIZ)
-  isFreePreview: boolean; // Có phải bài học miễn phí hay không
-  // Video specific
-  videoSourceType?: 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO' | null; // Loại nguồn video
-  externalVideoInput?: string | null; // ID video từ YT/Vimeo
-  lessonVideo?: File | null; // File video (nếu có upload)
-  videoDurationSeconds?: number | null; // Thời lượng video
-  thumbnailUrl?: string | null; // URL thumbnail của bài học
-  subtitles?: Subtitle[]; // Danh sách phụ đề
-  // Text specific
-  textContent?: string | null; // Nội dung dạng text
-  // Quiz specific
-  questions?: QuizQuestion[]; // Danh sách câu hỏi
-  // Common
-  attachments?: Attachment[]; // Danh sách file đính kèm
-  createdAt?: string; // Thời gian tạo
-  updatedAt?: string; // Thời gian cập nhật
-  externalVideoId?: string | null; // ID video từ YT/Vimeo (nếu có)
-  lessonVideoFile?: File | null; // File video (nếu có upload)
-}
+// export interface Lesson {
+//   tempId?: string | number; // FE temp ID
+//   lessonId?: number | string; // ID từ BE (kiểu string như "4" hoặc số)
+//   lessonName: string; // Tên bài học
+//   description?: string | null; // Mô tả bài học
+//   lessonOrder?: number; // Thứ tự bài học
+//   lessonType: LessonType; // Loại bài học (VIDEO, TEXT, QUIZ)
+//   isFreePreview: boolean; // Có phải bài học miễn phí hay không
+//   // Video specific
+//   videoSourceType?: 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO' | null; // Loại nguồn video
+//   externalVideoInput?: string | null; // ID video từ YT/Vimeo
+//   lessonVideo?: File | null; // File video (nếu có upload)
+//   videoDurationSeconds?: number | null; // Thời lượng video
+//   thumbnailUrl?: string | null; // URL thumbnail của bài học
+//   subtitles?: Subtitle[]; // Danh sách phụ đề
+//   // Text specific
+//   textContent?: string | null; // Nội dung dạng text
+//   // Quiz specific
+//   questions?: QuizQuestion[]; // Danh sách câu hỏi
+//   // Common
+//   attachments?: Attachment[]; // Danh sách file đính kèm
+//   createdAt?: string; // Thời gian tạo
+//   updatedAt?: string; // Thời gian cập nhật
+//   externalVideoId?: string | null; // ID video từ YT/Vimeo (nếu có)
+//   lessonVideoFile?: File | null; // File video (nếu có upload)
+// }
 
-export interface Section {
-  sectionId?: number; // DB ID
-  tempId?: string | number; // FE temp ID
-  id?: number; // DB ID
-  sectionName: string;
-  description?: string | null;
-  sectionOrder?: number; // Will be recalculated
-  lessons: Lesson[];
-}
+// export interface Section {
+//   sectionId?: number; // DB ID
+//   tempId?: string | number; // FE temp ID
+//   sectionName: string;
+//   description?: string | null;
+//   sectionOrder?: number; // Will be recalculated
+//   lessons: Lesson[];
+// }
 interface CurriculumState {
   sections: Section[];
 }
@@ -144,7 +141,7 @@ const curriculumReducer = (
       return {
         ...state,
         sections: state.sections.map((s) =>
-          s.id === action.payload.sectionId ||
+          s.sectionId === action.payload.sectionId ||
           s.tempId === action.payload.sectionId
             ? {
                 ...s,
@@ -159,7 +156,7 @@ const curriculumReducer = (
       const updatedSections = state.sections
         .filter(
           (s) =>
-            s.id !== action.payload.sectionId &&
+            s.sectionId !== action.payload.sectionId &&
             s.tempId !== action.payload.sectionId
         )
         .map((s, index) => ({ ...s, sectionOrder: index })); // Reorder
@@ -169,18 +166,18 @@ const curriculumReducer = (
       const newLesson: Lesson = {
         ...action.payload.lesson,
         tempId: action.payload.lesson.tempId || generateTempId('lesson'), // Dùng tempId nếu có hoặc tạo mới
-        id: action.payload.lesson.id, // Giữ id nếu có (trường hợp edit)
+        lessonId: action.payload.lesson.lessonId, // Giữ id nếu có (trường hợp edit)
         lessonOrder:
           state.sections.find(
             (s) =>
-              s.id === action.payload.sectionId ||
+              s.sectionId === action.payload.sectionId ||
               s.tempId === action.payload.sectionId
           )?.lessons.length || 0,
       };
       return {
         ...state,
         sections: state.sections.map((s) =>
-          s.id === action.payload.sectionId ||
+          s.sectionId === action.payload.sectionId ||
           s.tempId === action.payload.sectionId
             ? { ...s, lessons: [...s.lessons, newLesson] }
             : s
@@ -196,11 +193,13 @@ const curriculumReducer = (
       const updatedLessonData = action.payload.lesson;
 
       const newSections = state.sections.map((s) => {
-        if (s.id === targetSectionId || s.tempId === targetSectionId) {
-          console.log(`[REDUCER] Found target section: ${s.tempId || s.id}`);
+        if (s.sectionId === targetSectionId || s.tempId === targetSectionId) {
+          console.log(
+            `[REDUCER] Found target section: ${s.tempId || s.sectionId}`
+          );
           const newLessons = s.lessons.map((l) => {
             if (
-              (l.id && l.id === updatedLessonData.id) ||
+              (l.lessonId && l.lessonId === updatedLessonData.lessonId) ||
               (l.tempId && l.tempId === updatedLessonData.tempId)
             ) {
               // Tạo đối tượng lesson mới hoàn toàn, không chỉ spread nông
@@ -229,13 +228,13 @@ const curriculumReducer = (
         ...state,
         sections: state.sections.map((s) => {
           if (
-            s.id === action.payload.sectionId ||
+            s.sectionId === action.payload.sectionId ||
             s.tempId === action.payload.sectionId
           ) {
             const updatedLessons = s.lessons
               .filter(
                 (l) =>
-                  l.id !== action.payload.lessonId &&
+                  l.lessonId !== action.payload.lessonId &&
                   l.tempId !== action.payload.lessonId
               )
               .map((l, index) => ({ ...l, lessonOrder: index })); // Reorder
@@ -259,7 +258,7 @@ const curriculumReducer = (
         ...state,
         sections: state.sections.map((s) => {
           if (
-            s.id === action.payload.sectionId ||
+            s.sectionId === action.payload.sectionId ||
             s.tempId === action.payload.sectionId
           ) {
             const reorderedLessons = action.payload.lessons.map(
@@ -278,27 +277,27 @@ const curriculumReducer = (
       // eslint-disable-next-line no-case-declarations
       const initialSections = action.payload.sections.map((s) => ({
         ...s,
-        tempId: s.tempId || s.id || generateTempId('section'),
+        tempId: s.tempId || s.sectionId || generateTempId('section'),
         lessons: (s.lessons || []).map((l) => ({
           ...l,
-          tempId: l.tempId || l.id || generateTempId('lesson'),
+          tempId: l.tempId || l.lessonId || generateTempId('lesson'),
           questions: (l.questions || [])?.map((q) => ({
             ...q,
-            tempId: q.tempId || q.id || generateTempId('question'),
+            tempId: q.tempId || q.questionId || generateTempId('question'),
             options: (q.options || []).map((o) => ({
               ...o,
-              tempId: o.tempId || o.id || generateTempId('option'),
+              tempId: o.tempId || o.optionId || generateTempId('option'),
             })),
           })),
           attachments: (l.attachments || [])?.map((a) => ({
             ...a,
-            tempId: a.tempId || a.id || generateTempId('attach'),
+            tempId: a.tempId || a.attachmentId || generateTempId('attach'),
             // file object will be missing when loading from DB, handle this if needed
             file: a.file || null, // Set file to null when loading
           })),
           subtitles: (l.subtitles || [])?.map((sub) => ({
             ...sub,
-            tempId: sub.tempId || sub.id || generateTempId('sub'),
+            tempId: sub.tempId || sub.subtitleId || generateTempId('sub'),
           })),
         })),
       }));
@@ -374,9 +373,12 @@ export const useCourseCurriculum = (
   const updateLesson = useCallback(
     (sectionId: number | string, lesson: Lesson) => {
       // Ensure the lesson has a tempId or id before dispatching
-      const lessonToUpdate = { ...lesson, tempId: lesson.tempId || lesson.id };
+      const lessonToUpdate = {
+        ...lesson,
+        tempId: lesson.tempId || lesson.lessonId,
+      };
       console.log('Lesson to update', lessonToUpdate);
-      if (!lessonToUpdate.tempId && !lessonToUpdate.id) {
+      if (!lessonToUpdate.tempId && !lessonToUpdate.lessonId) {
         console.error('Cannot update lesson without id or tempId', lesson);
         toast({
           title: 'Error',

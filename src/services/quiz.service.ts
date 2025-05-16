@@ -1,63 +1,86 @@
 // src/services/quiz.service.ts
+import { IsoDateTimeString } from '@/types/common.types';
 import apiHelper from './apiHelper';
 
+export interface QuizOption {
+  optionId?: number;
+  tempId?: string | number; // FE temp ID
+  questionId: number;
+  optionText: string;
+  isCorrectAnswer: boolean;
+  optionOrder: number;
+}
+
+export interface QuizQuestion {
+  questionId?: number;
+  tempId?: string | number; // FE temp ID
+  lessonId?: number; // Hoặc string
+  questionText: string;
+  explanation?: string | null;
+  questionOrder: number;
+  options: QuizOption[]; // Lồng options vào đây
+  createdAt?: IsoDateTimeString;
+  updatedAt?: IsoDateTimeString;
+}
+
 // --- Kiểu dữ liệu (Ví dụ) ---
-interface QuizAttempt {
-  AttemptID: number;
-  LessonID: number;
-  AccountID: number;
-  StartedAt: string;
-  CompletedAt?: string | null;
-  Score?: number | null;
-  IsPassed?: boolean | null;
-  AttemptNumber: number;
+export interface QuizAttempt {
+  attemptId: number;
+  lessonId: number;
+  accountId: number;
+  startedAt: string;
+  completedAt?: string | null;
+  score?: number | null;
+  isPassed?: boolean | null;
+  attemptNumber: number;
 }
 
-interface QuizQuestionPublic {
+export interface QuizQuestionPublic {
   // Câu hỏi cho student (ko có đáp án đúng)
-  QuestionID: number;
-  QuestionText: string;
-  QuestionOrder: number;
-  options: { OptionID: number; OptionText: string; OptionOrder: number }[];
+  questionId: number;
+  questionText: string;
+  questionOrder: number;
+  options: { optionId: number; optionText: string; optionOrder: number }[];
 }
 
-interface StartQuizResponse {
+export interface StartQuizResponse {
   attempt: QuizAttempt;
   questions: QuizQuestionPublic[];
 }
 
-interface SubmitAnswer {
+export interface SubmitAnswer {
   questionId: number;
   selectedOptionId: number | null;
 }
 
-interface QuizAttemptResultDetail {
-  AttemptAnswerID: number;
-  QuestionID: number;
-  QuestionText: string;
-  Explanation?: string | null;
-  QuestionOrder: number;
-  SelectedOptionID: number | null;
-  SelectedOptionText?: string | null;
-  IsCorrect: boolean | null;
-  CorrectOptionID: number;
-  CorrectOptionText: string;
+export interface QuizAttemptResultDetail {
+  attemptAnswerId: number;
+  questionId: number;
+  questionText: string;
+  explanation?: string | null;
+  questionOrder: number;
+  selectedOptionId: number | null;
+  selectedOptionText?: string | null;
+  isCorrect: boolean | null;
+  correctOptionId: number;
+  correctOptionText: string;
+  options: QuizOption[];
 }
 
-interface QuizAttemptResultResponse {
+export interface QuizAttemptResultResponse {
   attempt: QuizAttempt;
   details: QuizAttemptResultDetail[];
 }
 
-interface AttemptHistory {
-  AttemptID: number;
-  CompletedAt?: string | null;
-  Score?: number | null;
-  IsPassed?: boolean | null;
-  AttemptNumber: number;
+export interface AttemptHistory {
+  attemptId: number;
+  completedAt?: string | null;
+  score?: number | null;
+  isPassed?: boolean | null;
+  attemptNumber: number;
 }
 
-interface QuizHistoryResponse {
+export interface QuizHistoryResponse {
   history: AttemptHistory[];
 }
 
@@ -67,6 +90,7 @@ interface QuizHistoryResponse {
 export const startQuizAttempt = async (
   lessonId: number
 ): Promise<StartQuizResponse> => {
+  console.log('Starting quiz attempt for lesson:', lessonId);
   return apiHelper.post(`/quizzes/lessons/${lessonId}/start`);
 };
 

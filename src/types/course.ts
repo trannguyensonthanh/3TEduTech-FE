@@ -32,7 +32,7 @@ export interface Order {
   userId: string;
   items: OrderItem[];
   total: number;
-  status: "pending" | "completed" | "failed" | "refunded";
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
   paymentMethod: string;
   paymentId?: string;
   createdAt: Date;
@@ -55,7 +55,7 @@ export interface QuizQuestion {
 export interface Resource {
   id: number;
   title: string;
-  type: "pdf" | "doc" | "zip" | "link";
+  type: 'pdf' | 'doc' | 'zip' | 'link';
   url: string;
   size?: string;
 }
@@ -64,7 +64,7 @@ export interface BaseLesson {
   id: number;
   title: string;
   duration: string;
-  type: "VIDEO" | "TEXT" | "QUIZ";
+  type: 'VIDEO' | 'TEXT' | 'QUIZ';
   completed: boolean;
   isPreview: boolean;
   description?: string;
@@ -73,17 +73,17 @@ export interface BaseLesson {
 }
 
 export interface VideoLesson extends BaseLesson {
-  type: "VIDEO";
+  type: 'VIDEO';
   videoUrl?: string;
 }
 
 export interface TextLesson extends BaseLesson {
-  type: "TEXT";
+  type: 'TEXT';
   content: string;
 }
 
 export interface QuizLesson extends BaseLesson {
-  type: "QUIZ";
+  type: 'QUIZ';
   questions: QuizQuestion[];
 }
 
@@ -103,7 +103,7 @@ export interface Course {
   subtitle: string;
   description: string;
   category: string;
-  level: "beginner" | "intermediate" | "advanced";
+  level: 'beginner' | 'intermediate' | 'advanced';
   price: number;
   coverImage: string;
   isPublished: boolean;

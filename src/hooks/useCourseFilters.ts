@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { InstructorCourseStatus } from '@/types/common.types'; // Giả sử bạn định nghĩa các type ở đây
 
 export interface CourseFilterParams {
-  search?: string;
+  searchTerm?: string;
   // Thay vì activeTab, chúng ta sẽ truyền các tham số cụ thể hơn cho API
   instructorId?: number | null; // Lọc theo instructor cụ thể (cho tab "My Courses")
   statusId?: InstructorCourseStatus | 'PUBLISHED_ALL' | null; // Thêm trạng thái đặc biệt cho tab "All"
@@ -23,7 +23,7 @@ export const useCourseFilters = (initialPage = 1, initialLimit = 9) => {
   const [filterParams, setFilterParams] = useState<
     Omit<CourseFilterParams, 'page' | 'limit'>
   >({
-    search: '',
+    searchTerm: '',
     instructorId: null, // Sẽ được set khi chọn tab "My Courses"
     // statusId: 'PUBLISHED_ALL', // Trạng thái mặc định cho tab "All"
     categoryId: null,

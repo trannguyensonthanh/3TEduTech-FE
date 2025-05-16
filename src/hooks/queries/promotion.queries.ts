@@ -18,8 +18,8 @@ import {
   PromotionQueryParams,
   CreatePromotionData,
   UpdatePromotionData,
-  ValidatePromoResponse,
 } from '@/services/promotion.service';
+import { ValidatePromoResponse } from '@/types/cart.types';
 
 // Query Key Factory
 const promotionKeys = {

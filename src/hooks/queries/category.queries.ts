@@ -5,6 +5,7 @@ import {
   UseQueryOptions,
   UseMutationOptions,
   useQueryClient,
+  UseQueryResult,
 } from '@tanstack/react-query';
 import {
   getCategories,
@@ -18,6 +19,7 @@ import {
   CreateCategoryData,
   UpdateCategoryData,
 } from '@/services/category.service';
+import { CategoryFilterItem } from '@/types/common.types';
 
 // Query Key Factory (giúp quản lý keys nhất quán)
 const categoryKeys = {
@@ -29,6 +31,23 @@ const categoryKeys = {
 };
 
 // --- Queries ---
+
+export const useMockFilterCategories = (): UseQueryResult<
+  CategoryFilterItem[],
+  Error
+> => {
+  console.warn('useFilterCategories is mocked.');
+  return {
+    data: [],
+    isLoading: true,
+    isError: false,
+    error: null,
+    // Thêm các thuộc tính khác của UseQueryResult nếu component của bạn dùng đến
+    isFetching: false,
+    status: 'pending', // hoặc 'loading' tùy phiên bản
+    // ... và các hàm refetch, etc. nếu cần
+  } as UseQueryResult<CategoryFilterItem[], Error>; // Ép kiểu để TypeScript chấp nhận
+};
 
 /** Hook lấy danh sách categories */
 export const useCategories = (

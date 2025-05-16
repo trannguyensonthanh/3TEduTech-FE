@@ -1,19 +1,30 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
+// src/components/admin/approvals/LessonDialogs.tsx
+import React, { useState, useEffect } from 'react'; // Thêm useState, useEffect
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter, // Thêm nếu cần nút đóng
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Check } from 'lucide-react';
+import { Button } from '@/components/ui/button'; // Thêm Button
+import { Check, X, Video, Loader2, AlertCircle } from 'lucide-react';
+import { Lesson } from '@/types/common.types'; // Import types chuẩn
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries'; // Hook lấy signed URL
+import {
+  getYoutubeEmbedUrl,
+  getVimeoEmbedUrl,
+} from '../../../utils/video.util'; // Import utils
 
+// --- Video Preview Dialog ---
 interface VideoPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lesson: any;
+  lesson: Lesson | null;
 }
 
 export const VideoPreviewDialog: React.FC<VideoPreviewDialogProps> = ({
@@ -21,32 +32,108 @@ export const VideoPreviewDialog: React.FC<VideoPreviewDialogProps> = ({
   onOpenChange,
   lesson,
 }) => {
+  // Fetch signed URL nếu là Cloudinary và có ID
+  const lessonIdForQuery =
+    lesson?.videoSourceType === 'CLOUDINARY' && lesson?.externalVideoId
+      ? Number(lesson.lessonId)
+      : undefined;
+  const {
+    data: videoData,
+    isLoading,
+    isError,
+    error,
+  } = useLessonVideoUrl(lessonIdForQuery);
+
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    let url: string | null = null;
+    if (lesson) {
+      if (lesson.videoSourceType === 'CLOUDINARY') {
+        url = videoData?.signedUrl || null;
+      } else if (lesson.videoSourceType === 'YOUTUBE') {
+        url = getYoutubeEmbedUrl(lesson.externalVideoId || '');
+      } else if (lesson.videoSourceType === 'VIMEO') {
+        url = getVimeoEmbedUrl(lesson.externalVideoId || '');
+      }
+    }
+    setVideoSrc(url);
+  }, [lesson, videoData]); // Chạy lại khi lesson hoặc signed URL thay đổi
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>{lesson?.title}</DialogTitle>
-        </DialogHeader>
-
-        <div className="aspect-video bg-black rounded-md overflow-hidden">
-          {lesson && (
-            <iframe
-              src={lesson.videoUrl.replace('watch?v=', 'embed/')}
-              className="w-full h-full"
-              allowFullScreen
-              title={lesson.title}
-            ></iframe>
+      <DialogContent className="max-w-4xl p-0">
+        {' '}
+        {/* Bỏ padding mặc định để video tràn viền */}
+        <DialogHeader className="p-6 pb-2">
+          {' '}
+          {/* Thêm padding lại cho header */}
+          <DialogTitle>{lesson?.lessonName || 'Video Preview'}</DialogTitle>
+          {lesson?.description && (
+            <DialogDescription className="text-sm">
+              {lesson.description}
+            </DialogDescription>
           )}
+        </DialogHeader>
+        <div className="aspect-video bg-black overflow-hidden">
+          {' '}
+          {/* Không cần rounded nếu dialog đã có */}
+          {isLoading && lessonIdForQuery && (
+            <div className="w-full h-full flex items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-gray-500" />
+            </div>
+          )}
+          {isError && lessonIdForQuery && (
+            <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 p-4">
+              <AlertCircle className="h-8 w-8 mb-2" />
+              <span>Error loading video</span>
+              <span className="text-xs mt-1">
+                ({error?.message || 'Unknown error'})
+              </span>
+            </div>
+          )}
+          {videoSrc && lesson?.videoSourceType === 'CLOUDINARY' && (
+            <video
+              key={videoSrc}
+              src={videoSrc}
+              controls
+              className="w-full h-full object-contain"
+            />
+          )}
+          {videoSrc &&
+            (lesson?.videoSourceType === 'YOUTUBE' ||
+              lesson?.videoSourceType === 'VIMEO') && (
+              <iframe
+                key={videoSrc}
+                src={videoSrc}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title={lesson.lessonName}
+              ></iframe>
+            )}
+          {/* Trường hợp không có video source hợp lệ */}
+          {!isLoading &&
+            !isError &&
+            !videoSrc &&
+            lesson?.lessonType === 'VIDEO' && (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground p-4">
+                <Video className="h-8 w-8 mb-2" />
+                <span>Video source not available</span>
+              </div>
+            )}
         </div>
+        {/* <DialogFooter className="p-6 pt-4"> <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button> </DialogFooter> */}
       </DialogContent>
     </Dialog>
   );
 };
 
+// --- Text Content Dialog ---
 interface TextContentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lesson: any;
+  lesson: Lesson | null;
 }
 
 export const TextContentDialog: React.FC<TextContentDialogProps> = ({
@@ -58,25 +145,35 @@ export const TextContentDialog: React.FC<TextContentDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{lesson?.title}</DialogTitle>
+          <DialogTitle>{lesson?.lessonName || 'Text Content'}</DialogTitle>
+          {lesson?.description && (
+            <DialogDescription className="text-sm">
+              {lesson.description}
+            </DialogDescription>
+          )}
         </DialogHeader>
-
-        <ScrollArea className="h-[60vh]">
-          <div className="prose prose-sm max-w-none">
-            {lesson && (
-              <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
-            )}
-          </div>
+        <ScrollArea className="max-h-[70vh] mt-4 border rounded-md">
+          {lesson?.textContent ? (
+            <div
+              className="prose prose-sm sm:prose-base dark:prose-invert max-w-none p-4" // Thêm padding
+              dangerouslySetInnerHTML={{ __html: lesson.textContent }}
+            />
+          ) : (
+            <p className="text-muted-foreground text-center py-12">
+              No content available.
+            </p>
+          )}
         </ScrollArea>
       </DialogContent>
     </Dialog>
   );
 };
 
+// --- Quiz Content Dialog ---
 interface QuizContentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lesson: any;
+  lesson: Lesson | null;
 }
 
 export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
@@ -84,53 +181,94 @@ export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
   onOpenChange,
   lesson,
 }) => {
+  // Sắp xếp câu hỏi và lựa chọn một lần
+  const sortedQuestions = React.useMemo(() => {
+    return (
+      lesson?.questions
+        ?.map((q) => ({
+          ...q,
+          options: [...(q.options || [])].sort(
+            (a, b) => a.optionOrder - b.optionOrder
+          ),
+        }))
+        .sort((a, b) => a.questionOrder - b.questionOrder) || []
+    );
+  }, [lesson?.questions]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{lesson?.title}</DialogTitle>
+          <DialogTitle>{lesson?.lessonName || 'Quiz Preview'}</DialogTitle>
+          {lesson?.description && (
+            <DialogDescription className="text-sm">
+              {lesson.description}
+            </DialogDescription>
+          )}
         </DialogHeader>
-
-        <ScrollArea className="h-[60vh]">
+        <ScrollArea className="max-h-[70vh] mt-4 pr-2">
           <div className="space-y-6">
-            {lesson?.questions.map((question, index) => (
-              <div
-                key={question.id}
-                className="border rounded-lg p-4 space-y-3"
-              >
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-primary">{index + 1}</Badge>
-                  <h3 className="font-medium">{question.question}</h3>
-                </div>
-
-                <div className="space-y-2 pl-8">
-                  {question.options.map((option, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-2 border rounded-md ${
-                        option === question.correctAnswer
-                          ? 'border-green-500 bg-green-50'
-                          : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {option === question.correctAnswer && (
-                          <Badge className="bg-green-500">
-                            <Check className="h-3 w-3" />
-                          </Badge>
+            {sortedQuestions.length > 0 ? (
+              sortedQuestions.map((question, index) => (
+                <div
+                  key={question.questionId}
+                  className="border rounded-lg p-4 space-y-3 bg-background shadow-sm"
+                >
+                  {/* Question */}
+                  <div className="flex items-start gap-3">
+                    <Badge variant="secondary" className="mt-0.5">
+                      {index + 1}
+                    </Badge>
+                    <p className="font-medium flex-1">
+                      {question.questionText}
+                    </p>
+                  </div>
+                  {/* Options */}
+                  <div className="space-y-2 pl-8">
+                    {question.options.map((option) => (
+                      <div
+                        key={option.optionId}
+                        className={`flex items-center gap-2 text-sm p-2 border rounded-md ${
+                          option.isCorrectAnswer
+                            ? 'border-green-300 bg-green-50 dark:bg-green-900/30'
+                            : 'border-border'
+                        }`}
+                      >
+                        {option.isCorrectAnswer ? (
+                          <Check className="h-4 w-4 text-green-600 shrink-0" />
+                        ) : (
+                          <div className="w-4 h-4 shrink-0"></div> // Giữ khoảng trống cho thẳng hàng
                         )}
-                        <span>{option}</span>
+                        <span
+                          className={
+                            option.isCorrectAnswer
+                              ? 'font-semibold text-green-700 dark:text-green-300'
+                              : ''
+                          }
+                        >
+                          {option.optionText}
+                        </span>
                       </div>
-                      {option === question.correctAnswer && (
-                        <p className="text-xs text-green-600 mt-1 pl-6">
-                          Correct answer
-                        </p>
-                      )}
+                    ))}
+                  </div>
+                  {/* Explanation */}
+                  {question.explanation && (
+                    <div className="pl-8 pt-3 border-t mt-3">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">
+                        Explanation:
+                      </p>
+                      <p className="text-sm italic text-muted-foreground">
+                        {question.explanation}
+                      </p>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-muted-foreground text-center py-12">
+                No questions in this quiz.
+              </p>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

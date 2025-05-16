@@ -3,27 +3,30 @@ import apiHelper from './apiHelper';
 
 export interface InstructorProfile {
   // Kết hợp từ UserProfile và InstructorProfile
-  AccountID: number;
-  Email: string;
-  FullName: string;
-  AvatarUrl?: string | null;
-  CoverImageUrl?: string | null;
-  Headline?: string | null;
-  Location?: string | null;
-  Gender?: string | null;
-  BirthDate?: string | null; // ISO Date
-  PhoneNumber?: string | null;
-  ProfessionalTitle?: string | null;
-  Bio?: string | null;
-  AboutMe?: string | null;
+  accountId: number;
+  email: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  coverImageUrl?: string | null;
+  headline?: string | null;
+  location?: string | null;
+  gender?: string | null;
+  birthDate?: string | null; // ISO Date
+  phoneNumber?: string | null;
+  professionalTitle?: string | null;
+  bio?: string | null;
+  aboutMe?: string | null;
   // Thông tin bank có thể không trả về ở đây để bảo mật
   // BankAccountNumber?: string | null;
   // BankName?: string | null;
   // BankAccountHolderName?: string | null;
-  CreatedAt: string; // Account CreatedAt
-  MemberSince?: string; // Alias cho CreatedAt nếu cần
-  skills: { SkillID: number; SkillName: string }[];
-  socialLinks: { Platform: string; Url: string }[];
+  createdAt: string; // Account CreatedAt
+  memberSince?: string; // Alias cho CreatedAt nếu cần
+  skills: { skillId: number; skillName: string }[];
+  socialLinks: { platform: string; url: string }[];
+  totalCourses?: number;
+  totalStudents?: number;
+  averageRating?: number | null;
 }
 
 export interface UpdateInstructorProfileData {
@@ -48,13 +51,13 @@ export interface UpdateBankInfoData {
 }
 
 export interface InstructorSkill {
-  SkillID: number;
-  SkillName: string;
+  skillId: number;
+  skillName: string;
 }
 
 export interface SocialLink {
-  Platform: string;
-  Url: string;
+  platform: string;
+  url: string;
 }
 
 export interface DashboardData {

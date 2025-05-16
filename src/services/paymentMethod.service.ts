@@ -4,8 +4,8 @@ import apiHelper from './apiHelper';
 // --- Kiểu dữ liệu ---
 // Định nghĩa interface cho đối tượng PaymentMethod trả về từ API
 export interface PaymentMethod {
-  MethodID: string;
-  MethodName: string;
+  methodId: string;
+  methodName: string;
   // Thêm các trường khác nếu API trả về (ví dụ: isEnabled)
 }
 

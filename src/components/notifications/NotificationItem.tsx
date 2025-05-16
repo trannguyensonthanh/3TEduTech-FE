@@ -1,101 +1,198 @@
+// src/components/notifications/NotificationItem.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import {
-  X,
-  Bell,
-  CheckCheck,
-  AlertTriangle,
-  Info,
-  CheckCircle,
-} from 'lucide-react';
-import { Notification, useNotifications } from '@/contexts/NotificationContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Giả sử dùng Avatar
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+
+import { formatDistanceToNowStrict } from 'date-fns';
+import { useMarkNotificationAsRead } from '@/hooks/queries/notification.queries';
+import { cn } from '@/lib/utils'; // Hàm tiện ích để nối class
+import {
+  AlertCircle,
+  CheckCircle,
+  Gift,
+  MessageSquare,
+  DollarSign,
+  BookCheck,
+  Eye,
+  BellRing,
+  Info,
+  ShoppingCart,
+} from 'lucide-react';
+import { Notification } from '@/services/notification.service';
 
 interface NotificationItemProps {
   notification: Notification;
+  onItemClick?: () => void; // Callback để đóng dropdown khi click
 }
+
+// Helper để lấy icon và link dựa trên loại thông báo
+const getNotificationDetails = (
+  notification: Notification
+): { icon: React.ReactNode; link: string | null } => {
+  let icon: React.ReactNode = (
+    <Info size={18} className="text-muted-foreground" />
+  );
+  let link: string | null = null;
+
+  // Logic này cần được điều chỉnh cho phù hợp với các `Type` và `RelatedEntityType` của bạn
+  switch (notification.type) {
+    case 'COURSE_APPROVED':
+    case 'COURSE_REJECTED':
+    case 'COURSE_SUBMITTED': // Giảng viên nhận
+      icon = (
+        <BookCheck
+          size={18}
+          className={
+            notification.type === 'COURSE_APPROVED'
+              ? 'text-green-500'
+              : notification.type === 'COURSE_REJECTED'
+              ? 'text-red-500'
+              : 'text-blue-500'
+          }
+        />
+      );
+      if (
+        notification.relatedEntityType === 'Course' &&
+        notification.relatedEntityId
+      ) {
+        // Giả sử bạn có slug trong message hoặc cần fetch slug
+        // Tạm thời trỏ đến /courses/id (cần slug thực tế)
+        link = `/courses/${notification.relatedEntityId}`; // Hoặc /instructor/courses/edit/{id}
+        // Nếu message chứa slug, bạn có thể trích xuất từ đó
+      }
+      break;
+    case 'NEW_COURSE_REVIEW':
+      icon = <MessageSquare size={18} className="text-yellow-500" />;
+      if (
+        notification.relatedEntityType === 'Review' &&
+        notification.relatedEntityId
+      ) {
+        // Cần course slug để link đến tab review của khóa học
+        // link = `/courses/${courseSlug}?tab=reviews#review-${notification.relatedEntityId}`;
+        link = `/courses/some-course-slug?review=${notification.relatedEntityId}`; // Placeholder
+      }
+      break;
+    case 'ORDER_COMPLETED':
+    case 'ORDER_FAILED':
+      icon = (
+        <ShoppingCart
+          size={18}
+          className={
+            notification.type === 'ORDER_COMPLETED'
+              ? 'text-green-500'
+              : 'text-red-500'
+          }
+        />
+      );
+      if (
+        notification.relatedEntityType === 'Order' &&
+        notification.relatedEntityId
+      ) {
+        link = `/user/orders/${notification.relatedEntityId}`;
+      }
+      break;
+    case 'PAYOUT_PROCESSED':
+    case 'PAYOUT_FAILED':
+      icon = (
+        <DollarSign
+          size={18}
+          className={
+            notification.type === 'PAYOUT_PROCESSED'
+              ? 'text-green-500'
+              : 'text-red-500'
+          }
+        />
+      );
+      if (
+        notification.relatedEntityType === 'Payout' &&
+        notification.relatedEntityId
+      ) {
+        link = `/instructor/payouts`; // Hoặc chi tiết payout nếu có
+      }
+      break;
+    // Thêm các case khác
+    default:
+      icon = <BellRing size={18} className="text-primary" />;
+  }
+  // Gán link đã tạo vào notification object để dùng lại (nếu FE xử lý link)
+  // Hoặc API nên trả về link sẵn nếu có thể
+  notification.linkTo = link;
+  return { icon, link };
+};
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
+  onItemClick,
 }) => {
-  const { markAsRead, removeNotification } = useNotifications();
+  const navigate = useNavigate();
+  const { mutate: markAsRead, isPending: isMarkingRead } =
+    useMarkNotificationAsRead();
+  console.log('NotificationItem', notification);
+  const details = getNotificationDetails(notification);
 
   const handleClick = () => {
-    if (!notification.read) {
-      markAsRead(notification.id);
+    if (!notification.isRead && !isMarkingRead) {
+      markAsRead(notification.notificationId, {
+        onError: (err) => console.error('Failed to mark as read:', err),
+        // Không cần onSuccess vì optimistic update đã làm hoặc invalidate sẽ làm
+      });
     }
+    if (details.link) {
+      navigate(details.link);
+    }
+    onItemClick?.(); // Đóng dropdown
   };
 
-  const getIcon = () => {
-    switch (notification.variant) {
-      case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-      case 'destructive':
-        return <AlertTriangle className="h-5 w-5 text-destructive" />;
-      case 'info':
-        return <Info className="h-5 w-5 text-blue-500" />;
-      default:
-        return <Bell className="h-5 w-5 text-primary" />;
-    }
-  };
-
-  const content = (
-    <div
-      onClick={handleClick}
+  return (
+    <DropdownMenuItem
       className={cn(
-        'flex items-start p-3 gap-3 border-b last:border-b-0 cursor-pointer hover:bg-accent/50 transition-colors',
-        !notification.read && 'bg-accent/20'
+        'p-0 focus:bg-transparent' // Bỏ style focus mặc định của DropdownMenuItem
       )}
+      // Không dùng asChild với Link ở đây để dễ xử lý onClick hơn
+      onSelect={(e) => {
+        e.preventDefault(); // Ngăn dropdown tự đóng nếu không muốn
+        handleClick();
+      }}
     >
-      <div className="flex-shrink-0 mt-0.5">{getIcon()}</div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start">
-          <h4
+      <div
+        className={cn(
+          'flex items-start gap-3 w-full p-2.5 hover:bg-muted/80 dark:hover:bg-muted/20 rounded-md cursor-pointer transition-colors',
+          !notification.isRead &&
+            'bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/15'
+        )}
+      >
+        <div className="mt-0.5 shrink-0">{details.icon}</div>
+        <div className="flex-grow min-w-0">
+          <p
             className={cn(
-              'text-sm font-medium',
-              !notification.read && 'font-semibold'
+              'text-xs leading-relaxed',
+              !notification.isRead && 'font-semibold'
             )}
           >
-            {notification.title}
-          </h4>
-          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">
-            {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
-          </span>
+            {notification.message}
+          </p>
+          <p
+            className={cn(
+              'text-xxs text-muted-foreground mt-0.5',
+              !notification.isRead && 'font-medium'
+            )}
+          >
+            {formatDistanceToNowStrict(new Date(notification.createdAt), {
+              addSuffix: true,
+            })}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-          {notification.message}
-        </p>
+        {!notification.isRead && (
+          <div
+            className="w-2 h-2 bg-primary rounded-full self-center shrink-0 ml-2"
+            title="Unread"
+          ></div>
+        )}
       </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 flex-shrink-0 opacity-70 hover:opacity-100"
-        onClick={(e) => {
-          e.stopPropagation();
-          removeNotification(notification.id);
-        }}
-      >
-        <X className="h-4 w-4" />
-        <span className="sr-only">Remove</span>
-      </Button>
-    </div>
+    </DropdownMenuItem>
   );
-
-  if (notification.link) {
-    return (
-      <Link to={notification.link} className="block">
-        {content}
-      </Link>
-    );
-  }
-
-  return content;
 };
 
 export default NotificationItem;

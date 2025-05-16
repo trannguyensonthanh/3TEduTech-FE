@@ -1,16 +1,17 @@
 // src/services/review.service.ts
 import apiHelper from './apiHelper';
-
+export type IsoDateTimeString = string; // Dùng cho DATETIME2
+export type IsoDateString = string; // Dùng cho DATE
 export interface Review {
-  ReviewID: number;
-  CourseID: number;
-  AccountID: number;
-  Rating: number;
-  Comment?: string | null;
-  ReviewedAt: string; // ISO Date string
-  // Thông tin join
-  UserFullName?: string;
-  UserAvatar?: string | null;
+  reviewId: number;
+  courseId: number;
+  accountId: number;
+  rating: number; // 1-5
+  comment?: string | null;
+  reviewedAt: IsoDateTimeString;
+  // --- Dữ liệu join tiềm năng ---
+  userFullName?: string;
+  userAvatar?: string | null;
 }
 
 export interface ReviewListResponse {
@@ -39,6 +40,7 @@ export const createOrUpdateReview = async (
   courseId: number,
   data: CreateUpdateReviewData
 ): Promise<Review> => {
+  console.log('cc');
   return apiHelper.post(`/courses/${courseId}/reviews`, data);
 };
 
@@ -55,7 +57,7 @@ export const getMyReviewForCourse = async (
   courseId: number
 ): Promise<Review | null> => {
   // API trả về null nếu chưa có review
-  return apiHelper.get(`/courses/${courseId}/my-review`);
+  return apiHelper.get(`/courses/${courseId}/reviews/my-review`);
 };
 
 /** Xóa đánh giá */

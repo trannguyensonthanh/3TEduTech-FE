@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,8 +6,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface CourseInfoDialogProps {
   isOpen: boolean;
@@ -57,8 +57,8 @@ const CourseInfoDialog: React.FC<CourseInfoDialogProps> = ({
             <ul className="list-disc pl-5">
               {course.sections.map((section) => (
                 <li key={section.id}>
-                  {section.title} -{" "}
-                  {section.completed ? "Completed" : "In Progress"}
+                  {section.title} -{' '}
+                  {section.completed ? 'Completed' : 'In Progress'}
                 </li>
               ))}
             </ul>

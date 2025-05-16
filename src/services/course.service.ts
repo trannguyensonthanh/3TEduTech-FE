@@ -1,54 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/course.service.ts
-import { Section } from '@/hooks/useCourseCurriculum';
-import apiHelper, { fetchWithAuth } from './apiHelper';
 
-// --- Kiểu dữ liệu (Ví dụ - cần định nghĩa chi tiết hơn) ---
-// export interface Course {
-//   CourseID: number;
-//   CourseName: string;
-//   Slug: string;
-//   ShortDescription: string;
-//   FullDescription: string;
-//   Requirements?: string | null;
-//   LearningOutcomes?: string | null;
-//   ThumbnailUrl?: string | null;
-//   ThumbnailPublicId?: string | null; // Thêm nếu cần quản lý xóa
-//   IntroVideoUrl?: string | null;
-//   OriginalPrice: number;
-//   DiscountedPrice?: number | null;
-//   InstructorID: number;
-//   CategoryID: number;
-//   LevelID: number;
-//   Language: string;
-//   StatusID: string; // CourseStatus Enum
-//   PublishedAt?: string | null; // ISO Date string
-//   IsFeatured: boolean;
-//   CreatedAt: string; // ISO Date string
-//   UpdatedAt: string; // ISO Date string
-//   // Thông tin join (từ API response)
-//   CategoryName?: string;
-//   LevelName?: string;
-//   StatusName?: string;
-//   InstructorName?: string;
-//   InstructorAvatar?: string | null;
-//   AverageRating?: number | null;
-//   ReviewCount?: number;
-//   // Thông tin lồng nhau (từ API get detail)
-//   sections?: SectionWithLessons[];
-//   isEnrolled?: boolean;
-//   userProgress?: Record<
-//     number,
-//     { isCompleted: boolean; lastWatchedPosition: number | null }
-//   >;
-// }
+import { Section } from '@/services/section.service';
+import apiHelper, { fetchWithAuth } from './apiHelper';
+import { IsoDateTimeString, Lesson } from '@/services/lesson.service';
+
+export interface CourseListItem {
+  courseId: number;
+  courseName: string;
+  slug: string;
+  thumbnailUrl?: string | null;
+  originalPrice: number;
+  discountedPrice?: number | null;
+  language: string;
+  statusId: string;
+  isFeatured?: boolean;
+  bestSeller?: boolean; // Thêm từ mock data trước đó, giữ lại nếu API có thể trả về
+  averageRating?: number | null;
+  reviewCount?: number;
+  categoryName: string;
+  levelName: string;
+  instructorAccountId: number;
+  instructorName: string;
+  instructorAvatar?: string | null;
+  studentCount: number;
+  lessonsCount?: number;
+  totalDurationSeconds?: number;
+  lastUpdated?: IsoDateTimeString; // Thêm từ mock data trước đó, giữ lại nếu API có thể trả về
+  // Các trường 'hasAssignments', 'hasCertificate' nếu API trả về
+  hasCertificate?: boolean;
+}
 
 export interface Course {
   courseId: number;
   courseName: string;
   slug: string;
-  shortDescription: string;
-  fullDescription: string;
+  shortDescription?: string;
+  fullDescription?: string;
   requirements?: string | null;
   learningOutcomes?: string | null;
   thumbnailUrl?: string | null;
@@ -56,15 +44,15 @@ export interface Course {
   introVideoUrl?: string | null;
   originalPrice?: number;
   discountedPrice?: number;
-  instructorId: number;
-  categoryId: number;
-  levelId: number;
-  language: string;
-  statusId: string; // CourseStatus Enum
+  instructorId?: number;
+  categoryId?: number;
+  levelId?: number;
+  language?: string;
+  statusId?: string; // CourseStatus Enum
   publishedAt?: string | null; // ISO Date string
-  isFeatured: 0 | 1 | null;
-  createdAt: string; // ISO Date string
-  updatedAt: string; // ISO Date string
+  isFeatured?: 0 | 1 | null;
+  createdAt?: string; // ISO Date string
+  updatedAt?: string; // ISO Date string
 
   // Thông tin join (từ API response)
   categoryName?: string;
@@ -76,54 +64,77 @@ export interface Course {
   reviewCount?: number;
   studentCount?: number; // Thêm nếu cần
   // Thông tin lồng nhau (từ API get detail)
-  sections?: SectionWithLessons[];
+  sections?: SectionWithLessons[] | Section[]; // Dùng SectionWithLessons nếu có
   isEnrolled?: boolean;
   userProgress?: Record<
     number,
     { isCompleted: boolean; lastWatchedPosition: number | null }
   >;
   instructorAccountId?: number; // Thêm nếu cần
+  totalDuration?: number; // Tổng thời gian của tất cả các bài học trong khóa học
+  totalLessons?: number; // Tổng số bài học trong khóa học
 }
 
-// export interface SectionWithLessons {
-//   SectionID: number;
-//   SectionName: string;
-//   SectionOrder: number;
-//   Description?: string | null;
-//   lessons: Lesson[]; // Lesson type cần định nghĩa ở lesson.service
-// }
+export enum CourseStatusId {
+  DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
+  PUBLISHED = 'PUBLISHED',
+  REJECTED = 'REJECTED',
+  ARCHIVED = 'ARCHIVED', // Bổ sung nếu có
+}
+export interface AdminCourseView extends Course {
+  // Kế thừa từ Course type cơ bản nếu có
+  courseId: number;
+  courseName: string;
+  slug: string;
+  instructorName?: string;
+  instructorAvatar?: string | null;
+  categoryName?: string;
+  categoryId: number;
+  levelId: number;
+  levelName?: string;
+  statusId: CourseStatusId | string;
+  thumbnailUrl?: string | null;
+  introVideoUrl?: string | null; // URL gốc (có thể cần signed URL nếu private)
+  originalPrice?: number;
+  discountedPrice?: number | null;
+  sections?: Section[] | SectionWithLessons[]; // Bao gồm toàn bộ curriculum
+  // Thông tin approval request liên quan
+  approvalRequestId?: number; // ID của request đang pending
+  submittedAt?: IsoDateTimeString; // Thời điểm gửi duyệt
+  instructorNotes?: string | null; // Ghi chú của instructor khi gửi
+  // Thêm các trường khác nếu API trả về
+  shortDescription?: string;
+  fullDescription?: string;
+  requirements?: string;
+  learningOutcomes?: string;
+  language?: string;
+  isFeatured?: 0 | 1 | null;
+  averageRating?: number;
+  reviewCount?: number;
+}
+
 export interface SectionWithLessons {
-  sectionId: number;
+  sectionId: number | string;
   sectionName: string;
   sectionOrder: number;
   description?: string | null;
   lessons: Lesson[]; // dùng đúng Lesson được import
 }
-
+export type ApprovalStatusType = 'PENDING' | 'APPROVED' | 'REJECTED'; // Có thể thêm các trạng thái khác nếu cần
 // export interface Lesson {
 //   // Định nghĩa tạm ở đây, nên có ở lesson.service
-//   LessonID: number;
-//   LessonName: string;
-//   LessonType: string; // LessonType Enum
-//   IsFreePreview: boolean;
-//   VideoDurationSeconds?: number | null;
+//   lessonId: number;
+//   lessonName: string;
+//   lessonType: string; // LessonType Enum
+//   isFreePreview: boolean;
+//   videoDurationSeconds?: number | null;
 //   // Các trường nội dung (VideoUrl, TextContent) có thể bị ẩn
 //   [key: string]: any;
 // }
 
-export interface Lesson {
-  // Định nghĩa tạm ở đây, nên có ở lesson.service
-  lessonId: number;
-  lessonName: string;
-  lessonType: string; // LessonType Enum
-  isFreePreview: boolean;
-  videoDurationSeconds?: number | null;
-  // Các trường nội dung (VideoUrl, TextContent) có thể bị ẩn
-  [key: string]: any;
-}
-
 export interface CourseListResponse {
-  courses: Partial<Course>[]; // Danh sách course với thông tin rút gọn
+  courses: CourseListItem[]; // Danh sách course với thông tin rút gọn
   total: number;
   page: number;
   limit: number;
@@ -133,7 +144,7 @@ export interface CourseListResponse {
 export interface CourseQueryParams {
   page?: number;
   limit?: number; // 0 = all
-  search?: string;
+  searchTerm?: string;
   categoryId?: number;
   levelId?: number;
   instructorId?: number;
@@ -186,12 +197,12 @@ export interface ToggleFeatureData {
   isFeatured: boolean;
 }
 
-export interface ApprovalRequest {
-  RequestID: number;
-  CourseID: number;
-  // Thêm các trường khác nếu cần
-  [key: string]: any;
-}
+// export interface ApprovalRequest {
+//   RequestID: number;
+//   CourseID: number;
+//   // Thêm các trường khác nếu cần
+//   [key: string]: any;
+// }
 
 // --- Interface MỚI cho Sync Curriculum ---
 export interface SyncCurriculumPayload {
@@ -212,6 +223,45 @@ export interface OrderItemData {
 
 export interface BulkReorderResponse {
   message: string;
+}
+
+// Interface cho một bản ghi Approval Request trả về từ API
+export interface ApprovalRequestListItem {
+  requestId: number;
+  status: string; // ApprovalStatus Enum
+  requestType: string; // ApprovalRequestType Enum
+  requestDate: string; // CreatedAt của request
+  reviewedAt?: string | null;
+  instructorNotes?: string | null;
+  adminNotes?: string | null;
+  courseId: number;
+  courseName: string;
+  courseSlug: string;
+  courseCurrentStatus?: string; // Trạng thái hiện tại của Course (tùy chọn)
+  instructorId: number;
+  instructorName: string;
+  adminId?: number | null;
+  adminName?: string | null;
+  // Thêm các trường khác nếu API trả về
+}
+
+// Interface cho response danh sách Approval Requests
+export interface ApprovalRequestListResponse {
+  requests: ApprovalRequestListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// Interface cho query params khi lấy danh sách Approval Requests
+export interface ApprovalRequestQueryParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string; // e.g., 'CreatedAt:desc', 'ReviewedAt:asc'
+  status?: ApprovalStatusType | null; // 'PENDING', 'APPROVED', 'REJECTED'
+  instructorId?: number;
+  courseId?: number;
 }
 
 // --- Hàm gọi API ---
@@ -293,7 +343,7 @@ export const updateCourseIntroVideo = async (
 export const submitCourseForApproval = async (
   courseId: number,
   data?: SubmitCourseData
-): Promise<{ message: string; request: ApprovalRequest }> => {
+): Promise<{ message: string; request: ApprovalRequestListItem }> => {
   return apiHelper.post(`/courses/${courseId}/submit`, data || {});
 };
 
@@ -301,7 +351,7 @@ export const submitCourseForApproval = async (
 export const reviewCourseApproval = async (
   requestId: number,
   data: ReviewCourseData
-): Promise<{ message: string; request: ApprovalRequest }> => {
+): Promise<{ message: string; request: ApprovalRequestListItem }> => {
   // Lưu ý đường dẫn API có thể là /approval-requests/:requestId/review
   // return apiHelper.patch(`/courses/reviews/${requestId}`, data); // Đường dẫn cũ
   return apiHelper.patch(`/approval-requests/${requestId}/review`, data); // Đường dẫn đề xuất
@@ -360,4 +410,30 @@ export const updateLessonsOrderApi = async (
     `/sections/${sectionId}/lessons/order`,
     orderedLessons
   );
+};
+
+// Interface cho data khi review (đã có)
+export interface ReviewCourseData {
+  decision: 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION';
+  adminNotes?: string;
+}
+
+// /** Admin: Lấy danh sách khóa học đang chờ duyệt */
+// export const getPendingCoursesForAdmin = async (
+//   params?: PendingCourseQueryParams
+// ): Promise<PendingCourseListResponse> => {
+//   return apiHelper.get('/courses/reviews/pending-approval', undefined, params);
+// };
+/** Admin: Lấy danh sách các yêu cầu phê duyệt khóa học */
+export const getApprovalRequests = async (
+  params?: ApprovalRequestQueryParams
+): Promise<ApprovalRequestListResponse> => {
+  return apiHelper.get('/approval-requests', undefined, params);
+};
+
+/** Admin: Lấy chi tiết một yêu cầu phê duyệt */
+export const getApprovalRequestDetails = async (
+  requestId: number
+): Promise<ApprovalRequestListItem> => {
+  return apiHelper.get(`/approval-requests/${requestId}`);
 };

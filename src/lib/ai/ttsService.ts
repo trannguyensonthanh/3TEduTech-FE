@@ -1,10 +1,21 @@
+/**
+ * Hủy tất cả các tác vụ phát âm đang chờ hoặc đang diễn ra.
+ */
+export const cancelSpeech = (): void => {
+  if ('speechSynthesis' in window) {
+    console.log('TTS: Cancelling all speech synthesis utterances.');
+    window.speechSynthesis.cancel();
+  }
+};
+
 export const speakText = (
   text: string,
   onStart?: () => void,
-  onEnd?: () => void
+  onEnd?: () => void,
+  onError?: (event: SpeechSynthesisErrorEvent) => void // Tham số thứ 4
 ): void => {
-  if (!("speechSynthesis" in window)) {
-    console.error("Trình duyệt này không hỗ trợ Web Speech API.");
+  if (!('speechSynthesis' in window)) {
+    console.error('Trình duyệt này không hỗ trợ Web Speech API.');
     onEnd?.();
     return;
   }
@@ -16,7 +27,7 @@ export const speakText = (
   try {
     const voices = window.speechSynthesis.getVoices();
     console.log(
-      "TTS: Checking available voices again:",
+      'TTS: Checking available voices again:',
       voices.map((v) => ({ name: v.name, lang: v.lang, default: v.default }))
     ); // Log tên, lang, default
 
@@ -24,19 +35,19 @@ export const speakText = (
 
     // 1. Ưu tiên tìm giọng có lang 'vi-VN' VÀ chứa 'Natural' trong tên (thường chất lượng cao)
     selectedVoice = voices.find(
-      (voice) => voice.lang === "vi-VN" && voice.name.includes("Natural")
+      (voice) => voice.lang === 'vi-VN' && voice.name.includes('Natural')
     );
 
     // 2. Nếu không có 'Natural', tìm bất kỳ giọng 'vi-VN' nào
     if (!selectedVoice) {
-      selectedVoice = voices.find((voice) => voice.lang === "vi-VN");
+      selectedVoice = voices.find((voice) => voice.lang === 'vi-VN');
     }
 
     // 3. Nếu vẫn không có vi-VN, dùng giọng mặc định của trình duyệt
     if (!selectedVoice) {
       selectedVoice = voices.find((voice) => voice.default);
       console.warn(
-        "TTS: Không tìm thấy giọng vi-VN phù hợp. Sử dụng giọng mặc định hệ thống."
+        'TTS: Không tìm thấy giọng vi-VN phù hợp. Sử dụng giọng mặc định hệ thống.'
       );
     }
 
@@ -44,7 +55,7 @@ export const speakText = (
     if (!selectedVoice && voices.length > 0) {
       selectedVoice = voices[0];
       console.warn(
-        "TTS: Không tìm thấy giọng vi-VN hoặc mặc định. Sử dụng giọng đầu tiên trong danh sách."
+        'TTS: Không tìm thấy giọng vi-VN hoặc mặc định. Sử dụng giọng đầu tiên trong danh sách.'
       );
     }
 
@@ -56,11 +67,11 @@ export const speakText = (
         `TTS: Using selected voice: "${selectedVoice.name}" (${selectedVoice.lang})`
       );
     } else {
-      console.error("TTS: Không tìm thấy bất kỳ giọng nói nào!");
+      console.error('TTS: Không tìm thấy bất kỳ giọng nói nào!');
       // Không đặt lang nếu không có giọng nào
     }
   } catch (e) {
-    console.error("TTS: Lỗi khi lấy/đặt giọng nói:", e);
+    console.error('TTS: Lỗi khi lấy/đặt giọng nói:', e);
   }
 
   // ... (pitch, rate, volume, callbacks, speak) ...
@@ -69,37 +80,37 @@ export const speakText = (
   utterance.volume = 1;
   // 5. Gán các sự kiện callback
   utterance.onstart = () => {
-    console.log("TTS: Bắt đầu nói...");
+    console.log('TTS: Bắt đầu nói...');
     onStart?.(); // Gọi callback onStart
   };
 
   utterance.onend = () => {
-    console.log("TTS: Nói xong.");
+    console.log('TTS: Nói xong.');
     onEnd?.(); // Gọi callback onEnd
   };
 
   utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
     // Thêm type để lấy chi tiết
-    console.error("TTS: Lỗi khi phát giọng nói!");
-    console.error(" - Error Code:", event.error); // Mã lỗi (quan trọng!)
-    console.error(" - Utterance Text:", event.utterance.text);
-    console.error(" - Utterance Lang:", event.utterance.lang);
+    console.error('TTS: Lỗi khi phát giọng nói!');
+    console.error(' - Error Code:', event.error); // Mã lỗi (quan trọng!)
+    console.error(' - Utterance Text:', event.utterance.text);
+    console.error(' - Utterance Lang:', event.utterance.lang);
     console.error(
-      " - Utterance Voice:",
-      event.utterance.voice ? event.utterance.voice.name : "Default"
+      ' - Utterance Voice:',
+      event.utterance.voice ? event.utterance.voice.name : 'Default'
     );
-    console.error(" - Event Object:", event); // Log toàn bộ event
+    console.error(' - Event Object:', event); // Log toàn bộ event
     onEnd?.();
   };
 
   // 6. Thực hiện nói
-  console.log("TTS: Yêu cầu nói:", text);
+  console.log('TTS: Yêu cầu nói:', text);
   window.speechSynthesis.speak(utterance);
 };
 
 // (Tùy chọn) Hàm lấy danh sách giọng nói có sẵn
 export const getAvailableVoices = (): SpeechSynthesisVoice[] => {
-  if (!("speechSynthesis" in window)) {
+  if (!('speechSynthesis' in window)) {
     return [];
   }
   // Lưu ý: getVoices() đôi khi trả về danh sách rỗng lần đầu
@@ -117,11 +128,11 @@ export const getAvailableVoices = (): SpeechSynthesisVoice[] => {
 // window.speechSynthesis.speak(utterance): Bắt đầu quá trình phát âm.
 // Gọi getVoices sớm để khởi tạo (có thể giúp ích)
 if (
-  "speechSynthesis" in window &&
+  'speechSynthesis' in window &&
   window.speechSynthesis.onvoiceschanged !== undefined
 ) {
   window.speechSynthesis.onvoiceschanged = () => {
-    console.log("TTS Voices have changed/loaded.");
+    console.log('TTS Voices have changed/loaded.');
     // Có thể gọi getAvailableVoices() ở đây nếu cần cập nhật danh sách động
   };
 }

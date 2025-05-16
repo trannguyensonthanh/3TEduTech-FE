@@ -125,7 +125,7 @@ const SkillsManagement: React.FC = () => {
   const { data, isLoading, isError, refetch } = useSkills({
     page: currentPage,
     limit: itemsPerPage,
-    search: searchTerm,
+    searchTerm: searchTerm,
   });
 
   const skills = data?.skills || [];

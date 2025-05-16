@@ -1,13 +1,6 @@
 // src/services/skill.service.ts
 import apiHelper from './apiHelper';
 
-// export interface Skill {
-//   SkillID: number;
-//   SkillName: string;
-//   Description?: string | null;
-//   CreatedAt?: string; // Optional depending on API response
-//   UpdatedAt?: string; // Optional
-// }
 export interface Skill {
   skillId: number;
   skillName: string;
@@ -27,7 +20,7 @@ export interface SkillListData {
 export interface SkillQueryParams {
   page?: number;
   limit?: number; // 0 = all
-  search?: string;
+  searchTerm?: string;
 }
 
 export interface CreateSkillData {

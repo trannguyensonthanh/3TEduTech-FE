@@ -2,13 +2,13 @@
 import apiHelper from './apiHelper';
 
 export interface LessonProgress {
-  ProgressID: number;
-  AccountID: number;
-  LessonID: number;
-  IsCompleted: boolean;
-  CompletedAt?: string | null; // ISO Date string
-  LastWatchedPosition?: number | null; // seconds
-  LastWatchedAt?: string | null; // ISO Date string
+  progressId?: number;
+  accountId?: number;
+  lessonId?: number;
+  isCompleted?: boolean;
+  completedAt?: string | null; // ISO Date string
+  lastWatchedPosition?: number | null; // seconds
+  lastWatchedAt?: string | null; // ISO Date string
 }
 
 export interface CourseProgressResponse {

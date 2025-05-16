@@ -2,19 +2,23 @@
 import apiHelper from './apiHelper';
 
 export interface Enrollment {
-  EnrollmentID: number;
-  AccountID: number;
-  CourseID: number;
-  EnrolledAt: string; // ISO Date string
-  PurchasePrice: number;
+  enrollmentId: number;
+  accountId: number;
+  courseId: number;
+  enrolledAt: string; // ISO Date string
+  purchasePrice: number;
   // Thông tin join (từ API response)
-  CourseName?: string;
-  Slug?: string;
-  ThumbnailUrl?: string | null;
-  ShortDescription?: string;
-  InstructorName?: string;
+  courseName?: string;
+  slug?: string;
+  thumbnailUrl?: string | null;
+  shortDescription?: string;
+  instructorName?: string;
   // Thêm progress nếu API trả về
+  // progressPercentage?: number;
+  completedLessons?: number;
+  totalLessons?: number;
   progressPercentage?: number;
+  completionDate?: string | null; // Ngày hoàn thành khóa học
 }
 
 export interface EnrollmentListResponse {

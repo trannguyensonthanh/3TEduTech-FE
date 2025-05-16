@@ -1,22 +1,23 @@
 // src/services/promotion.service.ts
+import { ValidatePromoResponse } from '@/types/cart.types';
 import apiHelper from './apiHelper';
 
 export interface Promotion {
-  PromotionID: number;
-  DiscountCode: string;
-  PromotionName: string;
-  Description?: string | null;
-  DiscountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
-  DiscountValue: number;
-  MinOrderValue?: number | null;
-  MaxDiscountAmount?: number | null;
-  StartDate: string; // ISO Date string
-  EndDate: string; // ISO Date string
-  MaxUsageLimit?: number | null;
-  UsageCount: number;
-  Status: string; // PromotionStatus Enum
-  CreatedAt: string;
-  UpdatedAt: string;
+  promotionId: number;
+  discountCode: string;
+  promotionName: string;
+  description?: string | null;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+  minOrderValue?: number | null;
+  maxDiscountAmount?: number | null;
+  startDate: string; // ISO Date string
+  endDate: string; // ISO Date string
+  maxUsageLimit?: number | null;
+  usageCount: number;
+  status: string; // PromotionStatus Enum
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PromotionListResponse {
@@ -60,13 +61,6 @@ export interface UpdatePromotionData {
   endDate?: string;
   maxUsageLimit?: number | null;
   status?: string;
-}
-
-export interface ValidatePromoResponse {
-  isValid: boolean;
-  discountAmount: number;
-  promotionId: number;
-  message: string;
 }
 
 // --- Admin APIs ---

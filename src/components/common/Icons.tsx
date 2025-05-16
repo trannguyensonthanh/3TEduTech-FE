@@ -71,6 +71,7 @@ import {
   Play,
   Pause,
   Printer,
+  GraduationCap,
 } from 'lucide-react';
 import { Laptop as Google } from 'lucide-react';
 
@@ -80,6 +81,7 @@ export type Icon = React.ForwardRefExoticComponent<
 >;
 
 export const Icons = {
+  graduationCap: GraduationCap,
   logo: Zap,
   close: X,
   spinner: Loader2,

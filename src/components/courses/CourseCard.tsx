@@ -1,8 +1,10 @@
-import { Link } from "react-router-dom";
-import { Icons } from "../common/Icons";
-import { Button } from "@/components/ui/button";
-import { useCart } from "@/contexts/CartContext";
-import { Badge } from "@/components/ui/badge";
+import { Link } from 'react-router-dom';
+import { Icons } from '../common/Icons';
+import { Button } from '@/components/ui/button';
+import { useCart } from '@/contexts/CartContext';
+import { Badge } from '@/components/ui/badge';
+
+// =============> hiện tại ko dùng <=====================
 
 export interface CourseType {
   id: number;
@@ -87,8 +89,8 @@ const CourseCard = ({ course }: CourseCardProps) => {
                 key={i}
                 className={`h-4 w-4 ${
                   i < Math.floor(course.rating)
-                    ? "text-yellow-400"
-                    : "text-gray-300 dark:text-gray-600"
+                    ? 'text-yellow-400'
+                    : 'text-gray-300 dark:text-gray-600'
                 }`}
               />
             ))}

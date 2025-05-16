@@ -13,20 +13,20 @@ export interface WithdrawalRequestData {
 }
 
 export interface WithdrawalRequest {
-  RequestID: number;
-  InstructorID: number;
-  RequestedAmount: number;
-  RequestedCurrencyID: string;
-  PaymentMethodID: string;
-  PayoutDetailsSnapshot: string; // JSON string
-  Status: string; // WithdrawalStatus Enum
-  InstructorNotes?: string | null;
-  AdminID?: number | null;
-  AdminNotes?: string | null;
-  ProcessedAt?: string | null; // ISO Date string
-  PayoutID?: number | null;
-  CreatedAt: string; // ISO Date string
-  UpdatedAt: string; // ISO Date string
+  requestId: number;
+  instructorId: number;
+  requestedAmount: number;
+  requestedCurrencyId: string;
+  paymentMethodId: string;
+  payoutDetailsSnapshot: string; // JSON string
+  status: string; // WithdrawalStatus Enum
+  instructorNotes?: string | null;
+  adminId?: number | null;
+  adminNotes?: string | null;
+  processedAt?: string | null; // ISO Date string
+  payoutId?: number | null;
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
 }
 
 export interface ReviewWithdrawalData {

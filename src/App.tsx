@@ -7,7 +7,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import AppRouter from './router';
 import { AuthProvider } from '@/contexts/AuthContext';
-
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -18,15 +18,14 @@ const App = () => {
         <TooltipProvider>
           <ThemeProvider>
             <CartProvider>
-              <NotificationProvider>
-                <Toaster />
-                <Sonner />
-                <AppRouter />
-              </NotificationProvider>
+              <Toaster />
+              <Sonner />
+              <AppRouter />
             </CartProvider>
           </ThemeProvider>
         </TooltipProvider>
       </AuthProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 };

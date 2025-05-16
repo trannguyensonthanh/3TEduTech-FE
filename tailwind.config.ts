@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss';
-
+import { fontFamily } from 'tailwindcss/defaultTheme';
 export default {
   darkMode: ['class'],
   content: [
@@ -118,6 +118,12 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         float: 'float 5s ease-in-out infinite',
+      },
+      fontFamily: {
+        sans: ['Open Sans', ...fontFamily.sans],
+        serif: ['Merriweather', ...fontFamily.serif],
+        script: ['Great Vibes', 'cursive'],
+        lato: ['Lato', 'sans-serif'], // Thêm Lato nếu dùng nhiều
       },
     },
   },

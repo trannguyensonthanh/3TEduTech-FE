@@ -3,6 +3,9 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+   --learning-page-header-height: 4rem; /* 64px */
+  --lesson-tabs-list-height: 2.75rem; /* 44px */
+  --lesson-navigation-height: 4.5rem; /* Chiều cao của dải nút Prev/Next/MarkComplete */
 }
 
 .logo {

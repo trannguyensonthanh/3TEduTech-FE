@@ -74,8 +74,8 @@ export const useCreateOrderFromCart = (
       // Invalidate danh sách đơn hàng
       queryClient.invalidateQueries({ queryKey: orderKeys.myLists() });
       // Có thể set cache cho đơn hàng mới tạo
-      queryClient.setQueryData(orderKeys.myDetail(data.OrderID), data);
-      console.log(`Order ${data.OrderID} created successfully.`);
+      queryClient.setQueryData(orderKeys.myDetail(data.orderId), data);
+      console.log(`Order ${data.orderId} created successfully.`);
       // toast.success('Tạo đơn hàng thành công!');
       // Thường sẽ chuyển hướng đến trang thanh toán hoặc chi tiết đơn hàng
     },

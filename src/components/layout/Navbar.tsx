@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -13,14 +14,14 @@ import {
 import { Icons } from '../common/Icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import AuthModal from '../auth/AuthModal';
-import { BookOpen, Moon, ShoppingCart, Sun, User } from 'lucide-react';
+import { BookOpen, Loader2, Moon, ShoppingCart, Sun, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useCart } from '@/contexts/CartContext';
 import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLogoutMutation } from '@/hooks/queries/auth.queries';
-
+import { useMyCart } from '@/hooks/queries/cart.queries';
+import CartDropdown from './CartDropdown';
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,7 +29,8 @@ const Navbar = () => {
   const [defaultAuthTab, setDefaultAuthTab] = useState<'login' | 'signup'>(
     'login'
   );
-  const { count: cartItemCount } = useCart();
+  const { data: cartData } = useMyCart();
+  const cartItemCount = cartData?.items?.length || 0;
   const [isDarkMode, setIsDarkMode] = useState(false);
   const logoutMutation = useLogoutMutation({
     onSuccess: () => {
@@ -125,7 +127,6 @@ const Navbar = () => {
                 className="pl-10 w-[200px] lg:w-[300px]"
               />
             </div>
-
             <Button
               variant="ghost"
               size="icon"
@@ -138,8 +139,9 @@ const Navbar = () => {
                 <Moon className="h-5 w-5" />
               )}
             </Button>
-
-            <Button asChild variant="ghost" size="icon" className="relative">
+            {/* Cart Dropdown */}
+            {userData && <CartDropdown />}{' '}
+            {/* <Button asChild variant="ghost" size="icon" className="relative">
               <Link to="/cart">
                 <ShoppingCart className="h-5 w-5" />
                 {cartItemCount > 0 && (
@@ -148,8 +150,7 @@ const Navbar = () => {
                   </Badge>
                 )}
               </Link>
-            </Button>
-
+            </Button> */}
             {userData ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -196,6 +197,9 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/orders">Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/user/notifications">Notifications</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/certificates">Certificates</Link>

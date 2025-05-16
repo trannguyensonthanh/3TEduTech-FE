@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/queries/discussion.queries.ts
 import {
   useQuery,
@@ -5,6 +6,10 @@ import {
   UseQueryOptions,
   UseMutationOptions,
   useQueryClient,
+  InfiniteData,
+  useInfiniteQuery,
+  QueryFunctionContext,
+  UseInfiniteQueryOptions,
 } from '@tanstack/react-query';
 import {
   createDiscussionThread,
@@ -28,7 +33,7 @@ import {
 } from '@/services/discussion.service';
 
 // Query Key Factory
-const discussionKeys = {
+export const discussionKeys = {
   all: ['discussions'] as const,
   threads: (params?: ThreadQueryParams) =>
     [...discussionKeys.all, 'threads', params || {}] as const,
@@ -42,20 +47,58 @@ const discussionKeys = {
 
 // --- Thread Queries ---
 
-/** Hook lấy danh sách threads */
-export const useDiscussionThreads = (
-  params: ThreadQueryParams,
+/**
+ * Hook lấy danh sách threads với infinite scrolling.
+ * @param params - Omit 'page'.
+ * @param options - React Query options cho useInfiniteQuery.
+ */
+export const useInfiniteDiscussionThreads = (
+  params: Omit<ThreadQueryParams, 'page'>,
   options?: Omit<
-    UseQueryOptions<ThreadListResponse, Error>,
-    'queryKey' | 'queryFn'
+    // Sửa ở đây: Type argument cho UseInfiniteQueryOptions
+    UseInfiniteQueryOptions<
+      ThreadListResponse, // TQueryFnData: Kiểu dữ liệu trả về của queryFn cho MỘT page
+      Error, // TError
+      InfiniteData<ThreadListResponse>, // TData: Kiểu dữ liệu của `data` (data.pages, data.pageParams)
+      ThreadListResponse, // TQueryData: Kiểu dữ liệu của queryFn (giống TQueryFnData)
+      ReadonlyArray<string | Record<string, any> | undefined>, // TQueryKey
+      number | undefined // TPageParam: Kiểu của pageParam (ví dụ: số trang tiếp theo)
+    >,
+    'queryKey' | 'queryFn' | 'getNextPageParam' | 'initialPageParam' // Các key đã được định nghĩa bên trong
   >
 ) => {
   const queryKey = discussionKeys.threads(params);
-  return useQuery<ThreadListResponse, Error>({
+  const defaultLimit = params.limit || 5;
+
+  return useInfiniteQuery<
+    ThreadListResponse, // TQueryFnData
+    Error, // TError
+    InfiniteData<ThreadListResponse>, // TData
+    ReadonlyArray<string | Record<string, any> | undefined>, // TQueryKey
+    number | undefined // TPageParam
+  >({
     queryKey: queryKey,
-    queryFn: () => getDiscussionThreads(params),
-    enabled: !!params.courseId || !!params.lessonId, // Cần có filter
-    staleTime: 5000, // Adjust the stale time as needed
+    queryFn: async ({
+      pageParam = 1,
+    }: QueryFunctionContext<
+      ReadonlyArray<string | Record<string, any> | undefined>,
+      number | undefined
+    >) => {
+      return getDiscussionThreads({
+        ...params,
+        page: pageParam,
+        limit: defaultLimit,
+      });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.page < lastPage.totalPages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    enabled: !!params.courseId || !!params.lessonId,
+    staleTime: 1000 * 60 * 1,
     ...options,
   });
 };
@@ -68,15 +111,16 @@ export const useCreateDiscussionThread = (
 ) => {
   const queryClient = useQueryClient();
   return useMutation<Thread, Error, CreateThreadData>({
-    mutationFn: createDiscussionThread,
+    mutationFn: (data: CreateThreadData) =>
+      createDiscussionThread(data.lessonId, data),
     onSuccess: (data) => {
       // Invalidate danh sách thread của course/lesson tương ứng
       queryClient.invalidateQueries({
-        queryKey: discussionKeys.threads({ courseId: data.CourseID }),
+        queryKey: discussionKeys.threads({ courseId: data.courseId }),
       });
-      if (data.LessonID) {
+      if (data.lessonId) {
         queryClient.invalidateQueries({
-          queryKey: discussionKeys.threads({ lessonId: data.LessonID }),
+          queryKey: discussionKeys.threads({ lessonId: data.lessonId }),
         });
       }
       console.log('Discussion thread created.');
@@ -108,12 +152,12 @@ export const useUpdateDiscussionThread = (
     onSuccess: (updatedThread) => {
       // Invalidate danh sách thread liên quan
       queryClient.invalidateQueries({
-        queryKey: discussionKeys.threads({ courseId: updatedThread.CourseID }),
+        queryKey: discussionKeys.threads({ courseId: updatedThread.courseId }),
       });
-      if (updatedThread.LessonID) {
+      if (updatedThread.lessonId) {
         queryClient.invalidateQueries({
           queryKey: discussionKeys.threads({
-            lessonId: updatedThread.LessonID,
+            lessonId: updatedThread.lessonId,
           }),
         });
       }
@@ -159,19 +203,57 @@ export const useDeleteDiscussionThread = (
 // --- Post Queries ---
 
 /** Hook lấy danh sách posts của thread */
-export const useDiscussionPosts = (
-  params: PostQueryParams,
+/**
+ * Hook lấy danh sách posts của một thread với infinite scrolling.
+ * @param params - Omit 'page'. Requires 'threadId'.
+ * @param options - React Query options.
+ */
+export const useInfiniteDiscussionPosts = (
+  params: Omit<PostQueryParams, 'page'>,
   options?: Omit<
-    UseQueryOptions<PostListResponse, Error>,
-    'queryKey' | 'queryFn'
+    UseInfiniteQueryOptions<
+      PostListResponse,
+      Error,
+      InfiniteData<PostListResponse>,
+      PostListResponse,
+      ReadonlyArray<string | Record<string, any> | undefined>,
+      number | undefined
+    >,
+    'queryKey' | 'queryFn' | 'getNextPageParam' | 'initialPageParam'
   >
 ) => {
   const queryKey = discussionKeys.posts(params);
-  return useQuery<PostListResponse, Error>({
+  const defaultLimit = params.limit || 10;
+
+  return useInfiniteQuery<
+    PostListResponse,
+    Error,
+    InfiniteData<PostListResponse>,
+    ReadonlyArray<string | Record<string, any> | undefined>,
+    number | undefined
+  >({
     queryKey: queryKey,
-    queryFn: () => getDiscussionPosts(params),
+    queryFn: async ({
+      pageParam = 1,
+    }: QueryFunctionContext<
+      ReadonlyArray<string | Record<string, any> | undefined>,
+      number | undefined
+    >) => {
+      return getDiscussionPosts(params.threadId, {
+        ...params,
+        page: pageParam,
+        limit: defaultLimit,
+      });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.page < lastPage.totalPages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
     enabled: !!params.threadId,
-    placeholderData: undefined,
+    staleTime: 1000 * 30,
     ...options,
   });
 };
@@ -221,7 +303,7 @@ export const useUpdateDiscussionPost = (
     onSuccess: (updatedPost) => {
       // Invalidate danh sách posts của thread chứa post này
       queryClient.invalidateQueries({
-        queryKey: discussionKeys.posts({ threadId: updatedPost.ThreadID }),
+        queryKey: discussionKeys.posts({ threadId: updatedPost.threadId }),
       });
       // Cập nhật cache chi tiết post nếu có
       console.log('Discussion post updated.');

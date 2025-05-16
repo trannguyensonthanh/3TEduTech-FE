@@ -93,7 +93,7 @@ export const useUpdateSkill = (
     mutationFn: ({ skillId, data }) => updateSkill(skillId, data),
     onSuccess: (updatedSkill) => {
       queryClient.setQueryData(
-        skillKeys.detail(updatedSkill.SkillID),
+        skillKeys.detail(updatedSkill.skillId),
         updatedSkill
       );
       queryClient.invalidateQueries({ queryKey: skillKeys.lists() });

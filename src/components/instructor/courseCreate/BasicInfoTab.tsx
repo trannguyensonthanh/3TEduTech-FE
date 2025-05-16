@@ -37,7 +37,7 @@ interface BasicInfoTabProps {
   }>;
   mockCategories: { categoryId: number; categoryName: string }[];
   mockLevels: { levelId: number; levelName: string }[];
-  mockLanguages: { id: number; name: string }[];
+  mockLanguages: { languageCode: string; languageName: string }[];
   handleTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -221,8 +221,11 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                   </FormControl>
                   <SelectContent>
                     {mockLanguages.map((language) => (
-                      <SelectItem key={language.id} value={language.name}>
-                        {language.name}
+                      <SelectItem
+                        key={language.languageCode}
+                        value={language.languageCode}
+                      >
+                        {language.languageName}
                       </SelectItem>
                     ))}
                   </SelectContent>

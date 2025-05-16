@@ -1,15 +1,6 @@
 // src/services/category.service.ts
 import apiHelper from './apiHelper';
 
-// export interface Category {
-//   CategoryID: number;
-//   CategoryName: string;
-//   Slug: string;
-//   Description?: string | null;
-//   IconUrl?: string | null;
-//   CreatedAt: string;
-//   UpdatedAt: string;
-// }
 export interface Category {
   categoryId: number;
   categoryName: string;
@@ -31,7 +22,7 @@ export interface CategoryListData {
 export interface CategoryQueryParams {
   page?: number;
   limit?: number; // 0 = all
-  search?: string;
+  searchTerm?: string;
 }
 
 export interface CreateCategoryData {

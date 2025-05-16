@@ -16,88 +16,95 @@ import MediaTab from '@/components/instructor/courseCreate/MediaTab';
 import CurriculumTab from '@/components/instructor/courseCreate/CurriculumTab';
 import PricingTab from '@/components/instructor/courseCreate/PricingTab';
 import SectionDialog from '@/components/instructor/courseCreate/SectionDialog';
-
+import { useQueryClient } from '@tanstack/react-query';
 // Import Hooks and Types
-import {
-  useCourseCurriculum,
-  Section,
-  Lesson,
-  LessonType,
-} from '@/hooks/useCourseCurriculum';
+import { useCourseCurriculum } from '@/hooks/useCourseCurriculum';
 import { useCategories } from '@/hooks/queries/category.queries';
 import { useLevels } from '@/hooks/queries/level.queries';
+import { useDeleteSection } from '@/hooks/queries/section.queries'; // Import hook delete section
+import { useDeleteLesson } from '@/hooks/queries/lesson.queries'; // Import hook delete lesson
 import {
   useCourseDetailBySlug,
   useUpdateCourse,
   useDeleteCourse,
   useUpdateCourseThumbnail,
-
   // useSubmitCourseForApproval, // Nếu cần
-  useSyncCourseCurriculum, // *** Import hook sync curriculum ***
+  useSubmitCourseForApproval,
+
+  // useSyncCourseCurriculum, // *** Bỏ hook sync ***
+  // useUpdateSectionsOrder, // Import nếu dùng kéo thả
+  // useUpdateLessonsOrder,  // Import nếu dùng kéo thả
+  courseKeys, // Import key để invalidate
 } from '@/hooks/queries/course.queries';
 // Không cần import các hook create/update/delete section/lesson lẻ nữa nếu dùng sync
 // import { useCreateSection, useUpdateSection, useDeleteSection } from '@/hooks/queries/section.queries';
 // import { useCreateLesson, useUpdateLesson, useDeleteLesson as useDeleteLessonMutate } from '@/hooks/queries/lesson.queries';
 // ... (Các import hook lẻ khác cũng có thể bỏ nếu sync xử lý hết)
-
-import { ListRestart, RotateCcw } from 'lucide-react';
+import DeleteConfirmationDialog from '@/components/instructor/courseCreate/ConfirmationDialog';
 import {
-  Course,
-  SyncCurriculumPayload,
-  UpdateCourseData,
-} from '@/services/course.service';
+  ListRestart,
+  RotateCcw,
+  Save,
+  Loader2,
+  CheckCircle,
+  Trash2,
+  Send,
+  AlertTriangle,
+} from 'lucide-react';
+import { Course, UpdateCourseData } from '@/services/course.service';
 
 import _ from 'lodash'; // Ensure lodash is installed and imported
 import { generateTempId } from '@/components/common/generateTempId';
 import LessonDialog from '@/components/instructor/courseCreate/LessonDialog';
 import { Form } from '@/components/ui/form';
 import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries';
-
+import { getVimeoEmbedUrl, getYoutubeEmbedUrl } from '@/utils/video.util';
+import { Section, Lesson, CourseStatusId } from '@/types/common.types';
+import { Badge } from '@/components/ui/badge';
+import ConfirmationDialog from '@/components/instructor/courseCreate/ConfirmationDialog';
+import { useLanguages } from '@/hooks/queries/language.queries';
 // Zod schema (Thêm ID)
+// Zod schema (Giữ nguyên)
 const courseFormSchema = z
   .object({
-    id: z.number().optional(),
+    courseId: z.number().optional(),
     courseName: z.string().min(1, 'Course title is required').max(255),
     slug: z.string().optional(),
-    shortDescription: z
-      .string()
-      .min(1, 'Short description is required')
-      .max(500),
-    fullDescription: z
-      .string()
-      .min(1, 'Full description is required')
-      .max(20000),
+    shortDescription: z.string().min(1, 'Short description required').max(500),
+    fullDescription: z.string().min(1, 'Full description required').max(30000), // Tăng giới hạn
     originalPrice: z.preprocess(
-      (val) => (val === '' ? NaN : parseFloat(String(val))), // Chuyển đổi string thành number
-      z
-        .number({ required_error: 'Original price is required' })
-        .min(0, 'Price must be non-negative')
+      (val) => (val === '' ? NaN : parseFloat(String(val))),
+      z.number({ required_error: 'Price required' }).min(0)
     ),
     discountedPrice: z.preprocess(
       (val) =>
         val === '' || val === null || val === undefined
           ? null
-          : parseFloat(String(val)), // Chuyển đổi string thành number hoặc null
-      z.number().min(0, 'Price must be non-negative').optional().nullable()
+          : parseFloat(String(val)),
+      z.number().min(0).optional().nullable()
     ),
     categoryId: z.preprocess(
-      (val) => parseInt(String(val), 10), // Chuyển đổi string thành number
-      z.number({ required_error: 'Category is required' }).int().positive()
+      (val) => (val ? parseInt(String(val), 10) : null),
+      z
+        .number({ required_error: 'Category required' })
+        .int()
+        .positive()
+        .nullable()
     ),
     levelId: z.preprocess(
-      (val) => parseInt(String(val), 10), // Chuyển đổi string thành number
-      z.number({ required_error: 'Level is required' }).int().positive()
+      (val) => (val ? parseInt(String(val), 10) : null),
+      z.number({ required_error: 'Level required' }).int().positive().nullable()
     ),
-    language: z.string().min(1, 'Language is required'),
-    requirements: z.string().max(4000).optional().nullable(),
-    learningOutcomes: z.string().max(4000).optional().nullable(),
+    language: z.string().min(1, 'Language required'),
+    requirements: z.string().max(5000).optional().nullable(), // Tăng giới hạn
+    learningOutcomes: z.string().max(5000).optional().nullable(), // Tăng giới hạn
   })
   .refine(
     (data) =>
       data.discountedPrice === null ||
       data.discountedPrice <= data.originalPrice,
     {
-      message: 'Discounted price cannot be higher than the original price.',
+      message: 'Discount price cannot be higher than original.',
       path: ['discountedPrice'],
     }
   );
@@ -123,43 +130,56 @@ const CourseEdit: React.FC = () => {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [promoVideoUrl, setPromoVideoUrl] = useState<string>('');
-
-  // State for Curriculum managed by custom hook
-  const {
-    sections,
-    addSection,
-    updateSection,
-    deleteSection,
-    addLesson,
-    updateLesson,
-    deleteLesson,
-    reorderSections, // Thêm
-    reorderLessons, // Thêm
-    setCurriculum,
-  } = useCourseCurriculum();
-
+  const [submitConfirmDialogState, setSubmitConfirmDialogState] = useState<{
+    isOpen: boolean;
+    courseId: number | null;
+    courseName: string | null;
+    isProcessing: boolean; // Thêm cờ loading
+  }>({ isOpen: false, courseId: null, courseName: null, isProcessing: false });
   // State for Dialogs
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [loading, setLoading] = useState(false);
   const [currentSectionIdForLesson, setCurrentSectionIdForLesson] = useState<
     number | string | null
   >(null);
-
+  const [deleteDialogState, setDeleteDialogState] = useState<{
+    isOpen: boolean;
+    type: 'section' | 'lesson' | null;
+    itemId: number | string | null;
+    sectionIdForLesson?: number | string | null;
+    onConfirm: () => void;
+    itemName?: string;
+  }>({
+    isOpen: false,
+    type: null,
+    itemId: null,
+    onConfirm: () => {},
+    itemName: '',
+  });
+  const [deleteCourseDialogState, setDeleteCourseDialogState] = useState<{
+    isOpen: boolean;
+    courseId: number | null;
+    courseName: string | null;
+    isProcessing: boolean; // Thêm cờ loading
+  }>({ isOpen: false, courseId: null, courseName: null, isProcessing: false });
+  const [loading, setLoading] = useState(false);
   // Refs
   const thumbnailRef = useRef<HTMLInputElement>(null);
   const lessonVideoRef = useRef<HTMLInputElement>(null);
   const attachmentRef = useRef<HTMLInputElement>(null);
-  const initialCourseDataRef = useRef<Course | null>(null); // Reference to store initial course data
+  const initialCourseDataRef = useRef<Course | null>(null); // Để so sánh thay đổi
 
-  // Fetch static data
+  // State for Curriculum managed by custom hook
+  const { sections } = useCourseCurriculum();
+
+  // State for Dialogs
+
+  // --- Data Fetching ---
   const { data: categoriesData, isLoading: isLoadingCategories } =
     useCategories();
   const { data: levelsData, isLoading: isLoadingLevels } = useLevels();
-
-  // Fetch Existing Course Data
   const {
     data: fetchedCourseData,
     isLoading: isLoadingCourse,
@@ -167,71 +187,45 @@ const CourseEdit: React.FC = () => {
     refetch: refetchCourse,
   } = useCourseDetailBySlug(courseSlug, {
     enabled: !!courseSlug,
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 1, // Giảm staleTime để fetch lại thường xuyên hơn khi invalidate
+    refetchOnWindowFocus: true, // Refetch khi focus lại tab
   });
-
-  // Form setup
+  const queryClient = useQueryClient();
+  // --- Form Setup ---
   const form = useForm<CourseFormData>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues: {
-      id: undefined, // ID của course khi edit
-      courseName: '',
-      slug: '',
-      shortDescription: '',
-      fullDescription: '',
-      originalPrice: 0,
-      discountedPrice: 0,
-      categoryId: 0,
-      levelId: 0,
-      language: 'vi',
-      requirements: null,
-      learningOutcomes: null,
-    },
+    defaultValues: {}, // Set trong useEffect
+    mode: 'onChange',
   });
 
-  // Initialize Form and Curriculum State
+  // Initialize Form and local states from fetched data
   useEffect(() => {
     if (fetchedCourseData) {
+      console.log('[CourseEdit] Fetched course data:', fetchedCourseData);
+      // Lưu trữ bản gốc để so sánh
       initialCourseDataRef.current = JSON.parse(
         JSON.stringify(fetchedCourseData)
-      ); // Store initial course data for comparison
+      );
 
       form.reset({
-        id: Number(fetchedCourseData.courseId) || undefined,
+        courseId: Number(fetchedCourseData.courseId) || undefined,
         courseName: fetchedCourseData.courseName || '',
         slug: fetchedCourseData.slug || '',
         shortDescription: fetchedCourseData.shortDescription || '',
         fullDescription: fetchedCourseData.fullDescription || '',
         originalPrice: fetchedCourseData.originalPrice || 0,
-        discountedPrice:
-          fetchedCourseData.discountedPrice !== null
-            ? fetchedCourseData.discountedPrice
-            : null,
-        categoryId: fetchedCourseData.categoryId || 0,
-        levelId: fetchedCourseData.levelId || 0,
+        discountedPrice: fetchedCourseData.discountedPrice ?? null,
+        categoryId: fetchedCourseData.categoryId || null, // Dùng null nếu API trả về null/0
+        levelId: fetchedCourseData.levelId || null,
         language: fetchedCourseData.language || 'vi',
         requirements: fetchedCourseData.requirements || null,
         learningOutcomes: fetchedCourseData.learningOutcomes || null,
       });
-      // *** Gọi setCurriculum để khởi tạo state từ dữ liệu fetch về ***
-      setCurriculum(
-        (fetchedCourseData.sections || []).map((section) => ({
-          ...section,
-          sectionName: section.sectionName || 'Untitled Section', // Provide a default value if necessary
-          lessons: (section.lessons || []).map((lesson) => ({
-            ...lesson,
-            lessonName: lesson.lessonName || 'Untitled Lesson', // Provide a default value
-            lessonType: (lesson.lessonType as LessonType) || 'VIDEO', // Default to "video" or another valid type
-            isFreePreview: lesson.isFreePreview || false, // Default to false
-          })),
-        }))
-      );
       setThumbnailPreview(fetchedCourseData.thumbnailUrl || null);
       setPromoVideoUrl(fetchedCourseData.introVideoUrl || '');
-      setThumbnail(null);
+      setThumbnail(null); // Reset file thumbnail mới
       setIsInitializing(false);
-      setSaveStatus('idle'); // Reset save status sau khi load xong
+      setSaveStatus('idle');
     } else if (courseSlug && !isLoadingCourse && courseError) {
       setIsInitializing(false);
       toast({
@@ -243,58 +237,12 @@ const CourseEdit: React.FC = () => {
   }, [
     fetchedCourseData,
     form,
-    setCurriculum,
     courseSlug,
     isLoadingCourse,
     courseError,
     toast,
   ]);
 
-  const hasCurriculumChanged = !_.isEqual(
-    sections.map((section) => {
-      const { sectionName, tempId, ...restSection } = section; // Exclude sectionName and tempId
-      return {
-        ...restSection,
-        lessons: section.lessons.map((lesson) => {
-          const { lessonName, tempId, ...restLesson } = lesson; // Exclude lessonName and tempId
-          return {
-            ...restLesson,
-            attachments: lesson.attachments?.map((att) => ({
-              ...att,
-              file: att.file || null, // Normalize file property
-            })),
-            questions: lesson.questions?.map((q) => {
-              const { tempId, ...restQuestion } = q; // Exclude tempId
-              return {
-                ...restQuestion,
-                options: q.options
-                  .map(({ tempId, ...restOption }) => ({
-                    ...restOption,
-                  }))
-                  .sort((a, b) => (a.optionOrder ?? 0) - (b.optionOrder ?? 0)),
-              };
-            }),
-          };
-        }),
-      };
-    }),
-    initialCourseDataRef.current?.sections?.map((section) => ({
-      ...section,
-      lessons: section.lessons.map((lesson) => ({
-        ...lesson,
-        attachments: lesson.attachments?.map((att) => ({
-          ...att,
-          file: att.file || null, // Normalize file property
-        })),
-        questions: lesson.questions?.map((q) => ({
-          ...q,
-          options: q.options.sort(
-            (a, b) => (a.optionOrder ?? 0) - (b.optionOrder ?? 0)
-          ),
-        })),
-      })),
-    }))
-  );
   // --- Mutation Hooks ---
   const { mutateAsync: updateCourseMutateAsync, isPending: isUpdatingCourse } =
     useUpdateCourse();
@@ -302,31 +250,35 @@ const CourseEdit: React.FC = () => {
     mutateAsync: updateCourseThumbnailMutateAsync,
     isPending: isUploadingThumb,
   } = useUpdateCourseThumbnail();
+
   const {
-    mutateAsync: syncCurriculumMutateAsync,
-    isPending: isSyncingCurriculum,
-  } = useSyncCourseCurriculum(); // Hook sync mới
+    mutateAsync: deleteSectionMutateAsync,
+    isPending: isDeletingSection,
+  } = useDeleteSection();
+  const { mutateAsync: deleteLessonMutateAsync, isPending: isDeletingLesson } =
+    useDeleteLesson();
+  const { mutateAsync: submitCourseMutateAsync, isPending: isSubmitting } =
+    useSubmitCourseForApproval();
   const { mutateAsync: deleteCourseMutateAsync, isPending: isDeletingCourse } =
-    useDeleteCourse(); // Vẫn cần nếu có nút xóa course
-  // Hook to fetch signed URL for private lesson video
+    useDeleteCourse();
+  const { data: languagesData, isLoading: isLoadingLanguages } = useLanguages();
+  // *** Thêm hook reorder nếu cần ***
+  // const { mutateAsync: reorderSectionsMutateAsync, isPending: isReorderingSections } = useUpdateSectionsOrder();
+  // const { mutateAsync: reorderLessonsMutateAsync, isPending: isReorderingLessons } = useUpdateLessonsOrder();
 
-  // Bỏ các hook lẻ cho section/lesson CUD nếu dùng sync
-  // const { mutateAsync: createSectionMutateAsync, isPending: isCreatingSection } = useCreateSection();
-  // const { mutateAsync: updateSectionMutateAsync, isPending: isUpdatingSection } = useUpdateSection();
-  // const { mutateAsync: deleteSectionMutateAsync, isPending: isDeletingSection } = useDeleteSection();
-  // const { mutateAsync: createLessonMutateAsync, isPending: isCreatingLesson } = useCreateLesson();
-  // const { mutateAsync: updateLessonMutateAsync, isPending: isUpdatingLesson } = useUpdateLesson();
-  // const { mutateAsync: deleteLessonMutateAsync, isPending: isDeletingLesson } = useDeleteLessonMutate();
-  // ... (Bỏ các hook lẻ cho quiz, attachment, subtitle CUD)
-
+  // Combine processing states
   // Combine processing states
   const isProcessing =
     isLoadingCourse ||
     isInitializing ||
     isUpdatingCourse ||
     isUploadingThumb ||
-    isSyncingCurriculum ||
-    isDeletingCourse; // Đơn giản hóa isProcessing
+    isDeletingSection ||
+    isDeletingLesson ||
+    isSubmitting ||
+    isDeletingCourse;
+
+  /* || isReorderingSections || isReorderingLessons */
 
   // Slug generation
   const generateSlug = useCallback((title: string): string => {
@@ -371,8 +323,6 @@ const CourseEdit: React.FC = () => {
       setThumbnailPreview(null);
     }
   };
-
-  // --- Dialog Handling Logic (Update state local bằng hook useCourseCurriculum) ---
   const handleOpenAddSectionDialog = () => {
     setEditingSection(null);
     setSectionDialogOpen(true);
@@ -381,23 +331,54 @@ const CourseEdit: React.FC = () => {
     setEditingSection(section);
     setSectionDialogOpen(true);
   };
-  const handleSaveSectionDialog = (data: {
-    sectionName: string;
-    description?: string | null;
-  }) => {
-    if (editingSection) {
-      updateSection(
-        editingSection.tempId || editingSection.sectionId!,
-        data.sectionName,
-        data.description
-      );
-    } else {
-      addSection(data.sectionName, data.description ?? undefined);
-    }
-    setSectionDialogOpen(false);
-    form.setValue('courseName', form.getValues('courseName'), {
-      shouldDirty: true,
-    }); // Mark form as dirty when curriculum changes
+  // Hàm này sẽ mở dialog xác nhận, không gọi API trực tiếp
+  const handleDeleteSectionRequest = (sectionId: number | string) => {
+    const section = fetchedCourseData?.sections?.find(
+      (s) => s.sectionId === sectionId
+    );
+    if (!section) return;
+    setDeleteDialogState({
+      isOpen: true,
+      type: 'section',
+      itemId: sectionId,
+      onConfirm: async () => {
+        // Logic xóa thực sự nằm ở đây
+        try {
+          setDeleteDialogState((prev) => ({ ...prev, isDeleting: true })); // Bắt đầu loading
+          await deleteSectionMutateAsync({
+            courseId: Number(fetchedCourseData?.courseId),
+            sectionId: Number(sectionId),
+          });
+          toast({
+            title: 'Success',
+            description: 'Section deleted successfully.',
+          });
+          // Invalidate để load lại curriculum
+          queryClient.invalidateQueries({
+            queryKey: courseKeys.detailById(
+              Number(fetchedCourseData?.courseId)
+            ),
+          });
+          queryClient.invalidateQueries({
+            queryKey: courseKeys.detailBySlug(courseSlug),
+          });
+        } catch (error: any) {
+          toast({
+            title: 'Error',
+            description: `Failed to delete section: ${error.message}`,
+            variant: 'destructive',
+          });
+        } finally {
+          setDeleteDialogState({
+            isOpen: false,
+            type: null,
+            itemId: null,
+            onConfirm: () => {},
+          }); // Đóng dialog
+        }
+      },
+      itemName: `section "${section.sectionName}" and all its lessons`,
+    });
   };
 
   const handleOpenAddLessonDialog = (sectionId: number | string) => {
@@ -409,291 +390,319 @@ const CourseEdit: React.FC = () => {
     sectionId: number | string,
     lesson: Lesson
   ) => {
-    console.log('Opening edit dialog for lesson:', lesson);
-    if (lesson.lessonVideoFile) {
-      console.log(
-        '  Original lessonVideoFile is File:',
-        lesson.lessonVideoFile instanceof File,
-        lesson.lessonVideoFile?.name
-      );
-    }
-
+    // Tạo bản sao nông khi mở edit
+    setEditingLesson({ ...lesson });
     setCurrentSectionIdForLesson(sectionId);
-
-    // Tạo bản sao nông cho Lesson. Các thuộc tính object/array sẽ là tham chiếu.
-    const lessonCopy: Lesson = { ...lesson };
-
-    // Nếu LessonDialog sẽ quản lý state riêng cho questions, attachments, subtitles
-    // thì việc sao chép nông các mảng này là đủ, vì dialog sẽ tạo bản sao khi khởi tạo state của nó.
-    // Ví dụ, trong LessonDialog:
-    // const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
-    // useEffect(() => { if (initialData) setQuizQuestions(_.cloneDeep(initialData.questions || [])) }, [initialData]);
-
-    // Nếu bạn muốn chắc chắn rằng `lessonCopy` hoàn toàn độc lập cho các mảng đó ngay từ đầu:
-    lessonCopy.questions = (lesson.questions || []).map((q) => ({
-      ...q,
-      options: (q.options || []).map((o) => ({ ...o })),
-    }));
-    lessonCopy.attachments = (lesson.attachments || []).map((a) => ({
-      ...a,
-      // Giữ nguyên tham chiếu 'file' nếu nó là File object
-      // file: a.file // Không cần gán lại nếu ...a đã giữ tham chiếu
-    }));
-    lessonCopy.subtitles = (lesson.subtitles || []).map((s) => ({ ...s }));
-
-    console.log('Setting editingLesson with (copied):', lessonCopy);
-    if (lessonCopy.lessonVideoFile) {
-      console.log(
-        '  Copied lessonVideoFile is File:',
-        lessonCopy.lessonVideoFile instanceof File,
-        lessonCopy.lessonVideoFile?.name
-      );
-    }
-
-    setEditingLesson(lessonCopy);
     setLessonDialogOpen(true);
   };
-  const handleSaveLessonDialog = (lessonDataFromDialog: Lesson) => {
-    if (!currentSectionIdForLesson) return;
-    const lessonToSave: Lesson = {
-      ...lessonDataFromDialog,
-      tempId:
-        editingLesson?.tempId ||
-        lessonDataFromDialog.tempId ||
-        (editingLesson?.id ? undefined : generateTempId('lesson')),
-      id: editingLesson?.id,
-      lessonOrder: editingLesson?.lessonOrder, // Giữ order khi edit, hook add sẽ tự tính
-      externalVideoId:
-        lessonDataFromDialog.videoSourceType === 'CLOUDINARY' &&
-        !lessonDataFromDialog.lessonVideoFile &&
-        editingLesson?.externalVideoId
-          ? editingLesson.externalVideoId
-          : lessonDataFromDialog.externalVideoId,
-      lessonVideoFile: lessonDataFromDialog.lessonVideoFile || null,
-    };
-
-    if (editingLesson) {
-      updateLesson(currentSectionIdForLesson, lessonToSave);
-    } else {
-      const { id, tempId, lessonOrder, ...lessonPayload } = lessonToSave; // Bỏ các trường ko cần khi add
-      addLesson(
-        currentSectionIdForLesson,
-        lessonPayload as Omit<Lesson, 'id' | 'tempId' | 'lessonOrder'>
-      );
-    }
-    setLessonDialogOpen(false);
+  // Hàm này sẽ mở dialog xác nhận
+  const handleDeleteLessonRequest = (
+    sectionId: number | string,
+    lessonId: number | string
+  ) => {
+    const section = fetchedCourseData?.sections?.find(
+      (s) => s.sectionId === sectionId
+    );
+    const lesson = section?.lessons.find(
+      (l) => l.lessonId === lessonId || l.tempId === lessonId
+    );
+    if (!lesson) return;
+    setDeleteDialogState({
+      isOpen: true,
+      type: 'lesson',
+      itemId: lessonId,
+      sectionIdForLesson: sectionId, // Lưu lại để biết invalidate đúng
+      onConfirm: async () => {
+        try {
+          setDeleteDialogState((prev) => ({ ...prev, isDeleting: true }));
+          await deleteLessonMutateAsync({
+            lessonId: Number(lessonId),
+            courseId: Number(fetchedCourseData?.courseId),
+          });
+          toast({
+            title: 'Success',
+            description: 'Lesson deleted successfully.',
+          });
+          // Invalidate để load lại curriculum
+          queryClient.invalidateQueries({
+            queryKey: courseKeys.detailById(
+              Number(fetchedCourseData?.courseId)
+            ),
+          });
+          queryClient.invalidateQueries({
+            queryKey: courseKeys.detailBySlug(courseSlug),
+          });
+        } catch (error: any) {
+          toast({
+            title: 'Error',
+            description: `Failed to delete lesson: ${error.message}`,
+            variant: 'destructive',
+          });
+        } finally {
+          setDeleteDialogState({
+            isOpen: false,
+            type: null,
+            itemId: null,
+            onConfirm: () => {},
+          });
+        }
+      },
+      itemName: `lesson "${lesson.lessonName}"`,
+    });
   };
 
-  // --- Delete Callbacks (Chỉ cập nhật state local) ---
-  const handleDeleteSectionCallback = useCallback(
-    (sectionId: number | string) => {
-      const sectionToDelete = sections.find(
-        (s) => s.sectionId === sectionId || s.tempId === sectionId
-      );
-      if (!sectionToDelete) return;
-      if (
-        window.confirm(
-          `Mark section "${sectionToDelete.sectionName}" and all its lessons for deletion? Changes will be saved when you click 'Save Changes'.`
-        )
-      ) {
-        deleteSection(sectionId); // Gọi hook để xóa khỏi state local
-        form.setValue('courseName', form.getValues('courseName'), {
-          shouldDirty: true,
-        }); // Đánh dấu có thay đổi
-      }
-    },
-    [sections, deleteSection, form]
-  );
-
-  const handleDeleteLessonCallback = useCallback(
-    (sectionId: number | string, lessonId: number | string) => {
-      const section = sections.find(
-        (s) => s.sectionId === sectionId || s.tempId === sectionId
-      );
-      const lessonToDelete = section?.lessons.find(
-        (l) => l.id === lessonId || l.tempId === lessonId
-      );
-      if (!lessonToDelete) return;
-      if (
-        window.confirm(
-          `Mark lesson "${lessonToDelete.lessonName}" for deletion? Changes will be saved when you click 'Save Changes'.`
-        )
-      ) {
-        deleteLesson(sectionId, lessonId); // Gọi hook để xóa khỏi state local
-        form.setValue('courseName', form.getValues('courseName'), {
-          shouldDirty: true,
-        }); // Đánh dấu có thay đổi
-      }
-    },
-    [sections, deleteLesson, form]
-  );
-  console.log('fetchedCourseData', fetchedCourseData);
-
-  // --- MAIN SAVE CHANGES LOGIC (Uses Sync API) ---
+  // --- Main Save Changes Handler ---
   const handleSaveChanges = async (formData: CourseFormData) => {
     if (!fetchedCourseData) return;
     const courseId = Number(fetchedCourseData.courseId);
     setSaveStatus('saving');
-    setLoading(true);
-    console.log('Saving changes for course:', courseId);
+    let hasError = false;
 
     try {
-      console.log('Form Data:', formData);
-      // --- Step 1: Update Basic Course Info & Promo URL ---
-      const courseUpdatePayload: UpdateCourseData = {
-        courseName: formData.courseName,
-        slug: form.getValues('slug'),
-        shortDescription: formData.shortDescription,
-        fullDescription: formData.fullDescription,
-        originalPrice: formData.originalPrice || 0,
-        discountedPrice: formData.discountedPrice
-          ? formData.discountedPrice
-          : null,
-        categoryId: formData.categoryId,
-        levelId: formData.levelId,
-        language: formData.language,
-        requirements: formData.requirements,
-        learningOutcomes: formData.learningOutcomes,
-        introVideoUrl: promoVideoUrl || null, // Cập nhật cả URL video giới thiệu
-      };
-      // Chỉ gọi update nếu form dirty
+      // 1. Update Course Info (nếu form dirty)
       if (form.formState.isDirty) {
-        console.log('Step 1: Updating course info...');
-        await updateCourseMutateAsync({ courseId, data: courseUpdatePayload });
-        console.log('Step 1 Success.');
-      } else {
-        console.log('Step 1: No changes in basic info/pricing/details.');
+        console.log('[Save] Updating course info...');
+        const courseUpdatePayload: UpdateCourseData = {
+          courseName: formData.courseName,
+          slug: formData.slug,
+          shortDescription: formData.shortDescription,
+          fullDescription: formData.fullDescription,
+          originalPrice: formData.originalPrice,
+          discountedPrice: formData.discountedPrice,
+          categoryId: formData.categoryId,
+          levelId: formData.levelId,
+          language: formData.language,
+          requirements: formData.requirements,
+          learningOutcomes: formData.learningOutcomes,
+          introVideoUrl: promoVideoUrl || null,
+        };
+        await updateCourseMutateAsync(
+          { courseId, data: courseUpdatePayload },
+          {
+            onSuccess: (data) => {
+              toast({
+                title: 'Success',
+                description: 'Course information updated successfully.',
+              });
+              navigate(`/instructor/courses/${data.slug}/edit`); // Chuyển hướng về trang chi tiết khóa học
+            },
+            onError: (error: any) => {
+              toast({
+                title: 'Error',
+                description: `Failed to update course information: ${error.message}`,
+                variant: 'destructive',
+              });
+              throw error; // Rethrow to handle in the outer try-catch
+            },
+          }
+        );
+        console.log('[Save] Course info updated.');
       }
 
-      // --- Step 2: Update Thumbnail (if changed) ---
+      // 2. Update Thumbnail (nếu có file mới)
       if (thumbnail) {
-        // Chỉ upload nếu có file mới
-        console.log('Step 2: Updating thumbnail...');
+        console.log('[Save] Updating thumbnail...');
         await updateCourseThumbnailMutateAsync({ courseId, file: thumbnail });
-        console.log('Step 2 Success.');
-      } else {
-        console.log('Step 2: No new thumbnail to upload.');
+        console.log('[Save] Thumbnail updated.');
+        setThumbnail(null); // Reset file state
       }
 
-      // --- Step 3: Sync Curriculum (Gửi toàn bộ state sections hiện tại) ---
-      console.log('Step 3: Syncing curriculum...');
-      // Sắp xếp lại theo order trước khi gửi
-      const sortedSections = [...sections].sort(
-        (a, b) => (a.sectionOrder ?? 0) - (b.sectionOrder ?? 0)
-      );
-      const curriculumPayload: SyncCurriculumPayload = {
-        sections: sortedSections.map((section, sectionIndex) => ({
-          id: section.sectionId || null,
-          tempId: section.tempId || generateTempId('section'),
-          sectionName: section.sectionName,
-          description: section.description || null,
-          sectionOrder: sectionIndex,
-          lessons: (section.lessons || [])
-            .sort((a, b) => (a.lessonOrder ?? 0) - (b.lessonOrder ?? 0))
-            .map((lesson, lessonIndex) => ({
-              id: lesson.lessonId || null,
-              tempId: lesson.tempId || generateTempId('lesson'),
-              lessonName: lesson.lessonName,
-              description: lesson.description || null,
-              lessonOrder: lessonIndex,
-              lessonType: lesson.lessonType,
-              isFreePreview: lesson.isFreePreview,
-              videoSourceType:
-                lesson.lessonType === 'VIDEO'
-                  ? lesson.videoSourceType
-                  : undefined,
-              externalVideoInput:
-                lesson.lessonType === 'VIDEO'
-                  ? lesson.externalVideoInput
-                  : undefined,
-              textContent:
-                lesson.lessonType === 'TEXT' ? lesson.textContent : undefined,
-              questions:
-                lesson.lessonType === 'QUIZ'
-                  ? (lesson.questions || []).map((question, questionIndex) => ({
-                      id: question.questionId || null,
-                      tempId: question.tempId || generateTempId('question'),
-                      questionText: question.questionText,
-                      explanation: question.explanation || null,
-                      questionOrder: questionIndex,
-                      options: (question.options || [])
-                        .sort(
-                          (a, b) => (a.optionOrder ?? 0) - (b.optionOrder ?? 0)
-                        )
-                        .map((option, optionIndex) => ({
-                          id: option.optionId || null,
-                          optionText: option.optionText,
-                          isCorrectAnswer: option.isCorrectAnswer,
-                          optionOrder: optionIndex,
-                        })),
-                    }))
-                  : undefined,
-              attachments: (lesson.attachments || []).map((attachment) => ({
-                id: attachment.attachmentId || null,
-                fileName: attachment.fileName,
-                file: attachment.file || null,
-              })),
-              subtitles:
-                lesson.lessonType === 'VIDEO'
-                  ? (lesson.subtitles || []).map((subtitle) => ({
-                      id: subtitle.subtitleId || null,
-                      languageCode: subtitle.languageCode,
-                      languageName: subtitle.languageName,
-                      subtitleUrl: subtitle.subtitleUrl,
-                      isDefault: subtitle.isDefault,
-                    }))
-                  : undefined,
-            })),
-        })),
-      };
+      // 3. Curriculum đã được lưu tự động thông qua các dialog và API CRUD lẻ
+      // Không cần gọi API sync ở đây nữa.
 
-      console.log('Curriculum Payload:', {
-        courseId,
-        payload: curriculumPayload,
-      });
-      await syncCurriculumMutateAsync({ courseId, payload: curriculumPayload });
-      console.log('Step 3 Success.');
-
-      // --- Final Step: Success ---
       setSaveStatus('saved');
       toast({
-        title: 'Course Updated',
-        description: 'All changes saved successfully.',
+        title: 'Changes Saved',
+        description: 'Course details updated successfully.',
       });
-      setThumbnail(null); // Reset file state sau khi upload thành công
-      form.reset({}, { keepValues: true }); // Reset dirty state nhưng giữ lại giá trị hiện tại
-      // Fetch lại dữ liệu để đảm bảo đồng bộ hoàn toàn và reset isDirty
+      form.reset({}, { keepValues: true }); // Reset dirty state
+      // Refetch lại để đảm bảo dữ liệu form và initialRef đồng bộ
       await refetchCourse();
     } catch (error: any) {
-      console.error('CRITICAL ERROR during course update:', error);
+      console.error('Error saving changes:', error);
       setSaveStatus('error');
+      hasError = true;
       toast({
-        title: 'Update Failed',
-        description: `An error occurred: ${error.message || 'Unknown error.'}`,
+        title: 'Save Failed',
+        description: error.message || 'Could not save changes.',
         variant: 'destructive',
-        duration: 9000,
       });
-      // Không rollback ở frontend khi update thất bại, user cần sửa lỗi
     } finally {
-      setLoading(false);
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      // setLoading(false); // Không cần state loading riêng nữa nếu dùng isProcessing
+      if (!hasError) {
+        setTimeout(() => setSaveStatus('idle'), 2000); // Giữ trạng thái 'saved' 2 giây
+      } else {
+        setSaveStatus('idle'); // Reset về idle nếu có lỗi
+      }
     }
   };
 
-  // --- Render ---
+  // --- Discard Changes Handler ---
+  const handleDiscardChanges = () => {
+    // Check if there are unsaved changes in the form or thumbnail
+    const isDataDirty = form.formState.isDirty || !!thumbnail;
+
+    // Deep compare current sections with initial sections (more reliable)
+    const sectionsFromFetch = initialCourseDataRef.current?.sections || [];
+    const currentSections = fetchedCourseData?.sections || []; // Lấy sections hiện tại từ query data
+    const curriculumIsDirty = !_.isEqual(currentSections, sectionsFromFetch);
+
+    if (isDataDirty || curriculumIsDirty) {
+      if (window.confirm('Discard all unsaved changes?')) {
+        setIsInitializing(true); // Show loader while resetting
+        refetchCourse().finally(() => setIsInitializing(false)); // Refetch data to reset everything
+      }
+    } else {
+      toast({ title: 'No Changes', description: 'No changes to discard.' });
+    }
+  };
+  const handleSubmitRequest = () => {
+    if (
+      !fetchedCourseData ||
+      fetchedCourseData.statusId !== CourseStatusId.DRAFT
+    )
+      return;
+    setSubmitConfirmDialogState({
+      isOpen: true,
+      courseId: fetchedCourseData?.courseId || null,
+      courseName: fetchedCourseData?.courseName || null,
+      isProcessing: false,
+    });
+  };
+
+  const confirmSubmit = async () => {
+    const courseId = submitConfirmDialogState.courseId;
+    if (!courseId) return;
+    setSubmitConfirmDialogState((prev) => ({ ...prev, isProcessing: true })); // Thêm cờ loading nếu cần
+
+    try {
+      // Có thể thêm data như ghi chú nếu API hỗ trợ
+      // const submitData: SubmitCourseData = { notes: "Ready for review" };
+      await submitCourseMutateAsync({ courseId /*, data: submitData */ });
+      toast({ title: 'Submitted', description: 'Course sent for approval.' });
+      refetchCourse(); // Load lại data để cập nhật status
+      setSubmitConfirmDialogState({
+        isOpen: false,
+        courseId: fetchedCourseData?.courseId || null,
+        courseName: fetchedCourseData?.courseName || null,
+        isProcessing: false,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Submission Failed',
+        description: error.message || 'Could not submit course.',
+        variant: 'destructive',
+      });
+      setSubmitConfirmDialogState((prev) => ({ ...prev, isProcessing: false })); // Tắt loading nếu lỗi
+    }
+  };
+
+  // --- ** Delete Course Handler ** ---
+  const handleDeleteRequest = () => {
+    if (
+      !fetchedCourseData ||
+      (fetchedCourseData.statusId !== CourseStatusId.DRAFT &&
+        fetchedCourseData.statusId !== CourseStatusId.REJECTED)
+    )
+      setDeleteCourseDialogState({
+        isOpen: true,
+        courseId: fetchedCourseData?.courseId || null,
+        courseName: fetchedCourseData?.courseName || null,
+        isProcessing: false,
+      });
+    return;
+  };
+
+  const confirmDelete = async () => {
+    const courseId = deleteCourseDialogState.courseId;
+    if (!courseId) return;
+    setDeleteCourseDialogState((prev) => ({ ...prev, isProcessing: true }));
+
+    try {
+      await deleteCourseMutateAsync(courseId);
+      toast({
+        title: 'Course Deleted',
+        description: `Course "${deleteCourseDialogState.courseName}" has been deleted.`,
+      });
+      setDeleteCourseDialogState({
+        isOpen: false,
+        courseId: fetchedCourseData?.courseId || null,
+        courseName: fetchedCourseData?.courseName || null,
+        isProcessing: false,
+      });
+      navigate('/instructor/courses'); // Chuyển hướng về trang danh sách
+    } catch (error: any) {
+      toast({
+        title: 'Delete Failed',
+        description: error.message || 'Could not delete course.',
+        variant: 'destructive',
+      });
+      setDeleteCourseDialogState((prev) => ({ ...prev, isProcessing: false })); // Tắt loading nếu lỗi
+    } finally {
+      // Đóng dialog ngay cả khi lỗi? Hoặc chỉ khi thành công?
+      // setDeleteCourseDialogState({ isOpen: false, courseId: null, courseName: null });
+    }
+  };
+  // --- Render Logic ---
   if (
     isLoadingCourse ||
     isInitializing ||
     isLoadingCategories ||
     isLoadingLevels
   ) {
-    // Thêm check loading categories/levels
     return (
       <InstructorLayout>
         <FullScreenLoader />
       </InstructorLayout>
     );
   }
+  if (courseError) {
+    return (
+      <InstructorLayout>
+        <div className="container mx-auto px-4 py-8 text-destructive text-center">
+          Error loading course data: {(courseError as Error).message}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetchCourse()}
+            className="ml-4"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Retry
+          </Button>
+        </div>
+      </InstructorLayout>
+    );
+  }
+  if (!fetchedCourseData) {
+    return (
+      <InstructorLayout>
+        <div className="container mx-auto px-4 py-8 text-center">
+          Course not found or you do not have permission to edit it.
+        </div>
+      </InstructorLayout>
+    );
+  }
+  const courseId = Number(fetchedCourseData.courseId);
+  const currentStatus = fetchedCourseData.statusId as CourseStatusId;
+  const canEdit =
+    currentStatus === CourseStatusId.DRAFT ||
+    currentStatus === CourseStatusId.REJECTED ||
+    currentStatus === CourseStatusId.PUBLISHED; // Cho phép sửa cả Published
+  const canDelete =
+    currentStatus === CourseStatusId.DRAFT ||
+    currentStatus === CourseStatusId.REJECTED;
+  const canSubmit = currentStatus === CourseStatusId.DRAFT; // Chỉ gửi duyệt từ Draft
+  // const canArchive = currentStatus === CourseStatusId.PUBLISHED; // Điều kiện để Archive
+  // Xác định có thay đổi chưa lưu
+  // Cần so sánh sâu curriculum nếu muốn chính xác hơn
+  const isDirty =
+    form.formState.isDirty ||
+    !!thumbnail ||
+    !_.isEqual(
+      fetchedCourseData?.sections || [],
+      initialCourseDataRef.current?.sections || []
+    );
 
   if (courseError) {
     return (
@@ -728,118 +737,135 @@ const CourseEdit: React.FC = () => {
   return (
     <InstructorLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {/* --- Header --- */}
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSaveChanges, (errors) => {
-                // Thêm hàm xử lý lỗi validation
-                console.error('Form Validation Errors:', errors);
-                toast({
-                  title: 'Invalid Data',
-                  description:
-                    'Please check the highlighted fields for errors.',
-                  variant: 'destructive',
-                });
-                // Tìm field lỗi đầu tiên và focus (hoặc chuyển tab)
-                const firstErrorField = Object.keys(
-                  errors
-                )[0] as keyof CourseFormData;
-                if (firstErrorField) {
-                  form.setFocus(firstErrorField);
-                  // Thêm logic chuyển tab nếu cần dựa vào firstErrorField
-                }
-              })}
-              className="space-y-6"
-            >
-              {' '}
-              {/* Gán onSubmit ở đây */}
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
-                <div>
-                  <h1
-                    className="text-2xl md:text-3xl font-bold tracking-tight line-clamp-1"
-                    title={form.watch('courseName')}
-                  >
-                    Edit Course:{' '}
-                    <span className="text-muted-foreground">
-                      {form.watch('courseName') || '...'}
-                    </span>
-                  </h1>
-                  <span
-                    className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                      fetchedCourseData.statusId === 'PUBLISHED'
-                        ? 'bg-green-100 text-green-800'
-                        : fetchedCourseData.statusId === 'DRAFT'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {fetchedCourseData.statusId}
+        <Form {...form}>
+          {/* onSubmit được đặt ở đây để bao gồm cả các nút header */}
+          <form
+            onSubmit={form.handleSubmit(handleSaveChanges)}
+            className="space-y-6"
+          >
+            {/* --- Header --- */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b pb-4">
+              {/* Title và Status */}
+              <div>
+                <h1
+                  className="text-2xl md:text-3xl font-bold tracking-tight line-clamp-1"
+                  title={form.watch('courseName')}
+                >
+                  Edit Course:{' '}
+                  <span className="text-muted-foreground">
+                    {form.watch('courseName') || '...'}
                   </span>
-                </div>
+                </h1>
+                <Badge
+                  variant={
+                    currentStatus === CourseStatusId.PUBLISHED
+                      ? 'success'
+                      : currentStatus === CourseStatusId.PENDING
+                      ? 'outline'
+                      : currentStatus === CourseStatusId.REJECTED
+                      ? 'destructive'
+                      : currentStatus === CourseStatusId.ARCHIVED
+                      ? 'secondary'
+                      : 'default' // Draft
+                  }
+                  className="mt-1"
+                >
+                  {currentStatus}
+                </Badge>
+                {/* Thông báo nếu đang Pending */}
+                {currentStatus === CourseStatusId.PENDING && (
+                  <p className="text-xs text-yellow-600 mt-1 flex items-center">
+                    <AlertTriangle className="h-3 w-3 mr-1" /> Course is pending
+                    review. Editing is disabled.
+                  </p>
+                )}
+                {/* Thông báo nếu Rejected */}
+                {currentStatus === CourseStatusId.REJECTED && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center">
+                    <AlertTriangle className="h-3 w-3 mr-1" /> Course was
+                    rejected. Please revise and resubmit.
+                  </p>
+                )}
+              </div>
 
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  {/* Reset Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (
-                        form.formState.isDirty ||
-                        thumbnail ||
-                        hasCurriculumChanged
-                      ) {
-                        if (window.confirm('Discard all unsaved changes?')) {
-                          setIsInitializing(true);
-                          refetchCourse(); // Reset form and curriculum
-                        }
-                      } else {
-                        toast({
-                          title: 'No Changes',
-                          description: 'No changes to discard.',
-                        });
-                      }
-                    }}
-                    disabled={
-                      isProcessing ||
-                      (!form.formState.isDirty &&
-                        !thumbnail &&
-                        _.isEqual(
-                          sections,
-                          initialCourseDataRef.current?.sections
-                        ))
-                    }
-                  >
-                    <ListRestart className="mr-2 h-4 w-4" /> Discard Changes
-                  </Button>
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDiscardChanges}
+                  disabled={isProcessing || !isDirty}
+                >
+                  {' '}
+                  <ListRestart className="mr-2 h-4 w-4" /> Discard{' '}
+                </Button>
+                <Button
+                  type="submit"
+                  variant={saveStatus === 'saved' ? 'secondary' : 'default'}
+                  disabled={
+                    isProcessing ||
+                    saveStatus === 'saving' ||
+                    !isDirty ||
+                    !canEdit
+                  }
+                  size="sm"
+                >
+                  {/* ... Icon và Text nút Save Changes ... */}
+                  {isProcessing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : saveStatus === 'saved' ? (
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  {isProcessing
+                    ? 'Saving...'
+                    : saveStatus === 'saved'
+                    ? 'Saved'
+                    : 'Save Changes'}
+                </Button>
+                {/* --- Nút Submit for Approval --- */}
+                {canSubmit && (
                   <Button
                     type="button"
-                    onClick={() => console.log(form.getValues())}
-                  >
-                    Log Form Values
-                  </Button>
-                  {/* Save Changes Button */}
-                  <Button
-                    type="submit"
-                    variant={saveStatus === 'saved' ? 'secondary' : 'default'}
-                    disabled={
-                      isProcessing ||
-                      saveStatus === 'saving' ||
-                      (!form.formState.isDirty &&
-                        !thumbnail &&
-                        _.isEqual(
-                          sections,
-                          initialCourseDataRef.current?.sections
-                        ))
-                    } // Disable nếu không có thay đổi
+                    variant="outline"
                     size="sm"
+                    onClick={handleSubmitRequest}
+                    disabled={isProcessing || isSubmitting || isDirty}
                   >
-                    {/* ... (Nội dung nút Save Changes) ... */}
-                    Save Changes
+                    {isSubmitting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    Submit for Approval
                   </Button>
-                </div>
+                )}
+                {/* --- Nút Delete Course --- */}
+                {canDelete && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteRequest}
+                    disabled={isProcessing || isDeletingCourse}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Course
+                  </Button>
+                )}
+                {/* --- Nút Archive (Tương lai) --- */}
+                {/* {canArchive && (
+                       <Button type="button" variant="outline" size="sm" onClick={handleArchiveRequest} disabled={isProcessing}>
+                          <Archive className="mr-2 h-4 w-4" /> Archive Course
+                       </Button>
+                  )} */}
               </div>
-              {/* --- Tabs --- */}
+            </div>
+
+            {/* --- Tabs --- */}
+            {/* Vô hiệu hóa nội dung Tabs nếu không thể edit */}
+            <fieldset disabled={!canEdit} className="disabled:opacity-70">
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
@@ -852,14 +878,13 @@ const CourseEdit: React.FC = () => {
                   <TabsTrigger value="curriculum">4. Curriculum</TabsTrigger>
                   <TabsTrigger value="pricing">5. Pricing</TabsTrigger>
                 </TabsList>
-
                 <div className="mt-6">
                   <TabsContent value="basic">
                     <BasicInfoTab
                       form={form}
                       mockCategories={categoriesData?.categories || []}
                       mockLevels={levelsData?.levels || []}
-                      mockLanguages={mockLanguages}
+                      mockLanguages={languagesData.languages}
                       handleTitleChange={handleTitleChange}
                     />
                   </TabsContent>
@@ -883,13 +908,16 @@ const CourseEdit: React.FC = () => {
                   </TabsContent>
                   <TabsContent value="curriculum">
                     <CurriculumTab
-                      sections={sections}
+                      courseId={Number(fetchedCourseData.courseId)}
+                      sections={fetchedCourseData.sections || []} // Luôn lấy từ data fetch mới nhất
                       handleAddSection={handleOpenAddSectionDialog}
                       handleEditSection={handleOpenEditSectionDialog}
-                      handleDeleteSection={handleDeleteSectionCallback}
+                      handleDeleteSection={handleDeleteSectionRequest}
                       handleAddLesson={handleOpenAddLessonDialog}
                       handleEditLesson={handleOpenEditLessonDialog}
-                      handleDeleteLesson={handleDeleteLessonCallback}
+                      handleDeleteLesson={handleDeleteLessonRequest}
+                      // onReorderSections={handleReorderSections}
+                      // onReorderLessons={handleReorderLessons}
                     />
                   </TabsContent>
                   <TabsContent value="pricing">
@@ -897,39 +925,82 @@ const CourseEdit: React.FC = () => {
                   </TabsContent>
                 </div>
               </Tabs>
-            </form>
-          </Form>
+            </fieldset>
+          </form>
+        </Form>
 
-          {/* --- Dialogs --- */}
-          <SectionDialog
-            open={sectionDialogOpen}
+        {/* --- Dialogs --- */}
+        {/* Section Dialog */}
+        <SectionDialog
+          open={sectionDialogOpen}
+          onClose={() => {
+            setSectionDialogOpen(false);
+            setEditingSection(null);
+          }}
+          initialData={editingSection}
+          isEditing={!!editingSection}
+          courseId={courseId}
+        />
+        {/* Lesson Dialog */}
+        {lessonDialogOpen && currentSectionIdForLesson && (
+          <LessonDialog
+            open={lessonDialogOpen}
             onClose={() => {
-              setSectionDialogOpen(false);
-              setEditingSection(null);
+              setLessonDialogOpen(false);
+              setEditingLesson(null);
+              setCurrentSectionIdForLesson(null);
             }}
-            onSave={handleSaveSectionDialog}
-            initialData={editingSection}
-            isEditing={!!editingSection}
+            initialData={editingLesson}
+            isEditing={!!editingLesson}
+            sectionId={currentSectionIdForLesson}
+            courseId={courseId}
+            lessonVideoRef={lessonVideoRef}
+            attachmentRef={attachmentRef}
           />
-          {lessonDialogOpen && (
-            <LessonDialog
-              open={lessonDialogOpen}
-              onClose={() => {
-                setLessonDialogOpen(false);
-                setEditingLesson(null);
-                setCurrentSectionIdForLesson(null);
-              }}
-              onSave={handleSaveLessonDialog}
-              initialData={editingLesson}
-              isEditing={!!editingLesson}
-              lessonVideoRef={lessonVideoRef}
-              attachmentRef={attachmentRef}
-            />
-          )}
+        )}
+        {/* Delete Course Dialog */}
+        <ConfirmationDialog
+          open={deleteCourseDialogState.isOpen}
+          onOpenChange={(open) => {
+            if (!open && !deleteCourseDialogState.isProcessing)
+              setDeleteCourseDialogState({
+                isOpen: false,
+                courseId: null,
+                courseName: null,
+                isProcessing: false,
+              });
+          }} // Chỉ đóng nếu không đang xử lý
+          onConfirm={confirmDelete}
+          itemName={`course "${deleteCourseDialogState.courseName}"`}
+          title="Delete Course?"
+          description="This action is irreversible and will permanently delete the course and all associated data."
+          confirmText="Delete"
+          confirmVariant="destructive"
+          isConfirming={deleteCourseDialogState.isProcessing} // Truyền trạng thái loading
+        />
+        {/* Submit Confirmation Dialog */}
+        <ConfirmationDialog
+          open={submitConfirmDialogState.isOpen}
+          onOpenChange={(open) => {
+            if (!open && !submitConfirmDialogState.isProcessing)
+              setSubmitConfirmDialogState({
+                isOpen: false,
+                courseId: null,
+                courseName: null,
+                isProcessing: false,
+              });
+          }}
+          onConfirm={confirmSubmit}
+          itemName={`course "${submitConfirmDialogState.courseName}" for approval`}
+          title="Submit for Approval?"
+          description="Ensure your course is complete and meets quality standards. You won't be able to edit it during the review process."
+          confirmText="Submit"
+          confirmVariant="default" // Hoặc "primary" nếu bạn có
+          isConfirming={submitConfirmDialogState.isProcessing} // Truyền trạng thái loading
+        />
 
-          {/* Loading Overlay */}
-          {(isProcessing || isInitializing || loading) && <FullScreenLoader />}
-        </div>
+        {/* Loading Overlay */}
+        {(isProcessing || isInitializing) && <FullScreenLoader />}
       </div>
     </InstructorLayout>
   );

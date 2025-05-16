@@ -17,7 +17,7 @@ import { courseKeys } from './course.queries'; // Để invalidate course detail
 // import { lessonKeys } from './lesson.queries'; // Để invalidate lesson detail? (ít cần)
 
 // Query Key Factory
-const progressKeys = {
+export const progressKeys = {
   all: ['progress'] as const,
   courseProgress: (courseId: number | undefined) =>
     [...progressKeys.all, 'course', courseId] as const,
@@ -60,7 +60,7 @@ export const useMarkLessonCompletion = (
     { lessonId: number; isCompleted: boolean }
   >({
     mutationFn: ({ lessonId, isCompleted }) =>
-      markLessonCompletion(lessonId, isCompleted),
+      markLessonCompletion(Number(lessonId), isCompleted),
     onSuccess: (data, variables) => {
       // Invalidate cache progress của khóa học chứa bài học này
       // Cần lấy courseId từ data hoặc variables? -> Hơi khó, cách đơn giản là invalidate all course progress

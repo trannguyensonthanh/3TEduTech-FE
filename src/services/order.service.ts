@@ -1,27 +1,34 @@
 // src/services/order.service.ts
+import { IsoDateTimeString } from '@/types/common.types';
 import apiHelper from './apiHelper';
 
+export type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
 export interface OrderItem {
-  OrderItemID: number;
-  CourseID: number;
-  PriceAtOrder: number;
-  EnrollmentID?: number | null;
+  orderItemId: number;
+  courseId: number;
+  priceAtOrder: number;
+  enrollmentId?: number | null;
   // Thông tin join
-  CourseName?: string;
-  Slug?: string;
-  ThumbnailUrl?: string | null;
+  courseName?: string;
+  slug?: string;
+  thumbnailUrl?: string | null;
 }
 
 export interface Order {
-  OrderID: number;
-  AccountID: number;
-  OrderDate: string; // ISO Date string
-  OriginalTotalPrice: number;
-  DiscountAmount: number; // Discount từ promotion
-  FinalAmount: number;
-  PromotionID?: number | null;
-  PaymentID?: number | null;
-  OrderStatus: string; // OrderStatus Enum
+  orderId: number;
+  accountId: number;
+  orderDate: IsoDateTimeString;
+  originalTotalPrice: number;
+  discountAmount: number;
+  finalAmount: number;
+  promotionId?: number | null;
+  paymentId?: number | null;
+  orderStatus: OrderStatus;
   // Thông tin join
   items?: OrderItem[];
   PaymentStatusID?: string | null; // PaymentStatus Enum
@@ -39,6 +46,10 @@ export interface OrderQueryParams {
   page?: number;
   limit?: number;
   status?: string; // OrderStatus Enum
+}
+
+export interface CreateOrderFromCartPayload {
+  promotionCode?: string | null; // Backend sẽ validate lại
 }
 
 /** Tạo đơn hàng từ giỏ hàng */

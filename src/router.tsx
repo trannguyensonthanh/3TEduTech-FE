@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Index from './pages/Index';
 import Courses from './pages/Courses';
 import Categories from './pages/Categories';
@@ -8,7 +8,7 @@ import InstructorDetail from './pages/InstructorDetail';
 import About from './pages/About';
 import CourseDetail from './pages/CourseDetail';
 import CourseSectionDetail from './pages/CourseSectionDetail';
-import LessonView from './pages/LessonView';
+// import LessonView from './pages/LessonView';
 import NotFound from './pages/NotFound';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -32,7 +32,7 @@ import CourseCreation from './pages/instructor/CourseCreation';
 import InstructorAnalytics from './pages/instructor/InstructorAnalytics';
 import InstructorStudents from './pages/instructor/InstructorStudents';
 import InstructorEarnings from './pages/instructor/InstructorEarnings';
-import InstructorEarnings_v2 from '@/pages/instructor/InstructorEarnings_v2';
+// import InstructorEarnings_v2 from '@/pages/instructor/InstructorEarnings_v2';
 import InstructorRegister from './pages/instructor/InstructorRegister';
 import InstructorRegisterSuccess from './pages/instructor/InstructorRegisterSuccess';
 import InstructorProfile from './pages/instructor/InstructorProfile';
@@ -56,16 +56,24 @@ import CurrenciesManagement from './pages/admin/CurrenciesManagement';
 import PaymentMethodsManagement from './pages/admin/PaymentMethodsManagement';
 import ExchangeRatesManagement from './pages/admin/ExchangeRatesManagement';
 import CourseEdit from '@/pages/instructor/CourseEdit';
+import Notifications from '@/pages/user/Notifications';
+import IntroPage from '@/pages/IntroPage';
 const AppRouter = () => {
+  const hasSeenIntro = localStorage.getItem('hasSeenIntro') === 'true';
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route
+          path="/"
+          element={!hasSeenIntro ? <Navigate to="/intro" replace /> : <Index />}
+        />
+        <Route path="/intro" element={<IntroPage />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:slug" element={<CourseDetail />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/my-courses" element={<MyCourses />} />
+        <Route path="/user/notifications" element={<Notifications />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/orders" element={<OrderHistory />} />
         <Route
@@ -114,10 +122,10 @@ const AppRouter = () => {
         <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
         <Route path="/instructor/students" element={<InstructorStudents />} />
         <Route path="/instructor/earnings" element={<InstructorEarnings />} />
-        <Route
+        {/* <Route
           path="/instructor/earnings_v2"
           element={<InstructorEarnings_v2 />}
-        />
+        /> */}
         <Route path="/instructor/register" element={<InstructorRegister />} />
         <Route
           path="/instructor/register/success"
@@ -130,29 +138,25 @@ const AppRouter = () => {
         <Route path="/instructor/profile" element={<InstructorProfile />} />
         <Route path="/instructor/settings" element={<InstructorSettings />} />
         <Route path="/instructor/qna" element={<InstructorQnA />} />
-        <Route
-          path="/checkout/momo/return"
-          element={<CheckoutReturn paymentMethod="momo" />}
-        />
-        <Route
-          path="/checkout/vnpay/return"
-          element={<CheckoutReturn paymentMethod="vnpay" />}
-        />
+        <Route path="/payment/result" element={<CheckoutReturn />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-canceled" element={<PaymentCanceled />} />
-        <Route path="/learn/:courseSlug" element={<CourseLearningPage />} />
+        <Route
+          path="/learn/:courseSlug/sections/:sectionId/lessons/:lessonId"
+          element={<CourseLearningPage />}
+        />
         <Route
           path="/courses/:courseId/sections/:sectionId"
           element={<CourseSectionDetail />}
         />
-        <Route
+        {/* <Route
           path="/courses/:courseId/sections/:sectionId/lessons/:lessonId"
           element={<LessonView />}
-        />
-        <Route
+        /> */}
+        {/* <Route
           path="/learn/:courseSlug/lessons/:lessonId"
           element={<CourseLearningPage />}
-        />
+        /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/instructor/courseCreate/LessonDialog.tsx
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,120 +45,197 @@ import {
   Link as LinkIcon,
   Cloud,
   Captions,
-  AlertTriangle,
-} from 'lucide-react'; // Renamed Book
-import { toast } from '@/hooks/use-toast';
-import QuizQuestionDialog from './QuizQuestionDialog';
+  Loader2,
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast'; // Đảm bảo hook toast tồn tại
+import QuizQuestionDialog from './QuizQuestionDialog'; // Đảm bảo component tồn tại
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { generateTempId } from '@/components/common/generateTempId'; // Hàm tạo ID tạm
+import TiptapEditor from '@/components/editor/TiptapEditor'; // Editor của bạn
 import {
-  Lesson,
-  LessonType,
-  QuizQuestion,
+  extractYoutubeId,
+  extractVimeoId,
+  getYoutubeEmbedUrl,
+  getVimeoEmbedUrl,
+} from '../../../utils/video.util'; // Các hàm tiện ích video
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import {
+  useAddLessonAttachment,
+  useCreateLesson,
+  useDeleteLessonAttachment,
+  useDeleteQuizQuestion,
+  useLessonDetail,
+  useLessonVideoUrl,
+  useUpdateLesson,
+  useUpdateLessonVideo,
+} from '@/hooks/queries/lesson.queries'; // Hook lấy signed URL
+import {
+  useAddSubtitleByUrl,
+  useDeleteSubtitle,
+  useSetPrimarySubtitle,
+} from '@/hooks/queries/subtitle.queries';
+import { useQueryClient } from '@tanstack/react-query';
+import {
   Attachment,
-  Subtitle,
-  QuizOption,
-} from '@/hooks/useCourseCurriculum';
-import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
-import { generateTempId } from '@/components/common/generateTempId';
-import TiptapEditor from '@/components/editor/TiptapEditor';
-import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries';
+  CreateLessonData,
+  UpdateLessonData,
+} from '@/services/lesson.service';
+import { courseKeys } from '@/hooks/queries/course.queries';
+import { Lesson } from '@/types/common.types';
+import { useLanguages } from '@/hooks/queries/language.queries';
+import { QuizQuestion } from '@/services/quiz.service';
+import { Subtitle } from '@/services/subtitle.service';
+
 // --- Zod Schema ---
 const quizOptionSchemaFE = z.object({
   tempId: z.union([z.string(), z.number()]).optional(),
-  id: z.number().optional(),
+  questionId: z.number().optional(),
   optionText: z.string().min(1, 'Option text is required').max(500),
   isCorrectAnswer: z.boolean().default(false),
   optionOrder: z.number().optional(),
 });
 
-const quizQuestionSchemaFE = z.object({
-  tempId: z.union([z.string(), z.number()]).optional(),
-  id: z.number().optional(),
-  questionText: z.string().min(1),
-  explanation: z.string().nullable().optional(),
-  questionOrder: z.number().optional(),
-  options: z.array(quizOptionSchemaFE).min(2),
-});
+// const quizQuestionSchemaFE = z.object({
+//   tempId: z.union([z.string(), z.number()]).optional(),
+//   id: z.number().optional(),
+//   questionText: z.string().min(1, 'Question text is required'),
+//   explanation: z.string().max(1000).nullable().optional(),
+//   questionOrder: z.number().optional(),
+//   options: z
+//     .array(quizOptionSchemaFE)
+//     .min(2, 'Minimum 2 options required')
+//     .max(10, 'Maximum 10 options allowed')
+//     .refine(
+//       (options) => options.filter((opt) => opt.isCorrectAnswer).length === 1,
+//       {
+//         message: 'Exactly one correct answer must be selected',
+//       }
+//     ), // Đảm bảo có đúng 1 đáp án đúng
+// });
 
-const attachmentSchemaFE = z.object({
-  tempId: z.union([z.string(), z.number()]).optional(),
-  id: z.number().optional(),
-  fileName: z.string(),
-  fileUrl: z.string().optional(),
-  fileType: z.string().optional(),
-  fileSize: z.number().optional(),
-  file: z.custom<File>((val) => val instanceof File, 'Invalid file'),
-});
+// const attachmentSchemaFE = z.object({
+//   tempId: z.union([z.string(), z.number()]).optional(),
+//   id: z.number().optional(),
+//   fileName: z.string(),
+//   fileUrl: z.string().optional(),
+//   fileType: z.string().optional(),
+//   fileSize: z.number().optional(),
+//   // File chỉ bắt buộc khi thêm mới, khi edit có thể là null nếu không thay đổi
+//   file: z.custom<File>((val) => val instanceof File, 'Invalid file').nullable(),
+// });
 
-const subtitleSchemaFE = z.object({
-  tempId: z.union([z.string(), z.number()]).optional(),
-  id: z.number().optional(),
-  languageCode: z.string().min(1).max(10),
-  languageName: z.string().min(1).max(50),
-  subtitleUrl: z.string().url('Invalid Subtitle URL').min(1),
-  isDefault: z.boolean().default(false),
-});
+// const subtitleSchemaFE = z.object({
+//   tempId: z.union([z.string(), z.number()]).optional(),
+//   id: z.number().optional(),
+//   languageCode: z.string().min(1, 'Code required').max(10),
+//   languageName: z.string().min(1, 'Name required').max(50),
+//   subtitleUrl: z.string().url('Invalid Subtitle URL').min(1, 'URL required'),
+//   isDefault: z.boolean().default(false),
+// });
 
 const lessonFormSchema = z
   .object({
-    lessonName: z.string().min(1, 'Lesson name is required').max(255),
+    // --- Core Fields ---
+    lessonName: z.string().trim().min(1, 'Lesson name is required').max(255),
     description: z.string().max(4000).optional().nullable(),
     lessonType: z.enum(['VIDEO', 'TEXT', 'QUIZ']),
     isFreePreview: z.boolean().default(false),
+
+    // --- Video Fields ---
     videoSourceType: z
       .enum(['CLOUDINARY', 'YOUTUBE', 'VIMEO'])
       .optional()
       .nullable(),
-    externalVideoInput: z
+    externalVideoInput: z // Dùng để nhập liệu YT/Vimeo URL hoặc ID
       .string()
+      .trim()
       .max(1000)
-      .refine((val) => !val || /^(ftp|http|https):\/\/[^ "]+$/.test(val), {
-        message: 'Invalid URL format',
-      })
-      .optional()
-      .nullable(),
-    lessonVideo: z
-      .custom<File | null>(
-        (val) => val === null || val instanceof File,
-        'Invalid file'
+      // Validate cơ bản URL hoặc ID pattern (có thể cải thiện regex)
+      .refine(
+        (val) =>
+          !val ||
+          /^(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.){1,}[a-zA-Z]{2,}(\/[^\s]*)?$/.test(
+            val
+          ) ||
+          /^[a-zA-Z0-9_-]{11}$/.test(val) ||
+          /^[0-9]+$/.test(val),
+        {
+          message: 'Invalid URL or ID format',
+        }
       )
       .optional()
       .nullable(),
-    textContent: z.string().max(20000).optional().nullable(),
+    lessonVideo: z // Dùng cho file upload lên Cloudinary (File object)
+      .custom<File | null>(
+        (val) => val === null || val instanceof File,
+        'Invalid file format'
+      )
+      .optional()
+      .nullable()
+      // Validate kích thước file (ví dụ: max 500MB)
+      .refine((file) => !file || file.size <= 500 * 1024 * 1024, {
+        message: 'Video file size cannot exceed 500MB.',
+      }),
+
+    // --- Text Field ---
+    textContent: z // Cho lesson type TEXT
+      .string()
+      .max(30000, 'Content is too long (max 30000 chars)') // Tăng giới hạn
+      .optional()
+      .nullable(),
+
+    // --- Trường ẩn để hỗ trợ validation khi edit ---
+    _initialExternalVideoId: z.string().optional().nullable(), // Lưu ID gốc khi edit
   })
+  // --- Refinements Logic ---
   .refine(
+    // Rule 1: Nếu VIDEO và YT/Vimeo => externalVideoInput phải hợp lệ (trích xuất được ID)
     (data) =>
       data.lessonType !== 'VIDEO' ||
       data.videoSourceType === 'CLOUDINARY' ||
-      !!data.externalVideoInput?.trim(),
+      (!!data.externalVideoInput &&
+        ((data.videoSourceType === 'YOUTUBE' &&
+          extractYoutubeId(data.externalVideoInput)) ||
+          (data.videoSourceType === 'VIMEO' &&
+            extractVimeoId(data.externalVideoInput)))),
     {
-      message: 'YouTube/Vimeo link is required',
+      message: 'Please enter a valid YouTube/Vimeo link or ID',
       path: ['externalVideoInput'],
     }
   )
   .refine(
+    // Rule 2: Nếu VIDEO và CLOUDINARY => phải có file mới HOẶC đã có video từ trước (khi edit)
     (data) =>
       data.lessonType !== 'VIDEO' ||
       data.videoSourceType !== 'CLOUDINARY' ||
-      !!data.lessonVideo ||
-      !!data.externalVideoInput,
+      !!data.lessonVideo || // Có file mới được chọn
+      !!data._initialExternalVideoId, // Hoặc có ID gốc từ trước (chứng tỏ đã upload)
     {
-      message: 'Please upload a video file or provide an existing video ID', // Clarified message
+      message: 'Please upload a video file',
       path: ['lessonVideo'],
     }
   )
-  .refine((data) => data.lessonType !== 'TEXT' || !!data.textContent?.trim(), {
-    message: 'Text content is required',
-    path: ['textContent'],
-  });
+  .refine(
+    // Rule 3: Nếu TEXT => textContent không được rỗng (hoặc có độ dài tối thiểu)
+    (data) =>
+      data.lessonType !== 'TEXT' ||
+      (!!data.textContent && data.textContent.trim().length >= 1), // Chỉ cần không rỗng
+    {
+      message: 'Text content cannot be empty',
+      path: ['textContent'],
+    }
+  );
 
 type LessonFormData = z.infer<typeof lessonFormSchema>;
 
+// Props Interface (Giữ nguyên)
 interface LessonDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Lesson) => void;
   initialData: Lesson | null;
   isEditing: boolean;
+  sectionId: number | string; // ** LUÔN CẦN sectionId **
+  courseId: number; // ** Cần courseId để invalidate **
   lessonVideoRef: React.RefObject<HTMLInputElement>;
   attachmentRef: React.RefObject<HTMLInputElement>;
 }
@@ -167,402 +243,799 @@ interface LessonDialogProps {
 const LessonDialog: React.FC<LessonDialogProps> = ({
   open,
   onClose,
-  onSave,
   initialData,
   isEditing,
+  sectionId, // Nhận sectionId
+  courseId, // Nhận courseId
   lessonVideoRef,
   attachmentRef,
 }) => {
+  const queryClient = useQueryClient();
   const form = useForm<LessonFormData>({
     resolver: zodResolver(lessonFormSchema),
-    defaultValues: {
-      lessonName: '',
-      description: null,
-      lessonType: 'VIDEO',
-      isFreePreview: false,
-      videoSourceType: 'CLOUDINARY',
-      externalVideoInput: null,
-      lessonVideo: null,
-      textContent: null,
-    },
+    defaultValues: {},
+    mode: 'onChange', // Validate khi thay đổi
   });
 
+  // --- States ---
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
-  const [lessonVideoPreview, setLessonVideoPreview] = useState<string | null>(
+  const [subtitleToDelete, setSubtitleToDelete] = useState<Subtitle | null>(
     null
   );
+  const [currentVideoUrlPreview, setCurrentVideoUrlPreview] = useState<
+    string | null
+  >(null);
+  const [externalVideoInfo, setExternalVideoInfo] = useState<{
+    type: 'youtube' | 'vimeo';
+    id: string;
+  } | null>(null);
   const [quizDialogOpen, setQuizDialogOpen] = useState(false);
+  // State để lưu File object mới chọn (quan trọng cho việc upload sau khi tạo/sửa lesson)
+  const [newVideoFileToUpload, setNewVideoFileToUpload] = useState<File | null>(
+    null
+  );
+  // State để lưu trữ attachments MỚI cần upload
+  const [newAttachmentsToUpload, setNewAttachmentsToUpload] = useState<
+    Attachment[]
+  >([]);
   const [editingQuizQuestion, setEditingQuizQuestion] =
     useState<QuizQuestion | null>(null);
   const [newSubtitle, setNewSubtitle] = useState<
-    Omit<Subtitle, 'id' | 'tempId'>
+    Omit<Subtitle, 'id' | 'tempId' | 'lessonId'>
   >({
     languageCode: '',
-    languageName: '',
     subtitleUrl: '',
     isDefault: false,
   });
-  const { data: lessonVideoData, isLoading: isLoadingLessonVideo } =
-    useLessonVideoUrl(initialData ? Number(initialData.lessonId) : undefined);
-  console.log('LessonDialog initialData:', initialData);
-  console.log('lessonVideoData:', lessonVideoData);
+  const { data: languagesData, isLoading: isLoadingLanguages } = useLanguages();
+  // --- Data Fetching ---
+  const currentLessonId =
+    isEditing && initialData?.lessonId
+      ? Number(initialData.lessonId)
+      : undefined;
+  // Fetch chi tiết lesson KHI EDITING để lấy attachments, subtitles, questions mới nhất
+  // (Nếu initialData từ props đã đủ thì không cần fetch lại)
+  const { data: fetchedLessonDetails, isLoading: isLoadingDetails } =
+    useLessonDetail(currentLessonId, {
+      enabled: isEditing && !!currentLessonId, // Chỉ fetch khi edit và có ID
+      staleTime: 1000 * 30, // Cache ngắn hơn vì có thể thay đổi thường xuyên
+    });
+  // Fetch signed URL nếu cần
+  const videoIdToFetchUrl =
+    isEditing &&
+    initialData?.videoSourceType === 'CLOUDINARY' &&
+    initialData?.externalVideoId &&
+    !newVideoFileToUpload
+      ? currentLessonId
+      : undefined;
+  const {
+    data: fetchedVideoData,
+    isLoading: isLoadingVideoUrl,
+    isError: isErrorVideoUrl,
+  } = useLessonVideoUrl(videoIdToFetchUrl);
+  console.log(initialData);
 
+  // --- Mutation Hooks ---
+  const { mutateAsync: createLessonMutateAsync, isPending: isCreatingLesson } =
+    useCreateLesson();
+  const { mutateAsync: updateLessonMutateAsync, isPending: isUpdatingLesson } =
+    useUpdateLesson();
+  const {
+    mutateAsync: updateLessonVideoMutateAsync,
+    isPending: isUploadingVideo,
+  } = useUpdateLessonVideo();
+  const {
+    mutateAsync: addAttachmentMutateAsync,
+    isPending: isUploadingAttachment,
+  } = useAddLessonAttachment();
+  const {
+    mutateAsync: deleteAttachmentMutateAsync,
+    isPending: isDeletingAttachment,
+  } = useDeleteLessonAttachment();
+  const { mutateAsync: addSubtitleMutateAsync, isPending: isAddingSubtitle } =
+    useAddSubtitleByUrl();
+  const {
+    mutateAsync: deleteSubtitleMutateAsync,
+    isPending: isDeletingSubtitle,
+  } = useDeleteSubtitle();
+  const {
+    mutateAsync: setPrimarySubtitleMutateAsync,
+    isPending: isSettingPrimarySub,
+  } = useSetPrimarySubtitle();
+  // *** Thêm hook mutation cho Quiz nếu quản lý ở đây ***
+  // const { mutateAsync: createQuestionMutateAsync, isPending: isCreatingQuestion } = useCreateQuizQuestion();
+  // const { mutateAsync: updateQuestionMutateAsync, isPending: isUpdatingQuestion } = useUpdateQuestion();
+  const {
+    mutateAsync: deleteQuestionMutateAsync,
+    isPending: isDeletingQuestion,
+  } = useDeleteQuizQuestion();
+
+  const isProcessing =
+    isCreatingLesson ||
+    isUpdatingLesson ||
+    isUploadingVideo ||
+    isUploadingAttachment ||
+    isDeletingAttachment ||
+    isAddingSubtitle ||
+    isDeletingSubtitle ||
+    isSettingPrimarySub; // Thêm các cờ isPending khác nếu có
+  // --- Effects ---
+
+  // Main Effect for Initialization and Resetting
   useEffect(() => {
-    if (lessonVideoPreview?.startsWith('blob:')) {
-      console.log(
-        'Revoking previous blob preview on effect run:',
-        lessonVideoPreview
-      );
-      URL.revokeObjectURL(lessonVideoPreview);
-    }
+    console.log('[Init Effect] Running. Open:', open);
+    // Dọn dẹp Blob URL cũ
+    if (currentVideoUrlPreview) URL.revokeObjectURL(currentVideoUrlPreview);
 
-    form.resetField('lessonVideo');
-    let newPreviewUrl: string | null = null;
-    let shouldRevokeOldPreview = true; // Mặc định là revoke preview cũ
+    setExternalVideoInfo(null);
+    setCurrentVideoUrlPreview(null); // Reset preview chính
+    setNewVideoFileToUpload(null); // Reset file mới
+    setNewAttachmentsToUpload([]); // Reset file attachment mới
+
     if (open) {
+      const dataToReset = isEditing ? initialData : null; // Dữ liệu gốc để reset
+      const detailsToUse = isEditing
+        ? fetchedLessonDetails || initialData
+        : null; // Ưu tiên dữ liệu fetch mới nhất nếu có
+      let newPreviewUrl: string | null = null;
+
       if (isEditing && initialData) {
+        console.log('[Effect Init] Editing Mode. InitialData:', initialData);
+        // 2. Reset Form
         form.reset({
-          lessonName: initialData.lessonName,
-          description: initialData.description || null,
-          lessonType: initialData.lessonType,
-          isFreePreview: initialData.isFreePreview,
+          lessonName: dataToReset.lessonName,
+          description: dataToReset.description || null,
+          lessonType: dataToReset.lessonType,
+          isFreePreview: dataToReset.isFreePreview,
           videoSourceType:
-            initialData.videoSourceType ||
-            (initialData.lessonType === 'VIDEO' ? 'CLOUDINARY' : null),
+            dataToReset.videoSourceType ||
+            (dataToReset.lessonType === 'VIDEO' ? 'CLOUDINARY' : null),
           externalVideoInput:
-            initialData.videoSourceType === 'YOUTUBE'
-              ? `https://youtube.com/watch?v=${initialData.externalVideoId}`
-              : initialData.videoSourceType === 'VIMEO'
-              ? `https://vimeo.com/${initialData.externalVideoId}`
+            dataToReset.videoSourceType === 'YOUTUBE'
+              ? getYoutubeEmbedUrl(dataToReset.externalVideoId || '')
+              : dataToReset.videoSourceType === 'VIMEO'
+              ? getVimeoEmbedUrl(dataToReset.externalVideoId || '')
               : null,
-          textContent: initialData.textContent || null,
-          lessonVideo: initialData.lessonVideoFile || null,
-        });
-        if (initialData.lessonType === 'VIDEO') {
-          if (initialData.videoSourceType === 'CLOUDINARY') {
-            if (initialData.lessonVideoFile instanceof File) {
-              // Nếu có File object, tạo Blob URL mới
-              console.log(
-                '[useEffect] Editing, Cloudinary type, found lessonVideoFile. Creating new Blob URL.'
-              );
-              newPreviewUrl = URL.createObjectURL(initialData.lessonVideoFile);
-              // Nếu Blob URL mới giống hệt Blob URL cũ đang hiển thị (ít khả năng, nhưng để an toàn)
-              // thì không cần revoke cái cũ rồi set lại cái giống hệt.
-              // Tuy nhiên, việc luôn tạo mới và revoke cũ có thể an toàn hơn về mặt quản lý resource.
-              if (lessonVideoPreview === newPreviewUrl) {
-                shouldRevokeOldPreview = false; // Không revoke nếu URL giống hệt
-              }
-            } else if (initialData?.externalVideoId === undefined) {
-              // Trường hợp: Đã upload lên Cloudinary, sử dụng signedUrl từ lessonVideoData
-              newPreviewUrl = lessonVideoData?.signedUrl;
-              console.log(
-                '[useEffect] Editing, Cloudinary type, using signedUrl from lessonVideoData:',
-                newPreviewUrl
-              );
-              // Nếu URL mới giống với preview hiện tại, không cần làm gì
-              if (lessonVideoPreview === newPreviewUrl) {
-                shouldRevokeOldPreview = false;
+          textContent: dataToReset.textContent || null,
+          lessonVideo: null, // RHF field for new file upload always starts null
+          _initialExternalVideoId: dataToReset.externalVideoId, // For refine rule
+        } as any);
+
+        // 3. Determine Initial Preview URL
+        if (dataToReset.lessonType === 'VIDEO') {
+          if (dataToReset.videoSourceType === 'CLOUDINARY') {
+            if (dataToReset.externalVideoId === 'uploaded') {
+              // Needs fetched signed URL
+
+              if (isLoadingVideoUrl) {
+                console.log(
+                  '[Effect Init] Waiting for Cloudinary signed URL...'
+                );
+                // Preview remains null for now, loader shown in JSX
+              } else if (fetchedVideoData?.signedUrl) {
+                console.log(
+                  '[Effect Init] Using fetched Cloudinary signed URL.'
+                );
+                newPreviewUrl = fetchedVideoData.signedUrl;
+              } else if (isErrorVideoUrl) {
+                console.error(
+                  '[Effect Init] Error fetching Cloudinary signed URL.'
+                );
               }
             }
           } else if (
             initialData.videoSourceType === 'YOUTUBE' ||
             initialData.videoSourceType === 'VIMEO'
           ) {
-            // Xử lý cho YouTube/Vimeo nếu bạn có cách hiển thị preview đặc biệt
-            // Hiện tại, bạn chỉ có input cho link, nên không cần preview ở đây
-            console.log(
-              'Editing: YouTube/Vimeo link, no direct preview in dialog for now.'
-            );
+            const id = initialData.externalVideoId; // Assume ID is stored
+            const type = initialData.videoSourceType.toLowerCase() as
+              | 'youtube'
+              | 'vimeo';
+            if (id) {
+              const embedUrl =
+                type === 'youtube'
+                  ? getYoutubeEmbedUrl(id)
+                  : getVimeoEmbedUrl(id);
+              console.log(`[Effect Init] Setting ${type} embed URL.`);
+              newPreviewUrl = embedUrl;
+              setExternalVideoInfo({ type, id }); // Set info for iframe rendering
+            }
           }
         }
-        // Add tempIds for proper key management and editing
-        // *** FIX: Cập nhật state cho quiz, attachments, subtitles ***
+
+        // 4. Initialize nested arrays (create copies)
         setQuizQuestions(
-          initialData.questions?.map((q) => ({
+          detailsToUse.questions?.map((q) => ({
             ...q,
-            tempId: q.tempId || q.id || generateTempId('question'),
-            options: (q.options || []).map((o) => ({
-              ...o,
-              tempId: o.tempId || o.id || generateTempId('option'),
-            })),
+            tempId: q.tempId || q.questionId || generateTempId('question'),
+            options:
+              q.options?.map((o) => ({
+                ...o,
+                tempId: o.tempId || o.optionId || generateTempId('option'),
+              })) || [],
           })) || []
         );
-
         setAttachments(
-          initialData.attachments?.map(
-            (a) =>
-              ({
-                ...a,
-                tempId: a.tempId || a.id || generateTempId('attach'),
-                file: null, // Luôn reset file object khi load lại
-              } as any)
-          ) || []
-        ); // Cần ép kiểu any vì ta thêm file: null
-
+          (detailsToUse.attachments?.map((a) => ({
+            ...a,
+            tempId: a.tempId || a.attachmentId || generateTempId('attach'),
+            file: null,
+          })) as Attachment[]) || []
+        );
         setSubtitles(
-          initialData.subtitles?.map((s) => ({
+          detailsToUse.subtitles?.map((s) => ({
             ...s,
-            tempId: s.tempId || s.id || generateTempId('subtitle'),
+            tempId: s.tempId || s.subtitleId || generateTempId('subtitle'),
           })) || []
         );
-        setLessonVideoPreview(null);
-        // Display existing Cloudinary video info (if editing)
-        if (
-          initialData.videoSourceType === 'CLOUDINARY' &&
-          initialData.externalVideoId === undefined
-        ) {
-          // You might want to display a placeholder or the public ID instead of trying to preview
-          console.log(
-            'Existing Cloudinary Video ID:',
-            initialData.externalVideoId
-          );
-        }
       } else {
-        form.reset();
+        // Adding New
+        console.log('[Effect Init] Add New Mode. Resetting form and states.');
+        form.reset({
+          lessonName: '',
+          description: null,
+          lessonType: 'VIDEO',
+          isFreePreview: false,
+          videoSourceType: 'CLOUDINARY',
+          externalVideoInput: null,
+          lessonVideo: null,
+          textContent: null,
+        });
         setQuizQuestions([]);
         setAttachments([]);
         setSubtitles([]);
-        setLessonVideoPreview(null);
       }
+
+      // 5. Set the calculated preview URL
+      if (currentVideoUrlPreview !== newPreviewUrl) {
+        // Avoid unnecessary sets
+        setCurrentVideoUrlPreview(newPreviewUrl);
+      }
+      console.log(newPreviewUrl);
+      // 6. Reset other dialog states
       setNewSubtitle({
         languageCode: '',
-        languageName: '',
         subtitleUrl: '',
         isDefault: false,
       });
-      setEditingQuizQuestion(null); // Reset cả câu hỏi đang sửa
-      setQuizDialogOpen(false); // Đảm bảo dialog quiz đóng
+      setEditingQuizQuestion(null);
+      setQuizDialogOpen(false);
     }
-    // Dọn dẹp Blob URL cũ *trước khi* set cái mới nếu cần
-    if (shouldRevokeOldPreview && lessonVideoPreview?.startsWith('blob:')) {
-      console.log('[useEffect] Revoking old blob preview:', lessonVideoPreview);
-      URL.revokeObjectURL(lessonVideoPreview);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    open,
+    isEditing,
+    initialData,
+    form.reset,
+    fetchedVideoData,
+    isLoadingVideoUrl,
+    isErrorVideoUrl,
+    fetchedLessonDetails,
+  ]); // Dependencies
+
+  // Effect cập nhật preview khi signed URL về
+  useEffect(() => {
+    if (videoIdToFetchUrl && fetchedVideoData?.signedUrl) {
+      if (currentVideoUrlPreview !== fetchedVideoData.signedUrl) {
+        if (currentVideoUrlPreview?.startsWith('blob:'))
+          URL.revokeObjectURL(currentVideoUrlPreview);
+        console.log(
+          '[Cloudinary URL Effect] Received signed URL:',
+          fetchedVideoData.signedUrl
+        );
+        setCurrentVideoUrlPreview(fetchedVideoData.signedUrl);
+      }
+    }
+    // Nếu đang edit mà không fetch được URL (lỗi hoặc không có ID) thì để preview là null
+    else if (
+      videoIdToFetchUrl &&
+      (isErrorVideoUrl || (!isLoadingVideoUrl && !fetchedVideoData?.signedUrl))
+    ) {
+      if (
+        currentVideoUrlPreview &&
+        !currentVideoUrlPreview.startsWith('blob:')
+      ) {
+        // Chỉ reset nếu đang hiển thị URL cũ
+        setCurrentVideoUrlPreview(null);
+      }
+    }
+  }, [
+    fetchedVideoData,
+    videoIdToFetchUrl,
+    isErrorVideoUrl,
+    isLoadingVideoUrl,
+    currentVideoUrlPreview,
+  ]);
+
+  // Effect for YouTube/Vimeo input change
+  useEffect(() => {
+    const source = form.watch('videoSourceType');
+    const input = form.watch('externalVideoInput');
+
+    // Only run if the source is YT/Vimeo
+    if (source !== 'YOUTUBE' && source !== 'VIMEO') {
+      // If source changed away from YT/Vimeo, reset the info
+      if (externalVideoInfo !== null) {
+        setExternalVideoInfo(null);
+        // Optionally reset preview if it was YT/Vimeo
+        if (
+          currentVideoUrlPreview &&
+          (currentVideoUrlPreview.includes('youtube.com') ||
+            currentVideoUrlPreview.includes('vimeo.com'))
+        ) {
+          setCurrentVideoUrlPreview(null);
+        }
+      }
+      return;
     }
 
-    // Cập nhật state preview
-    // Chỉ cập nhật nếu newPreviewUrl khác với lessonVideoPreview hiện tại để tránh vòng lặp vô hạn nếu lessonVideoPreview nằm trong dependency array
-    // (Mặc dù hiện tại nó không nằm trong dependency array của useEffect này)
-    if (lessonVideoPreview !== newPreviewUrl) {
-      console.log('[useEffect] Setting lessonVideoPreview to:', newPreviewUrl);
-      setLessonVideoPreview(newPreviewUrl);
-    }
-    // Quan trọng: Không reset form.setValue('lessonVideo', null) ở đây nữa.
-    // Trường 'lessonVideo' của RHF sẽ chỉ được set khi người dùng chọn file mới trong handleVideoFileChange.
-  }, [open, isEditing, initialData, form]);
+    let videoId: string | null = null;
+    let videoType: 'youtube' | 'vimeo' | null = null;
+    let embedUrl: string | null = null;
 
-  // Dọn dẹp Blob URL cuối cùng khi component unmount (dialog đóng hoàn toàn)
-  // useEffect dọn dẹp khi component unmount
+    if (source === 'YOUTUBE') {
+      videoId = extractYoutubeId(input || '');
+      if (videoId) {
+        videoType = 'youtube';
+        embedUrl = getYoutubeEmbedUrl(videoId);
+      }
+    } else if (source === 'VIMEO') {
+      videoId = extractVimeoId(input || '');
+      if (videoId) {
+        videoType = 'vimeo';
+        embedUrl = getVimeoEmbedUrl(videoId);
+      }
+    }
+
+    // Update states if needed
+    if (videoId && videoType) {
+      if (
+        externalVideoInfo?.id !== videoId ||
+        externalVideoInfo?.type !== videoType
+      ) {
+        setExternalVideoInfo({ id: videoId, type: videoType });
+      }
+      if (currentVideoUrlPreview !== embedUrl) {
+        if (currentVideoUrlPreview?.startsWith('blob:'))
+          URL.revokeObjectURL(currentVideoUrlPreview);
+        setCurrentVideoUrlPreview(embedUrl);
+      }
+    } else {
+      if (externalVideoInfo !== null) {
+        setExternalVideoInfo(null);
+        if (
+          currentVideoUrlPreview &&
+          (currentVideoUrlPreview.includes('youtube.com') ||
+            currentVideoUrlPreview.includes('vimeo.com'))
+        ) {
+          setCurrentVideoUrlPreview(null);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.watch('externalVideoInput'), form.watch('videoSourceType')]); // Watch relevant form fields
+
+  // Effect for final cleanup on unmount
   useEffect(() => {
     return () => {
-      if (lessonVideoPreview?.startsWith('blob:')) {
-        console.log(
-          '[useEffect Cleanup] Revoking blob preview on unmount:',
-          lessonVideoPreview
-        );
-        URL.revokeObjectURL(lessonVideoPreview);
+      if (currentVideoUrlPreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(currentVideoUrlPreview);
       }
     };
-  }, [lessonVideoPreview]); // Chỉ chạy khi lessonVideoPreview thay đổi
-  const handleFormSubmit = (formData: LessonFormData) => {
-    const newSelectedFile = form.getValues('lessonVideo'); // File | null
-    console.log('New selected file:', newSelectedFile);
-    console.log(' initialData.lessonVideoFile:', initialData?.lessonVideoFile);
-    console.log(newSelectedFile instanceof File);
-    // Xác định File object cuối cùng
-    let finalFileObject: File | null = null;
-    if (newSelectedFile instanceof File) {
-      finalFileObject = newSelectedFile;
-    } else if (isEditing && initialData?.lessonVideoFile instanceof File) {
-      finalFileObject = initialData.lessonVideoFile;
-    }
+  }, [currentVideoUrlPreview]);
 
-    // Xác định externalVideoId cuối cùng
-    let finalExternalVideoId: string | null | undefined = undefined;
-    if (formData.videoSourceType === 'CLOUDINARY') {
-      if (finalFileObject) {
-        // Nếu có file mới hoặc giữ file cũ (chưa upload), externalId sẽ do backend xử lý khi upload
-        finalExternalVideoId = null;
-      } else if (
-        isEditing &&
-        initialData?.videoSourceType === 'CLOUDINARY' &&
-        initialData?.externalVideoId
-      ) {
-        finalExternalVideoId = initialData.externalVideoId; // Giữ ID Cloudinary cũ nếu không có file mới
-      }
-    } else {
-      // YouTube, Vimeo
-      finalExternalVideoId = formData.externalVideoInput;
-    }
-    console.log('finalFileObject:', finalFileObject);
-    const finalLessonData: Lesson = {
-      // ID và order luôn lấy từ initialData nếu đang edit
-      tempId:
-        initialData?.tempId ||
-        (isEditing && initialData?.id ? undefined : generateTempId('lesson')),
-      id: isEditing ? initialData?.id : undefined,
-      lessonOrder: isEditing ? initialData?.lessonOrder : undefined,
-
-      // Các trường từ form
-      lessonName: formData.lessonName,
-      description: formData.description,
-      lessonType: formData.lessonType,
-      isFreePreview: formData.isFreePreview,
-      videoSourceType: formData.videoSourceType,
-      textContent: formData.textContent,
-      externalVideoInput: formData.externalVideoInput, // Giữ lại để form có thể hiển thị, nhưng externalVideoId mới là cái quan trọng
-
-      // Các trường đã xử lý
-      lessonVideoFile: finalFileObject,
-      lessonVideo: finalFileObject, // Giữ lại để form có thể hiển thị, nhưng lessonVideoFile mới là cái quan trọng
-      externalVideoId: finalExternalVideoId,
-
-      // Các mảng từ state của dialog
-      questions:
-        formData.lessonType === 'QUIZ'
-          ? quizQuestions
-          : isEditing
-          ? initialData?.questions
-          : [],
-      attachments: attachments,
-      subtitles:
-        formData.lessonType === 'VIDEO'
-          ? subtitles
-          : isEditing
-          ? initialData?.subtitles
-          : [],
-
-      // Dọn dẹp (có thể gộp vào logic trên nếu muốn)
-      ...(formData.lessonType !== 'VIDEO' && {
-        videoSourceType: undefined,
-        externalVideoId: undefined,
-        lessonVideoFile: undefined,
-        subtitles: undefined,
-      }),
-      ...(formData.lessonType !== 'TEXT' && { textContent: undefined }),
-      ...(formData.lessonType !== 'QUIZ' && { questions: undefined }),
-    };
-    console.log('finalLessonData:', finalLessonData);
-    console.log(
-      '[LessonDialog] Final lesson data to save:',
-      JSON.parse(JSON.stringify(finalLessonData))
-    );
-    onSave(finalLessonData);
-  };
+  // --- Handlers ---
 
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Clean up previous blob URL if exists
-    if (lessonVideoPreview?.startsWith('blob:')) {
-      URL.revokeObjectURL(lessonVideoPreview);
+    if (currentVideoUrlPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(currentVideoUrlPreview);
     }
-    setLessonVideoPreview(null); // Reset
+    setCurrentVideoUrlPreview(null);
+    setExternalVideoInfo(null); // Reset YT/Vimeo info
+
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      // Basic client-side validation (optional, supplement Zod)
+      if (file.size > 100 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Video cannot exceed 100MB.',
+          variant: 'destructive',
+        });
+        if (lessonVideoRef.current) lessonVideoRef.current.value = ''; // Clear input
+        return;
+      }
+      const newBlobUrl = URL.createObjectURL(file);
+      setCurrentVideoUrlPreview(newBlobUrl);
       form.setValue('lessonVideo', file, { shouldValidate: true });
-      const previewUrl = URL.createObjectURL(file);
-      setLessonVideoPreview(previewUrl);
+      setNewVideoFileToUpload(file); // ** Quan trọng: Lưu File object vào state riêng **
+      form.setValue('lessonVideo', file, { shouldValidate: true }); // Cập nhật RHF để validate
       toast({ title: 'Video Selected', description: file.name });
     } else {
+      setNewVideoFileToUpload(null);
       form.setValue('lessonVideo', null);
     }
   };
 
+  const handleFormSubmit = async (formData: LessonFormData) => {
+    console.log('[Submit] Form Data:', formData);
+    // Kiểm tra trạng thái video upload
+    try {
+      let savedLessonId: number | undefined | string = isEditing
+        ? initialData?.lessonId
+        : undefined;
+      let lessonSavedSuccessfully = false;
+      // 1. Tạo hoặc Cập nhật Lesson Metadata
+      const lessonPayload: CreateLessonData | UpdateLessonData = {
+        lessonName: formData.lessonName,
+        description: formData.description,
+        lessonType: formData.lessonType,
+        isFreePreview: formData.isFreePreview,
+        textContent:
+          formData.lessonType === 'TEXT' ? formData.textContent : null,
+        videoSourceType:
+          formData.lessonType === 'VIDEO' ? formData.videoSourceType : null,
+        // ExternalVideoId sẽ được xử lý cẩn thận
+        externalVideoInput: null, // Tạm thời set null
+      };
+
+      // Xác định externalVideoId cho API
+      if (formData.lessonType === 'VIDEO') {
+        if (formData.videoSourceType === 'CLOUDINARY') {
+          // Nếu KHÔNG upload file mới VÀ đang edit => giữ ID cũ
+          if (
+            !newVideoFileToUpload &&
+            isEditing &&
+            initialData?.videoSourceType === 'CLOUDINARY'
+          ) {
+            lessonPayload.externalVideoInput = initialData.externalVideoId;
+          } else {
+            lessonPayload.externalVideoInput = null; // Sẽ được set sau khi upload
+          }
+        } else if (
+          formData.videoSourceType === 'YOUTUBE' ||
+          formData.videoSourceType === 'VIMEO'
+        ) {
+          const id = externalVideoInfo?.id; // Lấy ID đã validate
+          if (!id) {
+            toast({ title: 'Invalid Link/ID', variant: 'destructive' });
+            form.setError('externalVideoInput', {
+              message: 'Invalid Link or ID',
+            });
+            return;
+          }
+          lessonPayload.externalVideoInput = id;
+        }
+      } else {
+        delete lessonPayload.videoSourceType; // Không cần gửi nếu không phải VIDEO
+        delete lessonPayload.externalVideoInput; // Không cần gửi nếu không phải VIDEO
+      }
+
+      console.log('[Submit] Lesson Payload before API call:', lessonPayload);
+
+      let lessonResponse: Lesson; // Lưu kết quả lesson đã tạo/sửa
+
+      if (isEditing && currentLessonId) {
+        console.log(
+          '[Submit] Updating Lesson Metadata:',
+          currentLessonId,
+          lessonPayload
+        );
+        lessonResponse = await updateLessonMutateAsync(
+          {
+            lessonId: currentLessonId,
+            data: lessonPayload as UpdateLessonData,
+          },
+          {
+            onSuccess: (data) => {
+              toast({
+                title: 'Lesson Updated',
+                description: 'Lesson metadata updated successfully.',
+              });
+              queryClient.invalidateQueries({
+                queryKey: ['lessons', 'detail', currentLessonId],
+              });
+            },
+            onError: (error: any) => {
+              console.error('Error updating lesson metadata:', error);
+              toast({
+                title: 'Update Failed',
+                description:
+                  error.message || 'Could not update lesson metadata.',
+                variant: 'destructive',
+              });
+            },
+          }
+        );
+        savedLessonId = lessonResponse.lessonId || currentLessonId; // Cập nhật ID nếu BE trả về
+        lessonSavedSuccessfully = true;
+      } else {
+        console.log('[Submit] Creating New Lesson Metadata:', lessonPayload);
+        lessonResponse = await createLessonMutateAsync({
+          courseId: Number(courseId),
+          sectionId: Number(sectionId),
+          data: lessonPayload as CreateLessonData,
+        });
+        savedLessonId = lessonResponse.lessonId; // Lấy ID mới
+        toast({ title: 'Lesson Created', description: 'Metadata saved.' });
+        lessonSavedSuccessfully = true;
+      }
+
+      if (!savedLessonId) {
+        throw new Error('Failed to get Lesson ID after save.');
+      }
+      savedLessonId = Number(savedLessonId); // Đảm bảo là number
+      let videoUploadError: Error | null = null;
+      // 2. Upload Video Mới (nếu có)
+      if (newVideoFileToUpload && formData.videoSourceType === 'CLOUDINARY') {
+        console.log(
+          '[Submit] Uploading new Cloudinary video for lesson:',
+          savedLessonId
+        );
+        toast({ title: 'Uploading Video...', description: 'Please wait.' });
+        try {
+          await updateLessonVideoMutateAsync({
+            lessonId: savedLessonId,
+            file: newVideoFileToUpload,
+          });
+          toast({
+            title: 'Video Uploaded',
+            description: 'Video successfully uploaded.',
+          });
+          setNewVideoFileToUpload(null); // Reset state file sau khi upload thành công
+        } catch (uploadError: any) {
+          videoUploadError = uploadError; // Lưu lỗi lại
+          toast({
+            title: 'Video Upload Failed',
+            description: uploadError.message || 'Could not upload video.',
+            variant: 'destructive',
+          });
+          // *** KHÔNG ĐÓNG DIALOG, KHÔNG TIẾP TỤC ***
+          // Người dùng cần xử lý lỗi này (ví dụ: chọn lại file)
+          return; // Dừng hàm submit ở đây
+        }
+      }
+
+      // 3. Upload Attachments Mới (nếu có) - dùng state newAttachmentsToUpload
+      const attachmentErrors: { fileName: string; reason: string }[] = [];
+      if (newAttachmentsToUpload.length > 0 && !videoUploadError) {
+        // Chỉ chạy nếu không có lỗi video trước đó
+        console.log(
+          '[Submit] Uploading new attachments for lesson:',
+          savedLessonId
+        );
+        toast({
+          title: 'Uploading Attachments...',
+          description: `Uploading ${newAttachmentsToUpload.length} file(s).`,
+        });
+        const uploadPromises = newAttachmentsToUpload.map((att) =>
+          addAttachmentMutateAsync({
+            lessonId: savedLessonId as number,
+            file: att.file!,
+          })
+            .then(() => ({ status: 'fulfilled', fileName: att.fileName }))
+            .catch((err) => ({
+              status: 'rejected',
+              fileName: att.fileName,
+              reason: err.message || 'Upload failed',
+            }))
+        );
+        const results = await Promise.allSettled(uploadPromises);
+        results.forEach((result: any) => {
+          if (result.status === 'rejected') {
+            attachmentErrors.push({
+              fileName: result.reason.fileName,
+              reason: result.reason.reason,
+            });
+            toast({
+              title: `Attachment Upload Failed: ${result.reason.fileName}`,
+              description: result.reason.reason,
+              variant: 'destructive',
+            });
+          }
+        });
+        // Reset ngay cả khi có lỗi, vì những cái thành công đã lên rồi
+        setNewAttachmentsToUpload([]);
+      }
+
+      // 4. Invalidate Query và Đóng Dialog (chỉ đóng nếu không có lỗi nghiêm trọng như upload video)
+      if (!videoUploadError) {
+        // Chỉ đóng nếu video upload thành công (hoặc không cần upload)
+        queryClient.invalidateQueries({
+          queryKey: courseKeys.detailById(courseId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: courseKeys.detailBySlug(undefined),
+        });
+        // Hiển thị thông báo tổng kết nếu có lỗi attachment
+        if (attachmentErrors.length > 0) {
+          toast({
+            title: 'Some Attachments Failed',
+            description: `Could not upload ${attachmentErrors.length} attachment(s).`,
+            variant: 'destructive',
+          });
+        } else if (lessonSavedSuccessfully) {
+          // Chỉ hiển thị thành công chung nếu mọi thứ (metadata, video, attachment) đều ổn
+          toast({
+            title: isEditing ? 'Lesson Updated' : 'Lesson Added',
+            description: 'All changes saved successfully.',
+          });
+        }
+        onClose();
+      }
+    } catch (error: any) {
+      // Bắt lỗi từ create/update metadata
+      console.error('Error saving lesson metadata:', error);
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Could not save lesson metadata.',
+        variant: 'destructive',
+      });
+      // Không đóng dialog khi lỗi metadata
+    }
+  };
+  // --- Other Handlers (Attachment, Quiz, Subtitle) ---
+  // Keep these handlers as they were, ensuring they manage their respective states correctly
   const handleInternalAttachmentUpload = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const newAttachment: Attachment = {
-        tempId: generateTempId('attach'),
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        file: file,
-        // fileUrl: URL.createObjectURL(file) // Create blob URL for preview if needed
-      };
-      setAttachments((prev) => [...prev, newAttachment]);
-      toast({
-        title: 'Attachment Added',
-        description: `File "${file.name}" ready.`,
-      });
-      if (attachmentRef.current) attachmentRef.current.value = '';
-    }
-  };
+      const files = Array.from(e.target.files);
+      const validFiles = files; // Thêm validation nếu cần
 
-  const handleInternalRemoveAttachment = (attachmentId: number | string) => {
-    if (window.confirm('Remove this attachment?')) {
-      const attachmentToRemove = attachments.find(
-        (a) => a.id === attachmentId || a.tempId === attachmentId
+      const newUploads = validFiles.map(
+        (file) =>
+          ({
+            tempId: generateTempId('new-attach'),
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            file: file, // Giữ File object ở đây để upload sau
+          } as Attachment)
       );
-      if (attachmentToRemove?.fileUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(attachmentToRemove.fileUrl);
+
+      if (newUploads.length > 0) {
+        setNewAttachmentsToUpload((prev) => [...prev, ...newUploads]);
+        setAttachments((prev) => [...prev, ...newUploads]); // Thêm vào danh sách hiển thị luôn
+        toast({
+          title: 'Attachments Ready',
+          description: `${newUploads.length} file(s) ready for upload upon saving lesson.`,
+        });
       }
-      setAttachments((prev) =>
-        prev.filter((a) => a.id !== attachmentId && a.tempId !== attachmentId)
-      );
-      toast({ title: 'Attachment Removed' });
+      if (attachmentRef.current) attachmentRef.current.value = ''; // Reset input
     }
   };
 
-  // --- Quiz Question Logic ---
+  const handleInternalRemoveAttachment = async (
+    idToRemove: number | string
+  ) => {
+    const attachment = attachments.find(
+      (a) => a.attachmentId === idToRemove || a.tempId === idToRemove
+    );
+    if (!attachment) return;
+
+    // Nếu là attachment mới (chỉ có tempId và file), chỉ cần xóa khỏi state FE
+    if (attachment.tempId && !attachment.attachmentId) {
+      if (
+        window.confirm(
+          `Remove attachment "${attachment.fileName}"? It hasn't been saved yet.`
+        )
+      ) {
+        setAttachments((prev) => prev.filter((a) => a.tempId !== idToRemove));
+        setNewAttachmentsToUpload((prev) =>
+          prev.filter((a) => a.tempId !== idToRemove)
+        ); // Xóa khỏi hàng đợi upload
+        toast({
+          title: 'Attachment Removed',
+          description: `"${attachment.fileName}" removed.`,
+        });
+      }
+      return;
+    }
+
+    // Nếu là attachment đã lưu (có id), gọi API xóa
+    if (
+      attachment.attachmentId &&
+      window.confirm(`Permanently delete attachment "${attachment.fileName}"?`)
+    ) {
+      try {
+        await deleteAttachmentMutateAsync({
+          lessonId: Number(currentLessonId),
+          attachmentId: Number(attachment.attachmentId),
+        });
+        // Xóa khỏi state hiển thị sau khi API thành công
+        setAttachments((prev) =>
+          prev.filter((a) => a.attachmentId !== idToRemove)
+        );
+        toast({
+          title: 'Attachment Deleted',
+          description: `"${attachment.fileName}" deleted successfully.`,
+        });
+        // Invalidate query lesson detail để cập nhật danh sách attachments
+        queryClient.invalidateQueries({
+          queryKey: ['lessonDetail', currentLessonId],
+        }); // Giả sử bạn có key này
+      } catch (error: any) {
+        toast({
+          title: 'Delete Failed',
+          description: error.message || 'Could not delete attachment.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
   const openAddQuizDialog = () => {
+    // Chỉ mở dialog nếu lesson đã được lưu (có lessonId)
+    if (!currentLessonId) {
+      toast({
+        title: 'Save Lesson First',
+        description: 'Please save the lesson before adding quiz questions.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setEditingQuizQuestion(null);
     setQuizDialogOpen(true);
   };
+
   const openEditQuizDialog = (question: QuizQuestion) => {
+    // Chỉ mở dialog nếu lesson đã được lưu
+    if (!currentLessonId) return; // Không nên xảy ra nếu question tồn tại
     setEditingQuizQuestion(question);
     setQuizDialogOpen(true);
   };
-  const saveQuizQuestion = (questionDataFromDialog: any) => {
-    const questionToSave: QuizQuestion = {
-      ...questionDataFromDialog,
-      tempId:
-        editingQuizQuestion?.tempId ||
-        questionDataFromDialog.tempId ||
-        (editingQuizQuestion?.id ? undefined : generateTempId('question')),
-      id: editingQuizQuestion?.id,
-      questionOrder: editingQuizQuestion?.questionOrder ?? quizQuestions.length,
-      options: questionDataFromDialog.options.map(
-        (opt: any, index: number) => ({
-          ...opt,
-          tempId: opt.tempId || `option-${Date.now()}-${index}`,
-          optionOrder: index,
-        })
-      ),
-    };
-    setQuizQuestions((prev) => {
-      if (editingQuizQuestion) {
-        return prev.map((q) =>
-          q.id === editingQuizQuestion.id ||
-          q.tempId === editingQuizQuestion.tempId
-            ? questionToSave
-            : q
+
+  const deleteQuizQuestionInternal = async (questionId: number | string) => {
+    // *** THAY THẾ BẰNG HOOK DELETE QUESTION ***
+
+    if (!currentLessonId || !questionId || typeof questionId === 'string')
+      return; // Cần ID thật
+
+    if (window.confirm('Delete this question and its options?')) {
+      try {
+        await deleteQuestionMutateAsync({
+          lessonId: Number(currentLessonId),
+          questionId: Number(questionId),
+        }); // Gọi API xóa
+        console.log(
+          `API call to delete question ${questionId} for lesson ${currentLessonId}`
+        ); // Placeholder
+        // Cập nhật state cục bộ SAU KHI API thành công (hoặc dựa vào invalidation)
+        setQuizQuestions((prev) =>
+          prev
+            .filter(
+              (q) => q.questionId !== questionId && q.tempId !== questionId
+            )
+            .map((q, index) => ({ ...q, questionOrder: index }))
         );
-      } else {
-        return [...prev, questionToSave];
+        toast({ title: 'Question removed' });
+        // Invalidate query chi tiết lesson hoặc course
+        queryClient.invalidateQueries({
+          queryKey: courseKeys.detailById(courseId),
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Delete Failed',
+          description: error.message || 'Could not delete question.',
+          variant: 'destructive',
+        });
       }
-    });
-    setQuizDialogOpen(false);
-  };
-  const deleteQuizQuestionInternal = (questionId: number | string) => {
-    if (window.confirm('Delete this question?')) {
-      setQuizQuestions((prev) =>
-        prev
-          .filter((q) => q.id !== questionId && q.tempId !== questionId)
-          .map((q, index) => ({ ...q, questionOrder: index }))
-      );
-      toast({ title: 'Question removed', variant: 'destructive' });
     }
   };
-
   // --- Subtitle Logic ---
-  const handleAddSubtitle = () => {
-    if (
-      !newSubtitle.languageCode.trim() ||
-      !newSubtitle.languageName.trim() ||
-      !newSubtitle.subtitleUrl.trim()
-    ) {
+  const handleAddSubtitle = async () => {
+    if (!currentLessonId) {
+      toast({
+        title: 'Cannot Add Subtitle',
+        description: 'Please save the lesson first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!newSubtitle.languageCode.trim() || !newSubtitle.subtitleUrl.trim()) {
       toast({
         title: 'Missing Info',
         description: 'Please provide language code, name, and URL.',
@@ -581,100 +1054,209 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
       });
       return;
     }
-
-    const subtitleToAdd: Subtitle = {
-      ...newSubtitle,
-      tempId: generateTempId('subtitle'),
-    };
-    setSubtitles((prev) => {
-      // Ensure only one default
-      if (subtitleToAdd.isDefault) {
-        return [
-          ...prev.map((s) => ({ ...s, isDefault: false })),
-          subtitleToAdd,
-        ];
-      }
-      return [...prev, subtitleToAdd];
-    });
-    // Reset form
-    setNewSubtitle({
-      languageCode: '',
-      languageName: '',
-      subtitleUrl: '',
-      isDefault: false,
-    });
-    toast({
-      title: 'Subtitle Added',
-      description: `Subtitle for ${subtitleToAdd.languageName} added.`,
-    });
-  };
-
-  const handleRemoveSubtitle = (subtitleId: number | string) => {
-    if (window.confirm('Delete this subtitle?')) {
-      setSubtitles((prev) =>
-        prev.filter((s) => s.id !== subtitleId && s.tempId !== subtitleId)
+    try {
+      await addSubtitleMutateAsync(
+        {
+          lessonId: Number(currentLessonId),
+          data: {
+            languageCode: newSubtitle.languageCode,
+            subtitleUrl: newSubtitle.subtitleUrl,
+            isDefault: newSubtitle.isDefault,
+          },
+        },
+        {
+          onSuccess: (data) => {
+            toast({
+              title: 'Subtitle Added',
+              description: `Subtitle for ${data.languageCode} added successfully.`,
+            });
+            queryClient.invalidateQueries({
+              queryKey: ['lessons', 'detail', currentLessonId],
+            });
+            // Reset form
+            setNewSubtitle({
+              languageCode: '',
+              subtitleUrl: '',
+              isDefault: false,
+            });
+          },
+          onError: (error: any) => {
+            console.error('Error adding subtitle:', error);
+            toast({
+              title: 'Add Subtitle Failed',
+              description: 'Could not add subtitle.',
+              variant: 'destructive',
+            });
+          },
+        }
       );
-      toast({ title: 'Subtitle Removed', variant: 'destructive' });
+    } catch (error: any) {
+      toast({
+        title: 'Add Subtitle Failed',
+        description: 'Could not add subtitle.',
+        variant: 'destructive',
+      });
+    }
+  };
+  const handleRemoveSubtitle = (idToRemove: number | string) => {
+    const subtitle = subtitles.find(
+      (s) => s.subtitleId === idToRemove || s.tempId === idToRemove
+    );
+    if (!subtitle) return;
+
+    setSubtitleToDelete(subtitle); // Lưu subtitle cần xóa vào state
+  };
+  // const handleRemoveSubtitle = async (idToRemove: number | string) => {
+  //   const subtitle = subtitles.find(
+  //     (s) => s.subtitleId === idToRemove || s.tempId === idToRemove
+  //   );
+  //   if (!subtitle || !subtitle.subtitleId) return; // Chỉ xóa cái đã lưu
+
+  //   try {
+  //     const confirmDelete = window.confirm(
+  //       `Are you sure you want to delete the subtitle "${subtitle.languageName}"?`
+  //     );
+
+  //     if (!confirmDelete) return;
+
+  //     await deleteSubtitleMutateAsync(
+  //       {
+  //         lessonId: Number(currentLessonId),
+  //         subtitleId: Number(subtitle.subtitleId),
+  //       },
+  //       {
+  //         onSuccess: () => {
+  //           setSubtitles((prev) =>
+  //             prev.filter((s) => s.subtitleId !== idToRemove)
+  //           );
+  //           toast({
+  //             title: 'Subtitle Removed',
+  //             description: `Subtitle "${subtitle.languageName}" has been successfully removed.`,
+  //           });
+  //         },
+  //         onError: (error: any) => {
+  //           toast({
+  //             title: 'Remove Subtitle Failed',
+  //             description: error.message || 'Could not remove subtitle.',
+  //             variant: 'destructive',
+  //           });
+  //         },
+  //       }
+  //     );
+  //     setSubtitles((prev) => prev.filter((s) => s.subtitleId !== idToRemove));
+  //     toast({ title: 'Subtitle Removed' });
+  //   } catch (error: any) {
+  //     toast({
+  //       title: 'Remove Subtitle Failed',
+  //       description: error.message || 'Could not remove subtitle.',
+  //       variant: 'destructive',
+  //     });
+  //   }
+  // };
+  const handleSetDefaultSubtitle = async (idToSet: number | string) => {
+    const subtitle = subtitles.find(
+      (s) => s.subtitleId === idToSet || s.tempId === idToSet
+    );
+    if (!subtitle || !subtitle.subtitleId || subtitle.isDefault) return; // Chỉ set cái đã lưu và chưa phải default
+
+    try {
+      await setPrimarySubtitleMutateAsync(
+        {
+          lessonId: Number(currentLessonId),
+          subtitleId: Number(subtitle.subtitleId),
+        },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: ['lessons', 'detail', currentLessonId],
+            });
+            toast({
+              title: 'Default Subtitle Set',
+              description: `Subtitle "${subtitle.languageCode}" is now the default.`,
+            });
+          },
+          onError: (error: any) => {
+            console.error('Error setting default subtitle:', error);
+            toast({
+              title: 'Failed to Set Default Subtitle',
+              description:
+                error?.response?.data?.message ||
+                'An error occurred while setting the default subtitle.',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
+    } catch (error) {
+      toast({
+        title: 'Set Default Subtitle Failed',
+        description: error.message || 'Could not set default subtitle.',
+        variant: 'destructive',
+      });
     }
   };
 
-  const handleSetDefaultSubtitle = (subtitleId: number | string) => {
-    setSubtitles((prev) =>
-      prev.map((s) => ({
-        ...s,
-        isDefault: s.id === subtitleId || s.tempId === subtitleId,
-      }))
-    );
-    toast({ title: 'Default Subtitle Set' });
-  };
-  console.log(!form.formState.isValid || form.formState.isSubmitting);
   // --- RENDER ---
+  const videoPreviewSrc =
+    currentVideoUrlPreview ||
+    (externalVideoInfo
+      ? externalVideoInfo.type === 'youtube'
+        ? getYoutubeEmbedUrl(externalVideoInfo.id)
+        : getVimeoEmbedUrl(externalVideoInfo.id)
+      : null);
+  const showVideoPreview = !!videoPreviewSrc;
+  const showYTOrVimeoPreview = !!externalVideoInfo;
+  const showCloudinaryPreview = showVideoPreview && !showYTOrVimeoPreview; // Blob hoặc Signed URL
+  const showUploadPlaceholder =
+    !showVideoPreview && form.watch('videoSourceType') === 'CLOUDINARY';
+  const showLinkPlaceholder =
+    !showVideoPreview &&
+    (form.watch('videoSourceType') === 'YOUTUBE' ||
+      form.watch('videoSourceType') === 'VIMEO');
+  console.log('form values', form.getValues());
+  console.log(
+    'isProcessing || !form.formState.isValid',
+    isProcessing,
+    !form.formState.isValid,
+    isProcessing || !form.formState.isValid
+  );
+  console.log('Form Errors:', form.formState.errors);
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      {' '}
-      {/* Ensure onClose is called */}
       <DialogContent className="max-w-3xl max-h-[90vh]">
-        {' '}
-        {/* Set max height */}
         <DialogHeader>
+          {' '}
           <DialogTitle>
             {isEditing ? 'Edit Lesson' : 'Add New Lesson'}
-          </DialogTitle>
+          </DialogTitle>{' '}
         </DialogHeader>
-        {/* Wrap form content in ScrollArea */}
         <ScrollArea className="max-h-[calc(90vh-200px)] pr-6">
-          {' '}
-          {/* Adjust max-height as needed, add padding right */}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleFormSubmit)}
               className="space-y-6 p-1"
             >
-              {/* Lesson Name */}
+              {/* --- Basic Fields --- */}
+              {/* ... (Fields: lessonName, lessonType, isFreePreview, description) ... */}
               <FormField
                 control={form.control}
                 name="lessonName"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>Lesson Title *</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="e.g. Introduction to React Hooks"
-                        {...field}
-                      />
+                      <Input placeholder="e.g. Introduction" {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
-
-              {/* Lesson Type Select */}
               <FormField
                 control={form.control}
                 name="lessonType"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Lesson Type</FormLabel>
+                    <FormLabel>Type</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -687,16 +1269,14 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                         <SelectItem value="QUIZ">Quiz</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
-
-              {/* Free Preview Checkbox */}
               <FormField
                 control={form.control}
                 name="isFreePreview"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3">
                     <FormControl>
                       <Checkbox
@@ -707,56 +1287,57 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                     <div className="space-y-1 leading-none">
                       <FormLabel>Free Preview</FormLabel>
                       <FormDescription className="text-xs">
-                        Allow users to view this lesson without enrolling.
+                        Allow free access.
                       </FormDescription>
                     </div>
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
-
-              {/* Description */}
               <FormField
                 control={form.control}
                 name="description"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
-                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Briefly describe this lesson..."
+                        placeholder="Briefly describe..."
                         {...field}
                         value={field.value ?? ''}
-                        className="min-h-[100px]"
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage>{fieldState.error?.message}</FormMessage>
                   </FormItem>
                 )}
               />
 
-              {/* --- Conditional Content --- */}
-
-              {/* Video Fields */}
+              {/* --- VIDEO Section --- */}
               {form.watch('lessonType') === 'VIDEO' && (
                 <div className="space-y-4 border rounded-md p-4 bg-muted/20">
                   <h3 className="font-semibold text-base flex items-center">
                     <Video className="h-5 w-5 mr-2 text-primary" /> Video
                     Settings
                   </h3>
-                  {/* Video Source Select */}
                   <FormField
                     control={form.control}
                     name="videoSourceType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Video Source</FormLabel>
+                        <FormLabel>Source</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('lessonVideo', null);
+                            form.setValue('externalVideoInput', '');
+                            setCurrentVideoUrlPreview(null);
+                            setExternalVideoInfo(null);
+                          }}
                           value={field.value ?? 'CLOUDINARY'}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select video source" />
+                              <SelectValue />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -779,16 +1360,14 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                     )}
                   />
 
-                  {/* Cloudinary Upload */}
+                  {/* Cloudinary */}
                   {form.watch('videoSourceType') === 'CLOUDINARY' && (
                     <FormField
                       control={form.control}
                       name="lessonVideo"
-                      render={(
-                        { fieldState } // Use fieldState for errors
-                      ) => (
+                      render={({ fieldState }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel>Upload Video File</FormLabel>
+                          <FormLabel>Video File</FormLabel>
                           <FormControl>
                             <div>
                               <input
@@ -798,215 +1377,195 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                                 style={{ display: 'none' }}
                                 onChange={handleVideoFileChange}
                               />
-                              {lessonVideoPreview ? (
+                              {isLoadingVideoUrl && videoIdToFetchUrl ? (
+                                <div className="aspect-video w-full flex items-center justify-center bg-muted rounded-md">
+                                  <Loader2 className="h-8 w-8 animate-spin" />
+                                </div>
+                              ) : showCloudinaryPreview ? (
                                 <div className="relative group aspect-video">
-                                  {' '}
-                                  {/* Giữ aspect-video để duy trì tỷ lệ */}
                                   <video
-                                    key={lessonVideoPreview}
-                                    src={lessonVideoPreview}
-                                    controls // Vẫn giữ controls gốc của trình duyệt
-                                    className="w-full h-full rounded-md bg-black object-contain" // object-contain để không bị cắt nếu tỷ lệ khác
+                                    key={videoPreviewSrc}
+                                    src={videoPreviewSrc!}
+                                    controls
+                                    className="w-full h-full rounded-md bg-black object-contain"
                                     onError={(e) => {
-                                      // Xảy ra khi URL không hợp lệ (ví dụ Blob URL hết hạn, hoặc URL Cloudinary sai)
-                                      console.error(
-                                        'Video preview error:',
-                                        e,
-                                        lessonVideoPreview
-                                      );
-                                      toast({
-                                        title: 'Video Preview Error',
-                                        description:
-                                          'Could not load video preview.',
-                                        variant: 'destructive',
-                                      });
-                                      // Có thể reset preview ở đây
-                                      // setLessonVideoPreview(null);
-                                      // form.setValue('lessonVideo', null);
+                                      /*...*/
                                     }}
                                   />
-                                  {/* Nút điều khiển đặt ở góc trên bên phải */}
-                                  <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                                    {/* Nút Edit/Replace */}
+                                  <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 z-10">
                                     <Button
                                       type="button"
-                                      variant="secondary" // Hoặc "outline" tùy style
+                                      variant="secondary"
                                       size="icon"
-                                      className="h-8 w-8 rounded-full shadow" // Kích thước nhỏ hơn
-                                      title="Replace Video"
+                                      className="h-8 w-8"
+                                      title="Replace"
                                       onClick={() =>
                                         lessonVideoRef.current?.click()
                                       }
                                     >
-                                      <Edit className="h-4 w-4" />
+                                      <Edit size={16} />
                                     </Button>
-                                    {/* Nút Delete chỉ hiển thị cho Blob URL */}
-                                    {lessonVideoPreview?.startsWith(
-                                      'blob:'
-                                    ) && (
+                                    {videoPreviewSrc?.startsWith('blob:') && (
                                       <Button
                                         type="button"
                                         variant="destructive"
                                         size="icon"
-                                        className="h-8 w-8 rounded-full shadow" // Kích thước nhỏ hơn
-                                        title="Remove Selected Video"
+                                        className="h-8 w-8"
+                                        title="Remove"
                                         onClick={() => {
-                                          if (
-                                            lessonVideoPreview?.startsWith(
-                                              'blob:'
-                                            )
-                                          ) {
+                                          if (currentVideoUrlPreview)
                                             URL.revokeObjectURL(
-                                              lessonVideoPreview
+                                              currentVideoUrlPreview
                                             );
-                                          }
-                                          setLessonVideoPreview(null);
+
+                                          setCurrentVideoUrlPreview(null);
                                           form.setValue('lessonVideo', null);
                                         }}
                                       >
-                                        <Trash className="h-4 w-4" />
+                                        <Trash size={16} />
                                       </Button>
                                     )}
                                   </div>
                                 </div>
-                              ) : isEditing &&
-                                initialData?.videoSourceType === 'CLOUDINARY' &&
-                                initialData?.externalVideoId ? (
-                                <div className="border rounded p-3 text-sm text-muted-foreground flex items-center justify-between">
-                                  <span>
-                                    Video previously uploaded (ID:{' '}
-                                    {initialData.externalVideoId.substring(
-                                      0,
-                                      15
-                                    )}
-                                    ...).
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      lessonVideoRef.current?.click()
-                                    }
-                                  >
-                                    Replace
-                                  </Button>
-                                </div>
-                              ) : (
+                              ) : showUploadPlaceholder ? (
                                 <div
-                                  className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                                  className="border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:border-primary"
                                   onClick={() =>
                                     lessonVideoRef.current?.click()
                                   }
                                 >
-                                  <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                                  <p className="text-sm text-muted-foreground text-center mb-3">
-                                    Drag & drop or click to browse
+                                  <Upload className="h-10 w-10 mx-auto mb-2" />
+                                  <p className="text-sm">
+                                    Click or drag & drop
                                   </p>
-                                  <span className="text-xs text-muted-foreground">
-                                    (Max 500MB)
-                                  </span>
+                                  <span className="text-xs">(Max 100MB)</span>
                                 </div>
+                              ) : null}
+                              {isErrorVideoUrl && videoIdToFetchUrl && (
+                                <p className="text-xs text-red-600 mt-1">
+                                  Error loading video.
+                                </p>
                               )}
                             </div>
                           </FormControl>
-                          <FormMessage>{fieldState.error?.message}</FormMessage>{' '}
-                          {/* Display validation error */}
+                          <FormMessage>{fieldState.error?.message}</FormMessage>
                         </FormItem>
                       )}
                     />
                   )}
 
-                  {/* YouTube/Vimeo URL Input */}
+                  {/* YouTube/Vimeo */}
                   {(form.watch('videoSourceType') === 'YOUTUBE' ||
                     form.watch('videoSourceType') === 'VIMEO') && (
                     <FormField
                       control={form.control}
                       name="externalVideoInput"
-                      render={({ field }) => (
-                        <FormItem>
+                      render={({ field, fieldState }) => (
+                        <FormItem className="space-y-2">
                           <FormLabel>
-                            {form.watch('videoSourceType')} Video Link *
+                            {form.watch('videoSourceType')} Link/ID *
                           </FormLabel>
+                          {showYTOrVimeoPreview ? (
+                            <div className="relative group aspect-video">
+                              <AspectRatio
+                                ratio={16 / 9}
+                                className="bg-muted rounded-md overflow-hidden"
+                              >
+                                <iframe
+                                  key={externalVideoInfo!.id}
+                                  className="w-full h-full"
+                                  src={videoPreviewSrc!}
+                                  title={`${externalVideoInfo!.type} Player`}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                ></iframe>
+                              </AspectRatio>
+                              <div className="absolute top-2 right-2 flex opacity-0 group-hover:opacity-100 z-10">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  title="Change Link"
+                                  onClick={() =>
+                                    document
+                                      .getElementById(`ext-vid-input`)
+                                      ?.focus()
+                                  }
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed rounded-md p-6 text-center">
+                              <LinkIcon className="h-10 w-10 mx-auto mb-2" />
+                              <p className="text-sm">
+                                Paste {form.watch('videoSourceType')} link or ID
+                                below.
+                              </p>
+                            </div>
+                          )}
                           <FormControl>
                             <Input
-                              placeholder={`Paste public ${form.watch(
-                                'videoSourceType'
-                              )} video link here`}
+                              id="ext-vid-input"
+                              placeholder="Paste link or ID"
                               {...field}
                               value={field.value ?? ''}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage>{fieldState.error?.message}</FormMessage>
                         </FormItem>
                       )}
                     />
                   )}
 
-                  {/* --- Subtitle Section --- */}
+                  {/* Subtitles */}
                   <div className="border-t pt-4 mt-4">
                     <h4 className="font-medium mb-3 text-base flex items-center">
-                      <Captions className="h-5 w-5 mr-2" /> Subtitles (.vtt
-                      files)
+                      {' '}
+                      <Captions className="h-5 w-5 mr-2" /> Subtitles{' '}
                     </h4>
-                    {/* Add New Subtitle Form */}
+                    {/* Form Add Subtitle */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 items-end border-b pb-3">
                       <div className="space-y-1">
-                        <Label
-                          htmlFor="sub-lang-code"
-                          className="text-xs font-medium"
-                        >
-                          Language Code *
+                        <Label htmlFor="sub-code" className="text-xs">
+                          Language code*
                         </Label>
-                        <Input
-                          id="sub-lang-code"
-                          size={12} // Replace with a valid number or remove the size prop
-                          placeholder="en"
+                        <Select
+                          onValueChange={(value) =>
+                            setNewSubtitle({
+                              ...newSubtitle,
+                              languageCode: value,
+                            })
+                          }
                           value={newSubtitle.languageCode}
-                          onChange={(e) =>
-                            setNewSubtitle({
-                              ...newSubtitle,
-                              languageCode: e.target.value
-                                .toLowerCase()
-                                .slice(0, 10),
-                            })
-                          }
-                        />{' '}
-                        {/* Limit length */}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languagesData?.languages?.map((language) => (
+                              <SelectItem
+                                key={language.languageCode}
+                                value={language.languageCode}
+                              >
+                                {language.languageName} ({language.languageCode}
+                                )
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label
-                          htmlFor="sub-lang-name"
-                          className="text-xs font-medium"
-                        >
-                          Display Name *
-                        </Label>
-                        <Input
-                          id="sub-lang-name"
-                          size={12}
-                          placeholder="English"
-                          value={newSubtitle.languageName}
-                          onChange={(e) =>
-                            setNewSubtitle({
-                              ...newSubtitle,
-                              languageName: e.target.value.slice(0, 50),
-                            })
-                          }
-                        />{' '}
-                        {/* Limit length */}
-                      </div>
-                      <div className="space-y-1">
-                        <Label
-                          htmlFor="sub-url"
-                          className="text-xs font-medium"
-                        >
-                          Subtitle URL (.vtt) *
+                        <Label htmlFor="sub-url" className="text-xs">
+                          Subtitles url (.vtt)*
                         </Label>
                         <Input
                           id="sub-url"
-                          size={12}
-                          placeholder="https://..."
                           type="url"
+                          placeholder="https://..."
                           value={newSubtitle.subtitleUrl}
                           onChange={(e) =>
                             setNewSubtitle({
@@ -1031,7 +1590,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                           htmlFor="sub-default"
                           className="text-sm font-normal cursor-pointer"
                         >
-                          Set as default subtitle
+                          Set as default
                         </Label>
                         <Button
                           type="button"
@@ -1039,16 +1598,21 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                           onClick={handleAddSubtitle}
                           className="ml-auto"
                           disabled={
-                            !newSubtitle.languageCode.trim() ||
-                            !newSubtitle.languageName.trim() ||
-                            !newSubtitle.subtitleUrl.trim()
+                            isAddingSubtitle ||
+                            !newSubtitle.languageCode ||
+                            !newSubtitle.subtitleUrl
                           }
                         >
-                          Add Subtitle
+                          {isAddingSubtitle ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4 mr-1" />
+                          )}{' '}
+                          Add
                         </Button>
                       </div>
                     </div>
-                    {/* List Existing Subtitles */}
+                    {/* List Subtitles */}
                     {subtitles.length > 0 ? (
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground">
@@ -1056,36 +1620,35 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                         </Label>
                         {subtitles.map((sub) => (
                           <div
-                            key={sub.tempId || sub.id}
+                            key={sub.tempId || sub.subtitleId}
                             className="flex items-center justify-between text-sm p-2 border rounded bg-background"
                           >
                             <div className="flex items-center space-x-3">
                               <input
                                 type="radio"
-                                name="defaultSubtitleRadio"
-                                id={`default-${sub.tempId || sub.id}`}
+                                name="defaultSub"
+                                id={`def-${sub.tempId || sub.subtitleId}`}
                                 checked={sub.isDefault}
                                 onChange={() =>
                                   handleSetDefaultSubtitle(
-                                    sub.tempId || sub.id!
+                                    sub.tempId || sub.subtitleId!
                                   )
                                 }
-                                className="form-radio h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                                className="form-radio h-4 w-4"
                               />
                               <Label
-                                htmlFor={`default-${sub.tempId || sub.id}`}
+                                htmlFor={`def-${sub.tempId || sub.subtitleId}`}
                                 className="cursor-pointer flex flex-col"
                               >
                                 <span className="font-medium">
-                                  {sub.languageName} ({sub.languageCode})
+                                  ({sub.languageCode})
                                 </span>
                                 <a
                                   href={sub.subtitleUrl}
                                   target="_blank"
-                                  rel="noopener noreferrer"
+                                  rel="noreferrer"
                                   className="text-xs text-blue-600 hover:underline truncate max-w-[200px] sm:max-w-xs md:max-w-sm"
                                 >
-                                  {' '}
                                   {sub.subtitleUrl}
                                 </a>
                               </Label>
@@ -1096,7 +1659,9 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                               size="icon"
                               className="h-7 w-7"
                               onClick={() =>
-                                handleRemoveSubtitle(sub.tempId || sub.id!)
+                                handleRemoveSubtitle(
+                                  sub.tempId || sub.subtitleId!
+                                )
                               }
                             >
                               <Trash className="h-4 w-4 text-destructive" />
@@ -1106,66 +1671,48 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground text-center py-2">
-                        No subtitles added yet.
+                        No subtitles added.
                       </p>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Text Fields */}
+              {/* TEXT */}
               {form.watch('lessonType') === 'TEXT' && (
                 <FormField
-                  control={form.control} // 'form.control' phải được truyền từ React Hook Form instance
-                  name="textContent" // Tên của field trong form data
-                  render={(
-                    { fieldState } // field không cần trực tiếp ở đây khi dùng Controller
-                  ) => (
+                  control={form.control}
+                  name="textContent"
+                  render={({ fieldState }) => (
                     <FormItem className="border rounded-md p-4 bg-muted/20">
                       <FormLabel className="font-semibold text-base flex items-center mb-3">
                         {' '}
-                        {/* Tăng mb một chút */}
-                        <FileText className="h-5 w-5 mr-2 text-primary" /> Text
-                        Content *
+                        <FileText /> Content *{' '}
                       </FormLabel>
                       <FormControl>
-                        {/* Sử dụng Controller để tích hợp TiptapEditor */}
                         <Controller
-                          name="textContent" // Tên field phải khớp
-                          control={form.control} // Truyền control vào Controller
-                          render={(
-                            { field: controllerField } // field từ Controller
-                          ) => (
+                          name="textContent"
+                          control={form.control}
+                          render={({ field: ctrlField }) => (
                             <TiptapEditor
-                              initialContent={controllerField.value || ''} // Giá trị ban đầu từ RHF
-                              onContentChange={(htmlContent) => {
-                                controllerField.onChange(htmlContent); // Cập nhật giá trị cho RHF
-                              }}
-                              // onBlur={controllerField.onBlur} // Tùy chọn: nếu TiptapEditor có hỗ trợ và bạn cần trigger validation onBlur
-                              // Bạn có thể truyền thêm props để tùy chỉnh TiptapEditor nếu cần
-                              // ví dụ: minHeight="300px" nếu TiptapEditor hỗ trợ prop đó
+                              initialContent={ctrlField.value || ''}
+                              onContentChange={ctrlField.onChange}
                             />
                           )}
                         />
                       </FormControl>
-                      {/* 
-                      FormDescription có thể không cần thiết nếu TiptapEditor đã đủ rõ ràng
-                      hoặc bạn có thể thêm mô tả phù hợp cho TiptapEditor.
-                      Ví dụ: <FormDescription>Use the rich text editor to format your content.</FormDescription>
-                    */}
-                      <FormMessage /> {/* Hiển thị lỗi validation nếu có */}
+                      <FormMessage>{fieldState.error?.message}</FormMessage>
                     </FormItem>
                   )}
                 />
               )}
 
-              {/* Quiz Fields */}
+              {/* QUIZ */}
               {form.watch('lessonType') === 'QUIZ' && (
                 <div className="space-y-4 border rounded-md p-4 bg-muted/20">
                   <div className="flex justify-between items-center border-b pb-3 mb-3">
                     <h3 className="font-semibold text-base flex items-center">
-                      <BookIcon className="h-5 w-5 mr-2 text-primary" /> Quiz
-                      Questions
+                      <BookIcon /> Questions
                     </h3>
                     <Button
                       type="button"
@@ -1173,24 +1720,24 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                       size="sm"
                       onClick={openAddQuizDialog}
                     >
-                      <Plus className="h-4 w-4 mr-1" /> Add Question
+                      <Plus /> Add
                     </Button>
                   </div>
                   {quizQuestions.length > 0 ? (
                     <div className="space-y-3 mt-2">
                       {quizQuestions.map((q, index) => (
                         <div
-                          key={q.tempId || q.id}
+                          key={q.tempId || q.questionId}
                           className="border rounded-md p-3 bg-background"
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <p className="font-medium text-sm">
-                              Question {index + 1}:{' '}
-                              <span className="font-normal">
+                            <p className="font-medium text-sm flex-1 mr-2">
+                              Q{index + 1}:{' '}
+                              <span className="font-normal line-clamp-2">
                                 {q.questionText}
                               </span>
                             </p>
-                            <div className="flex space-x-1 flex-shrink-0">
+                            <div className="flex space-x-1 shrink-0">
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -1198,7 +1745,7 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                                 className="h-7 w-7"
                                 onClick={() => openEditQuizDialog(q)}
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit size={16} />
                               </Button>
                               <Button
                                 type="button"
@@ -1206,26 +1753,25 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                                 size="icon"
                                 className="h-7 w-7"
                                 onClick={() =>
-                                  deleteQuizQuestionInternal(q.tempId || q.id!)
+                                  deleteQuizQuestionInternal(
+                                    q.tempId || q.questionId!
+                                  )
                                 }
                               >
-                                <Trash className="h-4 w-4 text-destructive" />
+                                <Trash size={16} className="text-destructive" />
                               </Button>
                             </div>
                           </div>
-                          {/* Optionally display options preview */}
                           <ul className="list-disc pl-5 mt-1 space-y-1">
                             {q.options.map((opt) => (
                               <li
-                                key={opt.tempId || opt.id}
+                                key={opt.tempId || opt.optionId}
                                 className={`text-xs ${
-                                  opt.isCorrectAnswer
-                                    ? 'text-green-600 font-medium'
-                                    : 'text-muted-foreground'
+                                  opt.isCorrectAnswer ? 'text-green-600' : ''
                                 }`}
                               >
-                                {opt.optionText}{' '}
-                                {opt.isCorrectAnswer && '(Correct)'}
+                                {opt.optionText}
+                                {opt.isCorrectAnswer && ' ✔️'}
                               </li>
                             ))}
                           </ul>
@@ -1234,28 +1780,25 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                     </div>
                   ) : (
                     <div className="text-center py-4 border border-dashed rounded-md">
-                      <p className="text-muted-foreground text-sm mb-2">
-                        No questions added yet.
-                      </p>
+                      <p className="text-sm mb-2">No questions yet.</p>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={openAddQuizDialog}
                       >
-                        <Plus className="h-4 w-4 mr-1" /> Add First Question
+                        <Plus /> Add Question
                       </Button>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Attachments Section */}
+              {/* Attachments */}
               <div className="border rounded-md p-4 space-y-3 bg-muted/20">
                 <div className="flex justify-between items-center border-b pb-3 mb-3">
                   <h3 className="font-semibold text-base flex items-center">
-                    <FileIcon className="h-5 w-5 mr-2 text-primary" /> Lesson
-                    Attachments
+                    <FileIcon /> Attachments
                   </h3>
                   <div>
                     <input
@@ -1263,34 +1806,84 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                       ref={attachmentRef}
                       style={{ display: 'none' }}
                       onChange={handleInternalAttachmentUpload}
+                      multiple
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => attachmentRef.current?.click()}
+                      disabled={isUploadingAttachment}
                     >
-                      <Upload className="h-4 w-4 mr-1" /> Add File
+                      <Upload className="h-4 w-4 mr-1" />{' '}
+                      {isUploadingAttachment ? 'Uploading...' : 'Add Files'}
                     </Button>
                   </div>
                 </div>
-                {attachments.length > 0 ? (
+                {/* Danh sách attachment ĐÃ LƯU */}
+                {attachments.filter((a) => a.attachmentId).length > 0 && (
+                  <div className="space-y-2 border-b pb-2 mb-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Uploaded Files
+                    </Label>
+                    {attachments
+                      .filter((a) => a.attachmentId)
+                      .map((att) => (
+                        <div
+                          key={att.attachmentId}
+                          className="flex items-center justify-between p-2 border rounded bg-background"
+                        >
+                          <div className="flex items-center space-x-2 overflow-hidden">
+                            <FileIcon size={16} />
+                            <span
+                              className="text-sm truncate"
+                              title={att.fileName}
+                            >
+                              {att.fileName}
+                            </span>
+                            {att.fileSize && (
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                ({(att.fileSize / 1024 / 1024).toFixed(2)} MB)
+                              </span>
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() =>
+                              handleInternalRemoveAttachment(att.attachmentId!)
+                            }
+                            disabled={isDeletingAttachment}
+                          >
+                            <Trash size={16} className="text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+                {/* Danh sách attachment MỚI CHƯA LƯU */}
+                {newAttachmentsToUpload.length > 0 && (
                   <div className="space-y-2">
-                    {attachments.map((att) => (
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      New Files (will upload on save)
+                    </Label>
+                    {newAttachmentsToUpload.map((att) => (
                       <div
-                        key={att.tempId || att.id}
-                        className="flex items-center justify-between p-2 border rounded-md bg-background"
+                        key={att.tempId}
+                        className="flex items-center justify-between p-2 border rounded bg-muted"
                       >
                         <div className="flex items-center space-x-2 overflow-hidden">
-                          <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <FileIcon size={16} />
                           <span
-                            className="text-sm font-medium truncate"
+                            className="text-sm truncate"
                             title={att.fileName}
                           >
                             {att.fileName}
                           </span>
                           {att.fileSize && (
-                            <span className="text-xs text-muted-foreground flex-shrink-0">
+                            <span className="text-xs text-muted-foreground shrink-0">
                               ({(att.fileSize / 1024 / 1024).toFixed(2)} MB)
                             </span>
                           )}
@@ -1301,58 +1894,133 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
                           size="icon"
                           className="h-7 w-7"
                           onClick={() =>
-                            handleInternalRemoveAttachment(
-                              att.tempId || att.id!
-                            )
+                            handleInternalRemoveAttachment(att.tempId!)
                           }
                         >
-                          <Trash className="h-4 w-4 text-destructive" />
+                          <Trash size={16} className="text-destructive" />
                         </Button>
                       </div>
                     ))}
                   </div>
-                ) : (
+                )}
+                {attachments.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-2">
-                    No attachments added.
+                    No attachments.
                   </p>
                 )}
               </div>
 
-              <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>
+              {/* Footer Buttons */}
+              <DialogFooter className="pt-6 sticky bottom-0 bg-background/95 backdrop-blur-sm pb-4 -mx-1 -mb-1 px-1 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isProcessing}
+                >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  disabled={
-                    !form.formState.isValid || form.formState.isSubmitting
-                  }
+                  disabled={isProcessing || !form.formState.isValid}
                 >
-                  {form.formState.isSubmitting
-                    ? 'Saving...'
-                    : isEditing
-                    ? 'Update Lesson'
-                    : 'Add Lesson'}
+                  {isProcessing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {isEditing ? 'Update Lesson' : 'Add Lesson'}
                 </Button>
               </DialogFooter>
             </form>
           </Form>
-        </ScrollArea>{' '}
-        {/* Kết thúc ScrollArea */}
+        </ScrollArea>
         {/* Nested Quiz Dialog */}
         {quizDialogOpen && (
           <QuizQuestionDialog
             key={
               editingQuizQuestion?.tempId ||
-              editingQuizQuestion?.id ||
+              editingQuizQuestion?.questionId ||
               'new-quiz-q'
             }
             open={quizDialogOpen}
             onClose={() => setQuizDialogOpen(false)}
-            onSave={saveQuizQuestion}
             initialData={editingQuizQuestion}
             isEditing={!!editingQuizQuestion}
+            lessonId={Number(currentLessonId)}
+            courseId={courseId}
           />
+        )}
+
+        {subtitleToDelete && (
+          <Dialog
+            open={!!subtitleToDelete}
+            onOpenChange={() => setSubtitleToDelete(null)}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Delete</DialogTitle>
+              </DialogHeader>
+              <p>
+                Are you sure you want to delete the subtitle "
+                <strong>{subtitleToDelete.languageCode}</strong>"?
+              </p>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setSubtitleToDelete(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    try {
+                      await deleteSubtitleMutateAsync(
+                        {
+                          lessonId: Number(currentLessonId),
+                          subtitleId: Number(subtitleToDelete.subtitleId),
+                        },
+                        {
+                          onSuccess: () => {
+                            toast({
+                              title: 'Subtitle Removed',
+                              description: `Subtitle "${subtitleToDelete.languageCode}" has been successfully removed.`,
+                            });
+                            queryClient.invalidateQueries({
+                              queryKey: ['lessons', 'detail', currentLessonId],
+                            });
+                          },
+                          onError: (error: any) => {
+                            toast({
+                              title: 'Remove Subtitle Failed',
+                              description:
+                                error.message || 'Could not remove subtitle.',
+                              variant: 'destructive',
+                            });
+                          },
+                        }
+                      );
+
+                      toast({
+                        title: 'Subtitle Removed',
+                        description: `Subtitle "${subtitleToDelete.languageCode}" has been successfully removed.`,
+                      });
+                    } catch (error: any) {
+                      toast({
+                        title: 'Remove Subtitle Failed',
+                        description:
+                          error.message || 'Could not remove subtitle.',
+                        variant: 'destructive',
+                      });
+                    } finally {
+                      setSubtitleToDelete(null); // Đóng dialog
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>
