@@ -1,85 +1,130 @@
-import { useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { FaHome } from 'react-icons/fa'; // Ví dụ sử dụng react-icons
+// src/pages/NotFoundPage.tsx
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/common/Icons'; // Home, AlertTriangle
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
-// Một SVG đơn giản cho trang 404
+// SVG Illustration mới hoặc SVG cũ được style lại
+// Ví dụ: Một SVG trừu tượng hơn hoặc một hình ảnh liên quan đến "lạc lối"
+// Nếu bạn tìm được SVG mới, hãy thay thế component này
 const NotFoundIllustration = () => (
-  <svg
-    className="w-64 h-64 mx-auto text-indigo-500 dark:text-indigo-400 mb-8"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
+  <motion.div
+    initial={{ opacity: 0, scale: 0.8, y: 20 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
   >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-    ></path>
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-      d="M14.828 14.828L16.243 16.243M17.657 17.657L19.071 19.071M6.343 6.343L4.929 4.929M7.757 7.757L6.343 6.343"
-    ></path>
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-      d="M12 6V4m0 16v-2m4-12l1.414-1.414M6 18l-1.414 1.414m12-10.586L19.071 4.93M4.929 19.071L6 18"
-    ></path>
-  </svg>
+    {/* Sử dụng một icon lớn từ Lucide hoặc SVG tùy chỉnh */}
+    <Icons.alertTriangle
+      className="w-32 h-32 md:w-40 md:h-40 mx-auto text-primary/30 dark:text-primary/25"
+      strokeWidth={1}
+    />
+    {/* <img src="/path/to/your/404-illustration.svg" alt="Page not found illustration" className="w-64 h-64 mx-auto mb-8" /> */}
+  </motion.div>
 );
 
-const NotFound = () => {
+const NotFoundPage = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error(
-      '404 Error: User attempted to access non-existent route:',
-      location.pathname
-    );
-    document.title = '404 - Page Not Found'; // Cập nhật tiêu đề trang
-    // Bạn có thể gửi thông tin này lên một dịch vụ logging như Sentry, LogRocket
-    // sendErrorToTrackingService({ type: '404', path: location.pathname });
+    document.title = '404 - Page Not Found | 3TEduTech';
   }, [location.pathname]);
 
+  const pageVariants = {
+    hidden: { opacity: 0, filter: 'blur(8px)' },
+    visible: {
+      opacity: 1,
+      filter: 'blur(0px)',
+      transition: { duration: 0.5, ease: 'easeOut' },
+    },
+  };
+
+  const contentVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i: number = 0) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.1 + 0.3, duration: 0.6, ease: 'easeOut' },
+    }),
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-sky-100 dark:from-slate-800 dark:to-sky-900 p-4 transition-colors duration-500">
-      <div className="bg-white dark:bg-slate-700 p-8 sm:p-12 rounded-xl shadow-2xl text-center max-w-lg w-full transform transition-all hover:scale-105 duration-300">
+    <motion.div
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+      className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-background to-sky-100 dark:from-slate-900 dark:via-slate-800 dark:to-sky-900 p-4 sm:p-6 text-center transition-colors duration-500"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
+        className="bg-background dark:bg-slate-800/70 p-8 sm:p-10 md:p-14 rounded-2xl shadow-2xl max-w-xl w-full border dark:border-slate-700/50 backdrop-blur-sm"
+      >
         <NotFoundIllustration />
 
-        <h1 className="text-7xl sm:text-9xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-4 tracking-tighter">
-          404
-        </h1>
-        <p className="text-2xl sm:text-3xl font-semibold text-gray-700 dark:text-gray-200 mb-3">
-          Ôi không! Trang bạn tìm không tồn tại.
-        </p>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm sm:text-base">
-          Có vẻ như bạn đã đi lạc hoặc liên kết đã bị hỏng. Đừng lo, chúng tôi
-          giúp bạn quay lại.
-        </p>
-
-        <a
-          href="/"
-          className="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+        <motion.h1
+          variants={contentVariants}
+          custom={0}
+          className="mt-6 text-6xl sm:text-7xl md:text-8xl font-extrabold text-primary dark:text-primary/90 mb-3 tracking-tighter"
         >
-          <FaHome className="mr-2 h-5 w-5" />
-          Quay về Trang Chủ
-        </a>
+          404
+        </motion.h1>
+        <motion.p
+          variants={contentVariants}
+          custom={1}
+          className="text-2xl sm:text-3xl font-semibold text-foreground dark:text-slate-100 mb-4"
+        >
+          Oops! Page Not Found.
+        </motion.p>
+        <motion.p
+          variants={contentVariants}
+          custom={2}
+          className="text-muted-foreground dark:text-slate-400 mb-8 text-base sm:text-lg leading-relaxed max-w-md mx-auto"
+        >
+          It seems you've ventured into uncharted territory or the link you
+          followed might be broken. Don't worry, we'll help you find your way
+          back.
+        </motion.p>
 
-        <p className="mt-10 text-xs text-gray-400 dark:text-gray-500">
-          Nếu bạn nghĩ đây là lỗi, vui lòng liên hệ bộ phận hỗ trợ.
-          <br />
-          Đã cố truy cập:{' '}
-          <code className="bg-gray-200 dark:bg-slate-600 px-1 py-0.5 rounded text-xs">
-            {location.pathname}
-          </code>
-        </p>
-      </div>
-    </div>
+        <motion.div variants={contentVariants} custom={3}>
+          <Button
+            asChild
+            size="lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-8 text-base font-semibold shadow-lg hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
+          >
+            <span
+              onClick={() => (window.location.href = '/')}
+              className="flex items-center cursor-pointer"
+            >
+              <Icons.home className="mr-2.5 h-5 w-5" /> Go Back to Homepage
+            </span>
+          </Button>
+        </motion.div>
+
+        <motion.div
+          variants={contentVariants}
+          custom={4}
+          className="mt-12 text-xs text-slate-400 dark:text-slate-500"
+        >
+          <p>
+            If you believe this is an error, please{' '}
+            <Link to="/contact" className="underline hover:text-primary">
+              contact our support team
+            </Link>
+            .
+          </p>
+          <p className="mt-1">
+            Attempted path:{' '}
+            <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono">
+              {location.pathname}
+            </code>
+          </p>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 
-export default NotFound;
+export default NotFoundPage; // Đổi tên component

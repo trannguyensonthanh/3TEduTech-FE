@@ -75,6 +75,26 @@ export interface Course {
   totalLessons?: number; // Tổng số bài học trong khóa học
 }
 
+export interface GetCoursesByCategorySlugParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string; // ví dụ: 'publishedAt:desc', 'averageRating:desc'
+  levelId?: number;
+  language?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  searchTerm?: string;
+}
+
+// Interface cho các tham số query khi lấy danh sách khóa học theo instructor ID
+export interface GetCoursesByInstructorParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string; // ví dụ: 'PublishedAt:desc', 'AverageRating:desc'
+  statusId?: string; // Lọc theo trạng thái khóa học (PUBLISHED, DRAFT, PENDING_APPROVAL)
+  searchTerm?: string;
+}
+
 export enum CourseStatusId {
   DRAFT = 'DRAFT',
   PENDING = 'PENDING',
@@ -151,6 +171,7 @@ export interface CourseQueryParams {
   statusId?: string; // CourseStatus Enum hoặc 'ALL'
   isFeatured?: 0 | 1 | null;
   sortBy?: string; // e.g., 'CreatedAt:desc'
+  userPage?: boolean; // true nếu lấy cho trang người dùng
 }
 
 export interface CreateCourseData {
@@ -436,4 +457,28 @@ export const getApprovalRequestDetails = async (
   requestId: number
 ): Promise<ApprovalRequestListItem> => {
   return apiHelper.get(`/approval-requests/${requestId}`);
+};
+
+// --- Hàm gọi API lấy danh sách khóa học theo category slug ---
+export const getCoursesByCategorySlug = async (
+  categorySlug: string,
+  params?: GetCoursesByCategorySlugParams
+): Promise<CourseListResponse> => {
+  return apiHelper.get(
+    `/categories/${categorySlug}/courses`,
+    undefined,
+    params
+  );
+};
+
+/** Lấy danh sách khóa học theo instructorId */
+export const getCoursesByInstructorId = async (
+  instructorId: number | string,
+  params?: GetCoursesByInstructorParams
+): Promise<CourseListResponse> => {
+  return apiHelper.get(
+    `/courses/by-instructor/${instructorId}`,
+    undefined,
+    params
+  );
 };

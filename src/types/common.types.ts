@@ -9,7 +9,7 @@ import { Section } from '@/services/section.service';
 import { Subtitle } from '@/services/subtitle.service';
 
 // types/common.types.ts (Có thể tạo file riêng cho các type dùng chung)
-export type IsoDateTimeString = string; // Dùng cho DATETIME2
+export type IsoDateTimeString = string; // Dùng cho DATETIME2 // được dùng trong code này
 export type IsoDateString = string; // Dùng cho DATE
 
 // // --- Authentication & User Roles ---
@@ -72,12 +72,8 @@ export interface Account {
   role?: Role; // Có thể join thêm role nếu cần
 }
 
-export type InstructorCourseStatus =
-  | 'DRAFT'
-  | 'PENDING'
-  | 'PUBLISHED'
-  | 'REJECTED'
-  | 'ARCHIVED';
+export type InstructorCourseStatus = //  được dùng trong code này
+  'DRAFT' | 'PENDING' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED';
 
 export type LoginType = 'EMAIL' | 'GOOGLE' | 'FACEBOOK';
 
@@ -190,7 +186,7 @@ export interface Level {
 }
 
 // Enum cho Course Status ID để dễ sử dụng hơn string
-export enum CourseStatusId {
+export enum CourseStatusId { // được dùng trong code này
   DRAFT = 'DRAFT',
   PENDING = 'PENDING',
   PUBLISHED = 'PUBLISHED',
@@ -207,52 +203,8 @@ export interface CourseStatus {
 export type LessonType = 'VIDEO' | 'TEXT' | 'QUIZ';
 export type VideoSourceType = 'CLOUDINARY' | 'YOUTUBE' | 'VIMEO';
 
-// export interface Subtitle {
-//   subtitleId?: number; // Có thể không cần id nếu FE chỉ quản lý qua tempId
-//   tempId?: string | number; // FE temp ID
-//   lessonId?: number; // Hoặc string nếu LessonID là string
-//   languageCode: string;
-//   subtitleUrl: string;
-//   isDefault: boolean;
-//   uploadedAt?: IsoDateTimeString; // Có thể không cần ở FE nếu chỉ thêm/xóa
-// }
-
-// export interface QuizOption {
-//   optionId?: number;
-//   tempId?: string | number; // FE temp ID
-//   questionId: number;
-//   optionText: string;
-//   isCorrectAnswer: boolean;
-//   optionOrder: number;
-// }
-
-// export interface QuizQuestion {
-//   questionId?: number;
-//   tempId?: string | number; // FE temp ID
-//   lessonId?: number; // Hoặc string
-//   questionText: string;
-//   explanation?: string | null;
-//   questionOrder: number;
-//   options: QuizOption[]; // Lồng options vào đây
-//   createdAt?: IsoDateTimeString;
-//   updatedAt?: IsoDateTimeString;
-// }
-
-// export interface Attachment {
-//   attachmentId?: number;
-//   tempId?: string | number; // FE temp ID
-//   lessonId: number; // Hoặc string
-//   fileName: string;
-//   fileUrl: string; // URL công khai để tải/hiển thị
-//   fileType?: string | null;
-//   fileSize?: number | null; // bytes
-//   cloudStorageId?: string | null; // Để backend xóa nếu cần
-//   uploadedAt?: IsoDateTimeString;
-//   // --- Thuộc tính chỉ dùng ở FE khi upload ---
-//   file?: File | null; // File object thực tế khi upload
-// }
-
 export interface Lesson {
+  // được dùng trong code này
   lessonId?: number | string; // Hoặc string nếu API trả về string
   tempId?: string | number; // FE temp ID khi tạo mới
   sectionId?: number; // Hoặc string
@@ -278,20 +230,6 @@ export interface Lesson {
   lessonVideoFile?: File | null; // File object khi upload lên Cloudinary
   // externalVideoInput?: string | null; // Có thể dùng làm trường nhập liệu cho YT/Vimeo URL/ID
 }
-
-// export interface Section {
-//   sectionId?: number | string; // Hoặc string
-//   tempId?: string | number; // FE temp ID
-//   courseId?: number; // Hoặc string
-//   sectionName: string;
-//   sectionOrder: number;
-//   description?: string | null;
-//   originalId?: number | null;
-//   createdAt?: IsoDateTimeString;
-//   updatedAt?: IsoDateTimeString;
-//   // --- Dữ liệu lồng nhau ---
-//   lessons?: Lesson[];
-// }
 
 export interface Course {
   courseId: number; // Hoặc string
@@ -688,6 +626,7 @@ export interface LevelBasic {
 // --- Main Course Type for Admin View ---
 // Có thể bao gồm nhiều thông tin hơn so với Course type thông thường
 export interface AdminCourseView extends Course {
+  // được dùng trong code này
   // Kế thừa từ Course type cơ bản nếu có
   courseId: number;
   courseName: string;
@@ -789,6 +728,7 @@ export type ApprovalStatusType = 'PENDING' | 'APPROVED' | 'REJECTED'; // Có th�
 // }
 
 export interface ReviewCourseData {
+  // được dùng trong code này
   decision: 'APPROVED' | 'REJECTED'; // Hành động của Admin
   adminNotes?: string; // Ghi chú của Admin
 }
@@ -843,25 +783,27 @@ export interface ApprovalRequest {
 // }
 
 export interface CourseQueryParams {
-  searchTerm?: string | null;
-  categoryId?: number | null; // API sẽ nhận ID
-  levelId?: number | null; // API sẽ nhận ID
-  language?: string | null; // API sẽ nhận language code (ví dụ: 'vi', 'en')
+  // được dùng trong code này
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  sortBy?: SortByValue;
+  categoryId?: number | null;
+  categorySlug?: string | null; // Thêm nếu dùng slug
+  levelId?: number | null;
+  levelIds?: string | null; // Nếu API nhận string '1,2,3'
+  language?: string | null;
   minPrice?: number | null;
   maxPrice?: number | null;
   minRating?: number | null;
   isFree?: boolean | null;
-  isFeatured?: 1 | 0; // Filter theo isFeatured
-  // Thêm các filter khác nếu backend hỗ trợ
-  // duration?: 'short' | 'medium' | 'long' | string | null;
-  // features?: ('certificate' | 'assignments' | string)[];
-  sortBy?: string; // Ví dụ: 'studentCount_desc', 'averageRating_desc', 'createdAt_desc', 'originalPrice_asc', 'originalPrice_desc'
-  page?: number;
-  limit?: number;
+  isFeatured?: 0 | 1 | null; // Hoặc boolean tùy API
+  // Thêm các filter khác nếu có
 }
 
 // Types cho filter options (lấy từ API)
 export interface CategoryFilterItem {
+  // được dùng trong code này
   categoryId: number;
   categoryName: string;
 }
@@ -875,6 +817,7 @@ export interface LanguageFilterItem {
 }
 
 export const SORT_OPTIONS = [
+  // được dùng trong code này
   { value: 'studentCount_desc', label: 'Most Popular' }, // Giả sử backend hiểu 'studentCount_desc'
   { value: 'averageRating_desc', label: 'Highest Rated' },
   { value: 'createdAt_desc', label: 'Newest' },
@@ -882,10 +825,23 @@ export const SORT_OPTIONS = [
   { value: 'originalPrice_desc', label: 'Price: High to Low' },
 ] as const;
 
-export type SortByValue = (typeof SORT_OPTIONS)[number]['value'];
+export type SortByValue = (typeof SORT_OPTIONS)[number]['value']; // đuợc dùng trong code này
+
+export const INSTRUCTOR_SORT_OPTIONS = [
+  { value: 'rating:desc', label: 'Highest Rated' },
+  { value: 'studentCount:desc', label: 'Most Students' },
+  { value: 'courseCount:desc', label: 'Most Courses' },
+  { value: 'name:asc', label: 'Name (A-Z)' },
+  { value: 'name:desc', label: 'Name (Z-A)' },
+] as const;
+
+export type InstructorSortByValue = // đuợc dùng trong code này
+  (typeof INSTRUCTOR_SORT_OPTIONS)[number]['value'];
 
 // Type cho user progress lồng trong Course object
 export interface UserLessonProgress {
+  // đuợc dùng trong code này
+  // được dùng trong code này
   isCompleted: boolean;
   lastWatchedPosition?: number | null;
 }
@@ -947,6 +903,7 @@ export interface CourseReviewListResponse {
 }
 
 export interface CourseReviewQueryParams {
+  // được dùng trong code này
   courseId: number;
   page?: number;
   limit?: number;
@@ -962,7 +919,6 @@ export interface CreateReviewPayload {
 // src/types/index.ts (Hoặc các file types riêng lẻ)
 
 // --- Enums & Basic Types ---
-export enum CourseStatusId /* ... */ {}
 
 // --- Lesson Content Details ---
 // export interface QuizOptionFE {
@@ -1052,6 +1008,7 @@ export interface SectionFE {
 
 // --- Course Detail for Learning Page ---
 export interface CourseLearningData {
+  // đươc dùng trong code này
   // Thay thế CourseDetail nếu cần type riêng cho trang học
   courseId: number;
   courseName: string;

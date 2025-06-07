@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '../common/Icons';
 import { useRegisterMutation } from '@/hooks/queries/auth.queries';
+import { cn } from '@/lib/utils';
 
 // Define schema using zod
 const signupSchema = z
@@ -82,84 +83,147 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
     setIsLoading(false);
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="fullName">Full Name</Label>
-        <Controller
-          name="fullName"
-          control={control}
-          render={({ field }) => (
-            <Input
-              id="fullName"
-              placeholder="John Doe"
-              {...field}
-              disabled={isLoading || registerMutation.isPending}
-            />
-          )}
-        />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div className="space-y-1.5">
+        <Label htmlFor="signup-fullName">Full Name</Label>
+        <div className="relative">
+          <Icons.user className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Controller
+            name="fullName"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="signup-fullName"
+                placeholder="John Doe"
+                {...field}
+                disabled={registerMutation.isPending}
+                className={cn(
+                  'pl-10 h-11',
+                  errors.fullName &&
+                    'border-destructive focus-visible:ring-destructive'
+                )}
+              />
+            )}
+          />
+        </div>
         {errors.fullName && (
-          <p className="text-sm text-destructive">{errors.fullName.message}</p>
+          <p className="text-xs text-destructive">{errors.fullName.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Controller
-          name="email"
-          control={control}
-          render={({ field }) => (
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              {...field}
-              disabled={isLoading || registerMutation.isPending}
-            />
-          )}
-        />
+      <div className="space-y-1.5">
+        <Label htmlFor="signup-email">Email Address</Label>
+        <div className="relative">
+          <Icons.mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="signup-email"
+                type="email"
+                placeholder="you@example.com"
+                {...field}
+                disabled={registerMutation.isPending}
+                className={cn(
+                  'pl-10 h-11',
+                  errors.email &&
+                    'border-destructive focus-visible:ring-destructive'
+                )}
+              />
+            )}
+          />
+        </div>
         {errors.email && (
-          <p className="text-sm text-destructive">{errors.email.message}</p>
+          <p className="text-xs text-destructive">{errors.email.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Controller
-          name="password"
-          control={control}
-          render={({ field }) => (
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              {...field}
-              disabled={isLoading || registerMutation.isPending}
-            />
-          )}
-        />
+      <div className="space-y-1.5">
+        <Label htmlFor="signup-password">Password</Label>
+        <div className="relative">
+          <Icons.lockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Controller
+            name="password"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="signup-password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min. 8 characters"
+                {...field}
+                disabled={registerMutation.isPending}
+                className={cn(
+                  'pl-10 pr-10 h-11',
+                  errors.password &&
+                    'border-destructive focus-visible:ring-destructive'
+                )}
+              />
+            )}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label="Toggle password visibility"
+          >
+            {showPassword ? (
+              <Icons.eyeOff className="h-4 w-4" />
+            ) : (
+              <Icons.eye className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         {errors.password && (
-          <p className="text-sm text-destructive">{errors.password.message}</p>
+          <p className="text-xs text-destructive">{errors.password.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
-        <Controller
-          name="confirmPassword"
-          control={control}
-          render={({ field }) => (
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              {...field}
-              disabled={isLoading || registerMutation.isPending}
-            />
-          )}
-        />
+      <div className="space-y-1.5">
+        <Label htmlFor="signup-confirmPassword">Confirm Password</Label>
+        <div className="relative">
+          <Icons.lockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Controller
+            name="confirmPassword"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="signup-confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Re-enter password"
+                {...field}
+                disabled={registerMutation.isPending}
+                className={cn(
+                  'pl-10 pr-10 h-11',
+                  errors.confirmPassword &&
+                    'border-destructive focus-visible:ring-destructive'
+                )}
+              />
+            )}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            aria-label="Toggle confirm password visibility"
+          >
+            {showConfirmPassword ? (
+              <Icons.eyeOff className="h-4 w-4" />
+            ) : (
+              <Icons.eye className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         {errors.confirmPassword && (
-          <p className="text-sm text-destructive">
+          <p className="text-xs text-destructive">
             {errors.confirmPassword.message}
           </p>
         )}
@@ -167,20 +231,30 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
 
       <Button
         type="submit"
-        className="w-full"
-        disabled={isLoading || registerMutation.isPending}
+        className="w-full h-11 text-base font-semibold"
+        disabled={registerMutation.isPending}
       >
-        {isLoading || registerMutation.isPending ? (
-          <>
-            <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            Creating account...
-          </>
+        {registerMutation.isPending ? (
+          <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
         ) : (
-          'Create Account'
-        )}
+          <Icons.userPlus className="mr-2 h-5 w-5" />
+        )}{' '}
+        {/* Giả sử có Icons.userPlus */}
+        Create Account
       </Button>
+
+      {/* Phần social login có thể không cần ở đây nếu AuthModal đã có cách xử lý chung */}
+      {/* <div className="relative pt-2">
+        <Separator />
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
+          <span className="bg-background px-3 text-xs uppercase text-muted-foreground">Or sign up with</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <LoginWithGoogle />
+        <LoginWithFacebook />
+      </div> */}
     </form>
   );
 };
-
 export default SignupForm;

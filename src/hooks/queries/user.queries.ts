@@ -17,7 +17,12 @@ import {
   UpdateUserProfileData,
   UserListResponse,
   UserQueryParams,
+  updateMyAvatar,
+  NotificationPreferences,
+  updateMyNotificationPreferences,
+  getMyNotificationPreferences,
 } from '@/services/user.service'; // Import các hàm và kiểu dữ liệu
+import { toast } from 'sonner';
 
 // Query Key Factory
 const userKeys = {
@@ -28,6 +33,8 @@ const userKeys = {
   detail: (id: number | 'me' | undefined) =>
     [...userKeys.details(), id] as const,
   profile: ['userProfile'] as const, // Key riêng cho profile của user đang đăng nhập
+  notificationPreferences: () =>
+    [...userKeys.profile, 'notification-preferences'] as const,
 };
 
 // --- Queries ---
@@ -37,11 +44,10 @@ export const useMyProfile = (
   options?: Omit<UseQueryOptions<UserProfile, Error>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery<UserProfile, Error>({
-    queryKey: ['userProfile'], // Key duy nhất cho query này
+    queryKey: userKeys.profile,
     queryFn: getMyProfile,
-    staleTime: 1000 * 60 * 5, // Dữ liệu profile coi là cũ sau 5 phút
-    // Các options khác: enabled, refetchOnWindowFocus,...
-    ...options,
+    staleTime: 1000 * 60 * 5,
+    ...(options || {}),
   });
 };
 
@@ -165,3 +171,75 @@ export const useAdminUpdateUserRole = (
 };
 
 // Thêm các hooks cho các action admin khác nếu cần
+
+/** Hook để cập nhật avatar user */
+export const useUpdateMyAvatar = (
+  options?: UseMutationOptions<UserProfile, Error, File>
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<UserProfile, Error, File>({
+    mutationFn: (avatarFile: File) => updateMyAvatar(avatarFile),
+    onSuccess: (data) => {
+      // Cập nhật cache profile với avatar mới
+      queryClient.setQueryData(userKeys.profile, data);
+      // Hoặc có thể chỉ cập nhật một phần của profile nếu data trả về chỉ là avatarUrl
+      // queryClient.setQueryData(userKeys.profile, (oldData: UserProfile | undefined) => {
+      //   if (oldData) {
+      //     return { ...oldData, avatarUrl: data.avatarUrl }; // Giả sử data trả về có avatarUrl
+      //   }
+      //   return oldData;
+      // });
+      console.log('Avatar updated successfully.');
+      toast.success('Cập nhật ảnh đại diện thành công!');
+    },
+    onError: (error) => {
+      console.error('Avatar update failed:', error.message);
+      toast.error(error.message || 'Cập nhật ảnh đại diện thất bại.');
+    },
+    ...options,
+  });
+};
+
+/** Hook lấy cài đặt thông báo email */
+export const useMyNotificationPreferences = (
+  options?: Omit<
+    UseQueryOptions<NotificationPreferences, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  return useQuery<NotificationPreferences, Error>({
+    queryKey: userKeys.notificationPreferences(),
+    queryFn: getMyNotificationPreferences,
+    staleTime: 1000 * 60 * 5, // Cache 5 phút
+    ...options,
+  });
+};
+
+/** Hook cập nhật cài đặt thông báo email */
+export const useUpdateMyNotificationPreferences = (
+  options?: UseMutationOptions<
+    NotificationPreferences,
+    Error,
+    Partial<NotificationPreferences>
+  >
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    NotificationPreferences,
+    Error,
+    Partial<NotificationPreferences>
+  >({
+    mutationFn: updateMyNotificationPreferences,
+    onSuccess: (updatedPreferences) => {
+      queryClient.setQueryData(
+        userKeys.notificationPreferences(),
+        updatedPreferences
+      );
+      // toast.success("Notification preferences updated!"); // Sẽ xử lý ở component
+    },
+    onError: (error) => {
+      // toast.error(error.message || "Failed to update preferences."); // Sẽ xử lý ở component
+    },
+    ...options,
+  });
+};

@@ -738,7 +738,7 @@ const IntroPage = () => {
           <div className="absolute top-8 sm:top-10 left-8 sm:left-10 z-20">
             {' '}
             <img
-              src="/3telogo.png"
+              src="/images/logo/3telogo.jpeg "
               alt="3TEduTech Logo"
               className="h-11 sm:h-12 opacity-90 hover:opacity-100 transition-opacity duration-300 filter drop-shadow-lg"
             />{' '}

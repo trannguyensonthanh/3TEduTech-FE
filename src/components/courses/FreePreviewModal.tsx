@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Icons } from '@/components/common/Icons'; // Giả sử Icons.play, Icons.fileText tồn tại
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Lesson, VideoSourceType } from '@/types/common.types'; // Import LessonFE
+import { Lesson } from '@/types/common.types'; // Import LessonFE
 import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries'; // Hook lấy signed URL
 import { getYoutubeEmbedUrl, getVimeoEmbedUrl } from '@/utils/video.util';
 import { ScrollArea } from '@/components/ui/scroll-area';

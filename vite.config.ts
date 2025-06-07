@@ -7,6 +7,11 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: '::',
     port: 8080,
+    watch: {
+      // Watch all files in the project
+      ignored: ['!**/node_modules/@react-pdf/renderer/**'],
+      // Hoặc thử một pattern khác nếu cần
+    },
   },
   plugins: [
     react(),

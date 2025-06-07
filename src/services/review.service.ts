@@ -35,12 +35,38 @@ export interface CreateUpdateReviewData {
   comment?: string;
 }
 
+export interface InstructorReviewItem {
+  reviewId: number;
+  courseId: number; // ID của khóa học được đánh giá
+  courseName: string; // Tên của khóa học
+  rating: number; // Rating cho khóa học đó
+  comment?: string | null;
+  accountId: number; // ID người đánh giá
+  userFullName?: string; // Tên người đánh giá
+  userAvatarUrl?: string | null;
+  reviewedAt: IsoDateTimeString;
+}
+
+export interface InstructorReviewListResponse {
+  reviews: InstructorReviewItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface InstructorReviewQueryParams {
+  page?: number;
+  limit?: number;
+  sortBy?: 'reviewedAt:desc' | 'rating:desc' | 'rating:asc';
+  minRating?: number;
+}
+
 /** Tạo hoặc cập nhật đánh giá */
 export const createOrUpdateReview = async (
   courseId: number,
   data: CreateUpdateReviewData
 ): Promise<Review> => {
-  console.log('cc');
   return apiHelper.post(`/courses/${courseId}/reviews`, data);
 };
 
@@ -64,4 +90,16 @@ export const getMyReviewForCourse = async (
 export const deleteReview = async (reviewId: number): Promise<void> => {
   // API này đứng riêng
   await apiHelper.delete(`/reviews/${reviewId}`);
+};
+
+/** Lấy tất cả reviews cho các khóa học của một giảng viên */
+export const getCourseReviewsByInstructor = async (
+  instructorId: number | string,
+  params?: InstructorReviewQueryParams
+): Promise<InstructorReviewListResponse> => {
+  return apiHelper.get(
+    `/reviews/${instructorId}/course-reviews`,
+    undefined,
+    params
+  );
 };

@@ -1,24 +1,115 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Icons } from "../common/Icons";
+// src/components/home/Hero.tsx
+import { Link, useNavigate } from 'react-router-dom'; // Thêm useNavigate
+import { Button } from '@/components/ui/button';
+import { Icons } from '../common/Icons'; // Đảm bảo có Icons.check, Icons.arrowRight
+import { Canvas } from '@react-three/fiber';
+import { Suspense } from 'react';
+import { AbstractParticles } from '@/components/home/AbstractParticles'; // Component mới
+import { motion } from 'framer-motion'; // Cho animation của text và button
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const textVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.15 + 0.3, // Delay tăng dần cho từng element + delay tổng
+        duration: 0.6,
+        ease: 'easeOut',
+      },
+    }),
+  };
+
+  const buttonVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        delay: 0.8, // Delay cho button sau text
+        duration: 0.5,
+        ease: 'easeOut',
+      },
+    },
+  };
+
+  const imageVariants = {
+    hidden: { opacity: 0, x: 50 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        delay: 0.5,
+        duration: 0.8,
+        ease: 'easeOut',
+      },
+    },
+  };
+
   return (
-    <div className="hero-gradient text-gray-900 dark:text-gray-200">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-6">
-              Expand Your Knowledge with AI-Enhanced Learning
-            </h1>
-            <p className="text-lg md:text-xl mb-8 max-w-lg opacity-90">
+    <div className="relative hero-gradient-enhanced text-gray-900 dark:text-gray-100 min-h-[85vh] md:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+          <ambientLight intensity={0.2} />
+          <pointLight position={[10, 10, 10]} intensity={0.5} />
+          <Suspense fallback={null}>
+            <AbstractParticles
+              count={150}
+              color="#a7b3d6"
+              size={0.08}
+              speed={0.05}
+            />
+            <AbstractParticles
+              count={100}
+              color="#82aaff"
+              size={0.1}
+              speed={0.03}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-16 items-center">
+          {/* Content bên trái */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            className="text-center lg:text-left"
+          >
+            <motion.h1
+              custom={0}
+              variants={textVariants}
+              className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-6 leading-tight dark:text-white text-slate-800"
+            >
+              Expand Your Knowledge <br className="hidden md:block" /> With Our{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-teal-400 to-green-500">
+                AI-Enhanced
+              </span>{' '}
+              Learning Platform
+            </motion.h1>
+
+            <motion.p
+              custom={1}
+              variants={textVariants}
+              className="text-lg md:text-xl mb-8 max-w-xl mx-auto lg:mx-0 text-slate-600 dark:text-slate-300"
+            >
               Discover courses taught by experts and enhanced with our AI tutor
               that guides you through your learning journey.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            </motion.p>
+
+            <motion.div
+              custom={2}
+              variants={buttonVariants}
+              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+            >
               <Button
                 size="lg"
-                className="bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300"
+                onClick={() => navigate('/courses')}
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold px-8 py-3 text-base shadow-lg hover:shadow-blue-500/30 transition-all duration-300 transform hover:scale-105"
               >
                 Explore Courses
                 <Icons.arrowRight className="ml-2 h-5 w-5" />
@@ -26,67 +117,53 @@ const Hero = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-gray-900 text-gray-900 hover:bg-gray-100 dark:border-gray-200 dark:text-gray-200 dark:hover:bg-gray-700"
+                onClick={() => navigate('/instructor/register')}
+                className="border-slate-400 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800/60 font-semibold px-8 py-3 text-base shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105"
               >
                 Become an Instructor
               </Button>
-            </div>
-            <div className="mt-8 flex items-center space-x-2">
-              <Icons.check className="h-5 w-5 text-gray-900 dark:text-gray-200" />
-              <span className="text-gray-900 dark:text-gray-200">
-                Access to 10,000+ courses
-              </span>
-            </div>
-            <div className="mt-2 flex items-center space-x-2">
-              <Icons.check className="h-5 w-5 text-gray-900 dark:text-gray-200" />
-              <span className="text-gray-900 dark:text-gray-200">
-                Learn at your own pace
-              </span>
-            </div>
-            <div className="mt-2 flex items-center space-x-2">
-              <Icons.check className="h-5 w-5 text-gray-900 dark:text-gray-200" />
-              <span className="text-gray-900 dark:text-gray-200">
-                AI-powered learning assistant
-              </span>
-            </div>
-          </div>
-          <div className="relative hidden lg:block">
-            <div className="relative z-10 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80"
-                alt="Students learning"
-                className="w-full h-auto"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  Data Science Fundamentals
-                </h3>
-                <p className="text-gray-700 dark:text-gray-400 mt-2">
-                  Master the basics of data science and analytics
-                </p>
-                <div className="mt-4 flex justify-between items-center">
-                  <div className="flex items-center">
-                    <div className="flex items-center">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Icons.sparkles
-                          key={star}
-                          className="h-4 w-4 text-yellow-400"
-                        />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-400">
-                      4.9 (1,200 reviews)
-                    </span>
-                  </div>
-                  <span className="font-bold text-gray-900 dark:text-gray-100">
-                    $49.99
-                  </span>
-                </div>
+            </motion.div>
+
+            <motion.div
+              custom={3}
+              variants={textVariants}
+              className="mt-10 space-y-3 text-sm text-slate-500 dark:text-slate-400"
+            >
+              <div className="flex items-center justify-center lg:justify-start">
+                <Icons.check className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
+                <span>
+                  Access to <strong>10,000+</strong> quality courses.
+                </span>
               </div>
+              <div className="flex items-center justify-center lg:justify-start">
+                <Icons.check className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
+                <span>Learn at your own pace, anytime, anywhere.</span>
+              </div>
+              <div className="flex items-center justify-center lg:justify-start">
+                <Icons.check className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
+                <span>AI-powered learning assistant for 24/7 support.</span>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Hình ảnh/Animation bên phải */}
+          <motion.div
+            variants={imageVariants}
+            initial="hidden"
+            animate="visible"
+            className="relative hidden lg:flex justify-center items-center"
+          >
+            <div className="relative w-[450px] h-[450px] xl:w-[500px] xl:h-[500px]">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-teal-400/20 via-blue-500/20 to-purple-600/20 blur-3xl animate-pulse-slow"></div>
+              <img
+                src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                alt="AI Enhanced Learning Platform"
+                className="relative z-10 w-full h-full object-contain rounded-2xl p-2"
+              />
+              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-green-400/30 rounded-full blur-2xl opacity-70 animate-pulse-slower"></div>
+              <div className="absolute -top-8 -right-8 w-24 h-24 bg-purple-500/30 rounded-full blur-2xl opacity-70 animate-pulse-slow"></div>
             </div>
-            <div className="absolute -bottom-6 -right-6 w-72 h-72 bg-teal-500/20 dark:bg-teal-500/30 rounded-full blur-3xl z-0"></div>
-            <div className="absolute -top-10 -left-10 w-80 h-80 bg-brand-500/20 dark:bg-brand-500/30 rounded-full blur-3xl z-0"></div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

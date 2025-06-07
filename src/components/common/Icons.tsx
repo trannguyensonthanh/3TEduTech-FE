@@ -72,6 +72,60 @@ import {
   Pause,
   Printer,
   GraduationCap,
+  Briefcase,
+  DatabaseZap,
+  Palette,
+  Megaphone,
+  Languages,
+  UserCheck,
+  BrainCircuit,
+  BarChart3,
+  Heart,
+  Wifi,
+  Bot,
+  CheckCircle2,
+  ShieldCheck,
+  Quote,
+  Users2,
+  BookCopy,
+  Mic,
+  SendHorizontal,
+  UserCircle2,
+  ChevronDown,
+  ChevronUp,
+  CornerDownLeft,
+  PackageOpen,
+  AlertTriangle,
+  ListRestart,
+  UsersRound,
+  HeartHandshake,
+  Lightbulb,
+  Target,
+  Folder,
+  UserCog, // Hoặc UserCircle, Edit3 cho Edit Profile (userEdit)
+  LockKeyhole, // Account Security
+  Settings2, // Preferences
+  BellRing, // Notifications (nếu tách riêng)
+  ImageUp, // Upload
+  KeyRound,
+  EyeOff,
+  LogIn,
+  UserPlus,
+  UserCircle,
+  Link2,
+  PlusCircle,
+  Home,
+  Landmark,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  CornerLeftUp,
+  Minus,
+  Wallet,
+  Hourglass,
+  XCircle,
+  Ban,
+  ExternalLink,
+  ListChecks,
 } from 'lucide-react';
 import { Laptop as Google } from 'lucide-react';
 
@@ -81,6 +135,13 @@ export type Icon = React.ForwardRefExoticComponent<
 >;
 
 export const Icons = {
+  business: Briefcase, // Hoặc Settings nếu bạn thích hơn
+  dataScience: DatabaseZap,
+  design: Palette, // Hoặc Image
+  marketing: Megaphone, // Hoặc Sparkles
+  language: Languages, // Hoặc Globe
+  userCheck: UserCheck, // Hoặc User
+  ai: BrainCircuit, // Hoặc Sparkles
   graduationCap: GraduationCap,
   logo: Zap,
   close: X,
@@ -151,6 +212,58 @@ export const Icons = {
   pause: Pause,
   alertCircle: AlertCircle,
   printer: Printer,
+  lessons: BookOpen, // Hoặc Layers3
+  level: BarChart3,
+  heart: Heart,
+  expert: Award, // Hoặc Users
+  learnAnywhere: Smartphone, // Hoặc Wifi, Globe
+  chatbot: MessageCircle, // Hoặc Bot
+  checkCircle2: CheckCircle2,
+  shieldCheck: ShieldCheck, // Cho "Trusted Content" ví dụ
+  zap: Zap, // Cho "Interactive" ví dụ
+  palette: Palette, // Cho "Creative Tools" ví dụ
+  quote: Quote,
+  students: Users2,
+  courses: BookCopy,
+  instructors: Mic,
+  bot: Bot, // Icon cho avatar của bot
+  usersRound: UsersRound,
+  send: SendHorizontal, // Hoặc ArrowRight
+  userCircle2: UserCircle2, // Icon cho avatar người dùng (nếu cần)
+  chevronDown: ChevronDown,
+  chevronUp: ChevronUp,
+  enterKey: CornerDownLeft, // Icon cho phím Enter (gợi ý)
+  alertTriangle: AlertTriangle,
+  packageOpen: PackageOpen,
+  listRestart: ListRestart,
+  heartHandshake: HeartHandshake,
+  lightbulb: Lightbulb,
+  target: Target,
+  folder: Folder,
+  userEdit: UserCog, // Hoặc UserCircle, Edit3 cho Edit Profile (userEdit)
+  lockKeyhole: LockKeyhole, // Account Security
+  settings2: Settings2, // Preferences
+  bellRing: BellRing, // Notifications (nếu tách riêng)
+  imageUp: ImageUp, // Upload
+  keyRound: KeyRound,
+  eyeOff: EyeOff,
+  logIn: LogIn,
+  userPlus: UserPlus,
+  userCircle: UserCircle,
+  link2: Link2,
+  plusCircle: PlusCircle,
+  home: Home,
+  landmark: Landmark,
+  arrowUpCircle: ArrowUpCircle,
+  arrowDownCircle: ArrowDownCircle,
+  cornerLeftUp: CornerLeftUp,
+  minus: Minus,
+  wallet: Wallet,
+  hourglass: Hourglass,
+  xCircle: XCircle,
+  ban: Ban,
+  externalLink: ExternalLink,
+  listChecks: ListChecks,
   paypal: ({ ...props }: LucideProps) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"

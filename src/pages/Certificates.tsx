@@ -90,8 +90,7 @@ const CertificatesPage = () => {
     return (
       <Layout>
         <div className="container mx-auto py-12 px-4 flex justify-center items-center min-h-[calc(100vh-200px)]">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="ml-4 text-lg">Đang tải dữ liệu...</p>
+          <p className="ml-4 text-lg">Loading data...</p>
         </div>
       </Layout>
     );
@@ -110,7 +109,7 @@ const CertificatesPage = () => {
               'Không thể tải danh sách khóa học của bạn. Vui lòng thử lại sau.'}
           </p>
           <Button onClick={() => refetchEnrollments()} className="mt-6">
-            Thử lại
+            Retry
           </Button>
         </div>
       </Layout>
@@ -142,10 +141,10 @@ const CertificatesPage = () => {
       <div className="container mx-auto py-10 px-4">
         <div className="mb-10 max-w-3xl mx-auto text-center">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-3">
-            Chứng nhận của tôi
+            My Certificates
           </h1>
           <p className="text-lg text-muted-foreground">
-            Quản lý và tải xuống các chứng nhận hoàn thành khóa học.
+            Manage and download your course completion certificates.
           </p>
         </div>
 
@@ -153,10 +152,10 @@ const CertificatesPage = () => {
           <Tabs defaultValue="completed" className="w-full">
             <TabsList className="grid w-full grid-cols-2 md:w-[350px] mx-auto mb-10 shadow-sm">
               <TabsTrigger value="completed" className="py-2.5">
-                Đã hoàn thành ({displayCourses.completed.length})
+                Completed ({displayCourses.completed.length})
               </TabsTrigger>
               <TabsTrigger value="in-progress" className="py-2.5">
-                Đang học ({displayCourses.inProgress.length})
+                In Progress ({displayCourses.inProgress.length})
               </TabsTrigger>
             </TabsList>
 
@@ -174,11 +173,11 @@ const CertificatesPage = () => {
               ) : (
                 <EmptyState
                   icon={<Icons.certificate className="h-16 w-16" />}
-                  title="Chưa có chứng nhận nào"
-                  description="Hoàn thành các khóa học để nhận chứng nhận và thể hiện thành tích của bạn!"
+                  title="No certificates yet"
+                  description="Complete courses to earn certificates and showcase your achievements!"
                   action={
                     <Button onClick={() => navigate('/my-courses')}>
-                      Xem khóa học của tôi
+                      View my courses
                     </Button>
                   }
                 />
@@ -199,11 +198,11 @@ const CertificatesPage = () => {
               ) : (
                 <EmptyState
                   icon={<Icons.graduationCap className="h-16 w-16" />}
-                  title="Không có khóa học nào đang diễn ra"
-                  description="Hãy khám phá và bắt đầu một hành trình kiến thức mới ngay hôm nay!"
+                  title="No courses in progress"
+                  description="Discover and start a new learning journey today!"
                   action={
                     <Button onClick={() => navigate('/courses')}>
-                      Tìm khóa học mới
+                      Find new courses
                     </Button>
                   }
                 />
@@ -222,10 +221,10 @@ const CertificatesPage = () => {
               <DialogHeader className="p-6 pb-4 border-b">
                 {' '}
                 {/* sr-only nếu CertificateDisplay đã có title */}
-                <DialogTitle>Xem trước Chứng chỉ</DialogTitle>
+                <DialogTitle>Certificate Preview</DialogTitle>
                 <DialogDescription>
-                  Chứng chỉ hoàn thành khóa học "
-                  {selectedCertificateCourse.courseName}".
+                  Certificate of completion for the course
+                  {selectedCertificateCourse.courseName}.
                 </DialogDescription>
               </DialogHeader>
 
@@ -267,7 +266,7 @@ const CertificatesPage = () => {
                   fallback={
                     <Button disabled className="w-full sm:w-auto">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Đang chuẩn bị PDF...
+                      Preparing PDF...
                     </Button>
                   }
                 >
@@ -293,7 +292,7 @@ const CertificatesPage = () => {
                           ) : (
                             <Icons.download className="mr-2 h-4 w-4" />
                           )}
-                          Tải xuống PDF
+                          Download PDF
                         </Button>
                       )}
                     </PDFDownloadLink>
@@ -304,7 +303,7 @@ const CertificatesPage = () => {
                   onClick={() => setCertificateOpen(false)}
                   className="w-full sm:w-auto"
                 >
-                  Đóng
+                  Close
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -314,9 +313,8 @@ const CertificatesPage = () => {
   );
 };
 
-// Course Card Component (Cập nhật)
 interface CourseCardProps {
-  course: ProcessedEnrollment; // Sử dụng ProcessedEnrollment
+  course: ProcessedEnrollment;
   isInProgress?: boolean;
   onViewCertificate?: () => void;
 }
@@ -342,7 +340,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
         />
         {!isInProgress && (
           <div className="absolute top-3 right-3 bg-green-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md shadow-lg">
-            ĐÃ HOÀN THÀNH
+            COMPLETED
           </div>
         )}
         {isInProgress && course.progressPercentage > 0 && (
@@ -409,7 +407,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             className="w-full text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             onClick={() => navigate(`/learn/${course.slug}`)}
           >
-            Vào học
+            Go to course
             <Icons.arrowRight className="ml-1.5 h-4 w-4" />
           </Button>
         ) : (
@@ -418,10 +416,10 @@ const CourseCard: React.FC<CourseCardProps> = ({
             size="sm"
             className="w-full"
             onClick={onViewCertificate}
-            disabled={!course.completionDate} // Chỉ bật khi đã hoàn thành
+            disabled={!course.completionDate}
           >
             <Icons.fileText className="h-4 w-4 mr-2" />
-            Xem chứng chỉ
+            View certificate
           </Button>
         )}
       </CardFooter>

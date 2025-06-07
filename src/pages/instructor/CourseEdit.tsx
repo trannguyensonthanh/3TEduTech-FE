@@ -59,10 +59,11 @@ import LessonDialog from '@/components/instructor/courseCreate/LessonDialog';
 import { Form } from '@/components/ui/form';
 import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries';
 import { getVimeoEmbedUrl, getYoutubeEmbedUrl } from '@/utils/video.util';
-import { Section, Lesson, CourseStatusId } from '@/types/common.types';
+import { Lesson, CourseStatusId } from '@/types/common.types';
 import { Badge } from '@/components/ui/badge';
 import ConfirmationDialog from '@/components/instructor/courseCreate/ConfirmationDialog';
 import { useLanguages } from '@/hooks/queries/language.queries';
+import { Section } from '@/services/section.service';
 // Zod schema (Thêm ID)
 // Zod schema (Giữ nguyên)
 const courseFormSchema = z

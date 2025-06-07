@@ -18,8 +18,8 @@ import {
   PromotionQueryParams,
   CreatePromotionData,
   UpdatePromotionData,
+  ValidatePromoResponse,
 } from '@/services/promotion.service';
-import { ValidatePromoResponse } from '@/types/cart.types';
 
 // Query Key Factory
 const promotionKeys = {
@@ -103,7 +103,7 @@ export const useUpdatePromotion = (
     mutationFn: ({ promotionId, data }) => updatePromotion(promotionId, data),
     onSuccess: (updatedPromotion) => {
       queryClient.setQueryData(
-        promotionKeys.detail(updatedPromotion.PromotionID),
+        promotionKeys.detail(updatedPromotion.promotionId),
         updatedPromotion
       );
       queryClient.invalidateQueries({ queryKey: promotionKeys.lists() });

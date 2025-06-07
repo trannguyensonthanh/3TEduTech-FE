@@ -1,5 +1,6 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+// src/components/layout/InstructorLayout.tsx
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   BookOpen,
@@ -7,207 +8,388 @@ import {
   BarChart2,
   DollarSign,
   Settings,
-  BookText,
+  FileText,
   User,
   FileCheck,
   Menu,
   X,
   MessageSquare,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+  ArrowLeftRight,
+  Home,
+  LogOut,
+  ChevronRight,
+  UserCircle,
+  BookUser,
+  PlusCircle, // Icons.plusCircle
+} from 'lucide-react';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { Icons } from '@/components/common/Icons';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator'; // Import Separator
+import { useAuth } from '@/contexts/AuthContext';
+import { useLogoutMutation } from '@/hooks/queries/auth.queries';
 
 interface InstructorLayoutProps {
   children: React.ReactNode;
+  pageTitle?: string;
+  breadcrumbs?: { label: string; href?: string }[];
 }
 
-const InstructorLayout = ({ children }: InstructorLayoutProps) => {
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-  const location = useLocation();
+const navigationItems = [
+  {
+    name: 'Dashboard',
+    icon: LayoutDashboard,
+    href: '/instructor',
+    notifications: 0,
+  },
+  {
+    name: 'My Courses',
+    icon: BookOpen,
+    href: '/instructor/courses',
+    notifications: 0,
+  },
+  {
+    name: 'Create Course',
+    icon: PlusCircle,
+    href: '/instructor/courses/create',
+    notifications: 0,
+  },
+  {
+    name: 'Course Approvals',
+    icon: FileCheck,
+    href: '/instructor/course-approvals',
+    notifications: 0,
+  }, // Bỏ mock notifications
+  {
+    name: 'Students',
+    icon: Users,
+    href: '/instructor/students',
+    notifications: 0,
+  },
+  // {
+  //   name: 'Q&A Management',
+  //   icon: MessageSquare,
+  //   href: '/instructor/qna',
+  //   notifications: 0,
+  // }, // Bỏ mock
+  // {
+  //   name: 'Analytics',
+  //   icon: BarChart2,
+  //   href: '/instructor/analytics',
+  //   notifications: 0,
+  // },
+  {
+    name: 'Earnings & Payouts',
+    icon: DollarSign,
+    href: '/instructor/earnings',
+    notifications: 0,
+  },
+];
 
-  const navigationItems = [
-    {
-      name: "Dashboard",
-      icon: LayoutDashboard,
-      href: "/instructor",
-      notifications: 0,
-    },
-    {
-      name: "My Courses",
-      icon: BookOpen,
-      href: "/instructor/courses",
-      notifications: 0,
-    },
-    {
-      name: "Course Approvals",
-      icon: FileCheck,
-      href: "/instructor/course-approvals",
-      notifications: 3,
-    },
-    {
-      name: "Students",
-      icon: Users,
-      href: "/instructor/students",
-      notifications: 2,
-    },
-    {
-      name: "Q&A Management",
-      icon: MessageSquare,
-      href: "/instructor/qna",
-      notifications: 5,
-    },
-    {
-      name: "Analytics",
-      icon: BarChart2,
-      href: "/instructor/analytics",
-      notifications: 0,
-    },
-    {
-      name: "Earnings",
-      icon: DollarSign,
-      href: "/instructor/earnings",
-      notifications: 0,
-    },
-    {
-      name: "Profile",
-      icon: User,
-      href: "/instructor/profile",
-      notifications: 0,
-    },
-    {
-      name: "Settings",
-      icon: Settings,
-      href: "/instructor/settings",
-      notifications: 0,
-    },
-  ];
+const accountNavigationItems = [
+  {
+    name: 'My Profile',
+    icon: UserCircle,
+    href: '/instructor/profile',
+    notifications: 0,
+  }, // Đổi icon User thành UserCircle
+  // {
+  //   name: 'Account Settings',
+  //   icon: Settings,
+  //   href: '/instructor/settings',
+  //   notifications: 0,
+  // },
+];
+
+const InstructorLayout = ({
+  children,
+  pageTitle,
+  breadcrumbs,
+}: InstructorLayoutProps) => {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  // const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false); // Cho desktop collapse (tùy chọn)
+  const location = useLocation();
+  const { user } = useAuth();
+  const logoutMutation = useLogoutMutation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+    // navigate('/'); // Đã xử lý trong hook
+  };
+
+  const getInitials = (name?: string | null): string => {
+    if (!name) return 'U';
+    const words = name.split(' ').filter(Boolean);
+    if (words.length === 0) return 'U';
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+    return (
+      words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')
+    ).toUpperCase();
+  };
+
+  useEffect(() => {
+    if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
+
+  const renderNavLinks = (
+    items: typeof navigationItems,
+    sectionTitle?: string
+  ) => (
+    <>
+      {sectionTitle && (
+        <p className="px-4 pt-3 pb-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          {sectionTitle}
+        </p>
+      )}
+      {items.map((item) => {
+        const isActive =
+          location.pathname === item.href ||
+          (item.href !== '/instructor' &&
+            location.pathname.startsWith(item.href) &&
+            item.href.length > '/instructor'.length); // Cải thiện logic active
+        return (
+          <TooltipProvider key={item.name} delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to={item.href}
+                  onClick={() =>
+                    isMobileSidebarOpen && setIsMobileSidebarOpen(false)
+                  }
+                  className={cn(
+                    buttonVariants({
+                      variant: isActive ? 'secondary' : 'ghost',
+                      size: 'default',
+                    }),
+                    'w-full justify-start h-10 text-sm font-medium', // Giảm h một chút
+                    isActive
+                      ? 'bg-primary/10 text-primary dark:bg-primary/25 dark:text-sky-300 font-semibold shadow-sm' // ĐIỀU CHỈNH Ở ĐÂY
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-slate-700/80'
+                    // isSidebarCollapsed && "justify-center px-0" // Bỏ comment nếu dùng tính năng collapse
+                  )}
+                >
+                  <item.icon className="h-[18px] w-[18px] mr-3 opacity-90" />
+                  <span>{item.name}</span>
+                  {item.notifications > 0 && (
+                    <Badge className="ml-auto bg-destructive text-destructive-foreground hover:bg-destructive/80 px-1.5 text-[10px] h-5 leading-none">
+                      {item.notifications}
+                    </Badge>
+                  )}
+                </Link>
+              </TooltipTrigger>
+              {/* Tooltip chỉ hiển thị khi sidebar collapsed (nếu có tính năng đó) */}
+              {/* {isDesktopSidebarCollapsed && <TooltipContent side="right">{item.name}</TooltipContent>} */}
+            </Tooltip>
+          </TooltipProvider>
+        );
+      })}
+    </>
+  );
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-slate-100 dark:bg-slate-900">
       {/* Mobile Sidebar Backdrop */}
-      {isSidebarOpen && (
+      {isMobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
         ></div>
       )}
 
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="min-h-screen w-full"
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex flex-col w-64 border-r bg-background dark:bg-slate-800 dark:border-slate-700 transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-lg',
+          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
       >
-        {/* Sidebar */}
-        <div
-          className={cn(
-            "fixed inset-y-0 left-0 z-30 w-64 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:relative lg:z-0",
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
-          <ResizablePanel
-            defaultSize={20}
-            minSize={15}
-            maxSize={30}
-            className="h-full bg-background border-r"
+        <div className="flex h-20 items-center border-b px-4 dark:border-slate-700 shrink-0">
+          <Link
+            to="/instructor"
+            className="flex items-center space-x-2.5 group"
+            onClick={() => setIsMobileSidebarOpen(false)}
           >
-            {/* Sidebar Header */}
-            <div className="h-16 flex items-center justify-between px-4 border-b">
-              <Link to="/instructor" className="flex items-center space-x-2">
-                <BookText className="h-6 w-6 text-primary" />
-                <span className="font-bold text-lg">Instructor Portal</span>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Sidebar Navigation */}
-            <ScrollArea className="h-[calc(100vh-4rem)]">
-              <nav className="p-4 space-y-1">
-                {navigationItems.map((item, index) => (
-                  <Link
-                    key={index}
-                    to={item.href}
-                    className={cn(
-                      "flex items-center h-10 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      location.pathname === item.href
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5 mr-3" />
-                    <span>{item.name}</span>
-                    {item.notifications > 0 && (
-                      <Badge className="ml-auto" variant="secondary">
-                        {item.notifications}
-                      </Badge>
-                    )}
-                  </Link>
-                ))}
-              </nav>
-
-              {/* Sidebar Footer */}
-              <div className="p-4 border-t mt-4">
-                <Link
-                  to="/courses"
-                  className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Go to Student View</span>
-                </Link>
-              </div>
-            </ScrollArea>
-          </ResizablePanel>
+            <Icons.logo className="h-8 w-8 text-primary transition-transform duration-300 group-hover:rotate-[10deg]" />
+            <span className="font-bold text-xl text-foreground group-hover:text-primary transition-colors">
+              Instructor
+            </span>
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden ml-auto text-muted-foreground hover:text-foreground"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
-        <ResizableHandle withHandle />
+        <ScrollArea className="flex-1 custom-scrollbar">
+          <nav className="p-3 space-y-1.5">
+            {renderNavLinks(navigationItems)}
+            <Separator className="my-3 dark:bg-slate-700" />
+            {renderNavLinks(accountNavigationItems, 'My Account')}
+          </nav>
+        </ScrollArea>
 
-        {/* Main Content */}
-        <ResizablePanel defaultSize={80}>
-          <div className="flex-1 flex flex-col min-w-0 h-screen">
-            {/* Top Navigation */}
-            <header className="h-16 border-b flex items-center justify-between px-4 lg:px-6">
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden"
-                  onClick={() => setIsSidebarOpen(true)}
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-                <h1 className="text-xl font-semibold hidden md:block">
-                  Instructor Dashboard
-                </h1>
-              </div>
+        <div className="p-4 border-t mt-auto dark:border-slate-700 bg-background dark:bg-slate-800">
+          <Button
+            variant="outline"
+            asChild
+            className="w-full justify-start h-10 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
+          >
+            <Link to="/">
+              <Home className="h-4 w-4 mr-2.5 opacity-80" />
+              Go to Main Site
+            </Link>
+          </Button>
+        </div>
+      </aside>
 
-              <div className="flex items-center space-x-4">
-                <Link to="/instructor/profile">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                    <User className="h-4 w-4" />
-                  </div>
-                </Link>
-              </div>
-            </header>
-
-            {/* Page Content with its own scrolling */}
-            <div className="flex-1 overflow-auto">
-              <main className="p-4 lg:p-6">{children}</main>
-            </div>
+      {/* Main Content Area */}
+      <div className="lg:ml-64 flex-1 flex flex-col min-h-screen">
+        {' '}
+        {/* ml-64 bằng chiều rộng sidebar */}
+        {/* Top Header của Main Content */}
+        <header className="sticky top-0 z-20 h-20 border-b bg-background/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 dark:border-slate-700">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden mr-2 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+            {/* Breadcrumbs hoặc Tiêu đề trang động */}
+            {breadcrumbs && breadcrumbs.length > 0 ? (
+              <nav className="hidden md:flex items-center text-sm">
+                {breadcrumbs.map((crumb, index) => (
+                  <React.Fragment key={index}>
+                    {crumb.href ? (
+                      <Link
+                        to={crumb.href}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {crumb.label}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-foreground">
+                        {crumb.label}
+                      </span>
+                    )}
+                    {index < breadcrumbs.length - 1 && (
+                      <ChevronRight className="h-4 w-4 mx-1.5 text-muted-foreground" />
+                    )}
+                  </React.Fragment>
+                ))}
+              </nav>
+            ) : pageTitle ? (
+              <h1 className="text-xl font-semibold text-foreground hidden md:block">
+                {pageTitle}
+              </h1>
+            ) : (
+              <h1 className="text-xl font-semibold text-foreground hidden md:block">
+                Instructor Dashboard
+              </h1>
+            )}
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+
+          <div className="flex items-center space-x-3">
+            {/* User Avatar và Dropdown */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full p-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background group"
+                  >
+                    <Avatar className="h-9 w-9 border-2 border-transparent group-hover:border-primary/60">
+                      <AvatarImage
+                        src={
+                          user.avatarUrl ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            user.fullName || 'U'
+                          )}&background=random&size=96`
+                        }
+                        alt={user.fullName || 'User'}
+                      />
+                      <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
+                        {getInitials(user.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        {user.fullName}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center w-full">
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      Main Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  {/* <DropdownMenuItem asChild>
+                    <Link
+                      to="/instructor/settings"
+                      className="flex items-center w-full"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Instructor Settings
+                    </Link>
+                  </DropdownMenuItem> */}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-600 focus:text-red-600 dark:focus:bg-red-800/30"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </header>
+        {/* Page Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {' '}
+          {/* Scroll cho nội dung chính */}
+          <main className="p-4 py-6 md:p-6 lg:p-8">{children}</main>
+          <footer className="p-6 border-t text-center text-xs text-muted-foreground dark:border-slate-700">
+            © {new Date().getFullYear()} 3TEduTech Instructor Portal. All rights
+            reserved.
+          </footer>
+        </div>
+      </div>
     </div>
   );
 };

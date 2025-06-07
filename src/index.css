@@ -71,6 +71,9 @@
     --brand-700: 221 73% 87%;
     --brand-800: 221 73% 93%;
     --brand-900: 221 73% 98%;
+
+    --theme-primary: hsl(var(--primary)); /* Giả sử bạn dùng HSL cho màu primary của shadcn */
+    --theme-secondary: hsl(var(--secondary));
   }
 }
 

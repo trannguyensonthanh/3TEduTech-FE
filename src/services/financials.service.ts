@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/financials.service.ts
+import { IsoDateTimeString } from '@/services/lesson.service';
 import apiHelper from './apiHelper';
 
 export interface AvailableBalanceResponse {
@@ -6,10 +8,16 @@ export interface AvailableBalanceResponse {
   currency: string; // e.g., 'VND'
 }
 
-export interface WithdrawalRequestData {
-  requestedAmount: number;
-  // currency và method cố định ở backend, không cần gửi lên
-  instructorNotes?: string;
+// export interface WithdrawalRequestData {
+//   requestedAmount: number;
+//   // currency và method cố định ở backend, không cần gửi lên
+//   instructorNotes?: string;
+// }
+
+export interface RequestWithdrawalFormData {
+  amount: number;
+  instructorPayoutMethodId: number; // PK của InstructorPayoutMethods
+  notes?: string;
 }
 
 export interface WithdrawalRequest {
@@ -90,37 +98,138 @@ export interface ProcessPayoutData {
   completedAt?: string; // ISO Date string
   adminNotes?: string;
 }
-
-export interface RevenueDetail {
-  SplitID: number;
-  Amount: number; // Số tiền instructor nhận được từ split này
-  RevenueDate: string; // CreatedAt của split
-  PayoutID?: number | null;
-  OrderItemID: number;
-  CourseSalePrice: number; // PriceAtOrder của OrderItem
-  OrderID: number;
-  OrderDate: string;
-  CourseID: number;
-  CourseName: string;
-  CourseSlug: string;
-  PayoutStatusID?: string | null; // Trạng thái của Payout liên kết
-  PayoutDate?: string | null; // CompletedAt của Payout liên kết
-}
-
-export interface RevenueDetailsResponse {
-  revenues: RevenueDetail[];
+// Interface cho response từ API lấy lịch sử giao dịch
+export interface TransactionListResponse {
+  // Đổi tên từ RevenueDetailsResponse
+  transactions: InstructorTransactionDetail[]; // Đổi tên key
   total: number;
   page: number;
   limit: number;
   totalPages: number;
 }
 
-export interface RevenueDetailsParams {
+// Interface cho query params
+export interface TransactionHistoryParams {
+  // Đổi tên từ RevenueDetailsParams
   page?: number;
   limit?: number;
-  payoutStatus?: 'ALL' | 'PAID' | 'UNPAID';
+  type?: 'ALL' | 'CREDIT_SALE' | 'DEBIT_WITHDRAWAL' | string; // Thêm các type khác
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
+}
+// Interface cho một giao dịch doanh thu/chi trả chi tiết hiển thị cho Instructor
+export interface InstructorTransactionDetail {
+  transactionId: number; // TransactionID từ InstructorBalanceTransactions
+  type: string; // 'CREDIT_SALE', 'DEBIT_WITHDRAWAL', etc.
+  amount: number; // Số tiền (+/-)
+  currency: string;
+  balanceAfter: number;
+  transactionTimestamp: string; // TransactionTimestamp
+  description: string | null;
+  orderId?: number | null;
+  courseName?: string | null;
+  courseSlug?: string | null;
+  sourcePaymentMethodName?: string | null; // Phương thức người mua dùng để thanh toán
+  sourcePaymentExternalID?: string | null; // Mã giao dịch của người mua
+  payoutId?: number | null; // ID của Payout nếu là giao dịch rút tiền
+  payoutStatusId?: string | null;
+  payoutDate?: string | null;
+  status?: string | null; // chưa có
+  // Thêm các trường từ join nếu cần
 }
 
+export interface WithdrawalActivityItem {
+  // Từ WithdrawalRequests
+  requestId: number;
+  requestedAmount: number;
+  requestedCurrencyId: string;
+  requestStatus:
+    | 'PENDING'
+    | 'APPROVED'
+    | 'REJECTED'
+    | 'PROCESSING_PAYMENT'
+    | 'CANCELLED'; // Status của YÊU CẦU
+  requestedAt: IsoDateTimeString;
+  instructorNotes?: string | null;
+  adminNotesForRequest?: string | null; // Ghi chú của admin cho việc duyệt/từ chối request
+  processedAt?: IsoDateTimeString | null; // Thời điểm request được admin xử lý (duyệt/từ chối)
+
+  // Từ Payouts (nếu request đã được approve và có payout tương ứng)
+  payoutId?: number | null;
+  actualAmountPaid?: number | null; // Số tiền thực nhận sau phí
+  payoutCurrencyId?: string | null; // Tiền tệ của payout (có thể khác requestedCurrency)
+  exchangeRateUsed?: number | null; // Nếu có chuyển đổi tiền tệ
+  transactionFee?: number | null;
+  payoutStatus?: 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED'; // Status của việc CHI TRẢ
+  paymentMethodUsed?: string | null; // Tên phương thức (ví dụ: "PayPal", "Bank Transfer")
+  payoutDetailsSnapshot?: any | null; // Thông tin chi tiết tài khoản nhận tiền tại thời điểm chi trả
+  paymentCompletedAt?: IsoDateTimeString | null; // Thời điểm tiền thực sự được gửi/hoàn thành
+  externalTransactionId?: string | null; // Mã giao dịch từ bên thứ 3 (PayPal, ngân hàng)
+  adminNotesForPayout?: string | null; // Ghi chú của admin cho việc thực hiện payout
+}
+
+export interface WithdrawalActivityListResponse {
+  activities: WithdrawalActivityItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface WithdrawalActivityQueryParams {
+  page?: number;
+  limit?: number;
+  // Filter theo trạng thái chung của "hành trình" này, backend sẽ map sang status của request hoặc payout
+  // Ví dụ: 'PENDING' (request pending), 'PROCESSING' (request approved, payout pending/processing), 'COMPLETED' (payout paid), 'FAILED' (request rejected hoặc payout failed)
+  overallStatus?:
+    | 'PENDING'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED'
+    | 'REJECTED'
+    | 'CANCELLED';
+  dateFrom?: IsoDateTimeString;
+  dateTo?: IsoDateTimeString;
+  sortBy?:
+    | 'requestedAt:desc'
+    | 'requestedAt:asc'
+    | 'paymentCompletedAt:desc'
+    | 'paymentCompletedAt:asc';
+}
+
+// Interface cho API Lịch sử thu nhập theo tháng
+export interface MonthlyEarningItem {
+  month: string; // "YYYY-MM"
+  totalRevenue: number;
+  netEarnings: number;
+}
+export interface MonthlyEarningsResponse {
+  earnings: MonthlyEarningItem[];
+  currencyId: string;
+}
+export interface MonthlyEarningsQueryParams {
+  period?: 'last_6_months' | 'last_12_months' | string; // string cho 'year_YYYY'
+  courseId?: number;
+}
+
+// Interface cho API Phân tích doanh thu theo khóa học
+export interface CourseRevenueItem {
+  courseId: number;
+  courseName: string;
+  totalSalesCount: number;
+  totalRevenue: number;
+  netEarnings: number;
+  percentageOfTotalEarnings: number;
+  courseSlug: string;
+}
+export interface CourseRevenueResponse {
+  courses: CourseRevenueItem[];
+  currencyId: string;
+  totalCourses: number;
+}
+export interface CourseRevenueQueryParams {
+  period?: 'last_6_months' | 'last_12_months' | string; // string cho 'year_YYYY'
+}
 // --- Instructor APIs ---
 
 /** Instructor: Lấy số dư khả dụng */
@@ -129,37 +238,52 @@ export const getMyAvailableBalance =
     return apiHelper.get('/financials/balance');
   };
 
+// /** Instructor: Tạo yêu cầu rút tiền */
+// export const requestWithdrawal = async (
+//   data: WithdrawalRequestData
+// ): Promise<WithdrawalRequest> => {
+//   // API backend chỉ cần requestedAmount và notes
+//   return apiHelper.post('/financials/withdrawals/request', data);
+// };
+
 /** Instructor: Tạo yêu cầu rút tiền */
 export const requestWithdrawal = async (
-  data: WithdrawalRequestData
+  data: RequestWithdrawalFormData
 ): Promise<WithdrawalRequest> => {
-  // API backend chỉ cần requestedAmount và notes
+  // API backend /financials/withdrawals/request
   return apiHelper.post('/financials/withdrawals/request', data);
 };
 
-/** Instructor: Lấy lịch sử yêu cầu rút tiền */
-export const getMyWithdrawalHistory = async (
-  params?: WithdrawalHistoryParams
-): Promise<WithdrawalHistoryResponse> => {
-  return apiHelper.get('/financials/withdrawals/history', undefined, params);
+// /** Instructor: Lấy lịch sử yêu cầu rút tiền */
+// export const getMyWithdrawalHistory = async (
+//   params?: WithdrawalHistoryParams
+// ): Promise<WithdrawalHistoryResponse> => {
+//   return apiHelper.get('/financials/withdrawals/history', undefined, params);
+// };
+
+// /** Instructor: Lấy lịch sử chi trả */
+// export const getMyPayoutHistory = async (
+//   params?: PayoutQueryParams
+// ): Promise<PayoutListResponse> => {
+//   // Instructor chỉ xem của mình, không cần instructorId filter
+//   const { instructorId, ...restParams } = params || {}; // Loại bỏ instructorId nếu có
+//   return apiHelper.get('/financials/payouts/history', undefined, restParams);
+// };
+
+/** Instructor: Lấy lịch sử hoạt động rút tiền tổng hợp */
+export const getWithdrawalActivityHistory = async (
+  params?: WithdrawalActivityQueryParams
+): Promise<WithdrawalActivityListResponse> => {
+  return apiHelper.get('/financials/payout-activity', undefined, params);
 };
 
-/** Instructor: Lấy lịch sử chi trả */
-export const getMyPayoutHistory = async (
-  params?: PayoutQueryParams
-): Promise<PayoutListResponse> => {
-  // Instructor chỉ xem của mình, không cần instructorId filter
-  const { instructorId, ...restParams } = params || {}; // Loại bỏ instructorId nếu có
-  return apiHelper.get('/financials/payouts/history', undefined, restParams);
+/** Instructor: Lấy chi tiết các giao dịch doanh thu/chi trả */
+export const getMyTransactions = async (
+  params?: TransactionHistoryParams
+): Promise<TransactionListResponse> => {
+  // Gọi API mới /financials/transactions
+  return apiHelper.get('/financials/transactions', undefined, params);
 };
-
-/** Instructor: Lấy chi tiết doanh thu */
-export const getMyRevenueDetails = async (
-  params?: RevenueDetailsParams
-): Promise<RevenueDetailsResponse> => {
-  return apiHelper.get('/financials/revenue-details', undefined, params);
-};
-
 // --- Admin APIs ---
 
 /** Admin: Duyệt/Từ chối yêu cầu rút tiền */
@@ -183,4 +307,18 @@ export const processPayoutExecution = async (
   data: ProcessPayoutData
 ): Promise<Payout> => {
   return apiHelper.patch(`/financials/payouts/${payoutId}/process`, data);
+};
+
+/** Instructor: Lấy lịch sử thu nhập theo tháng */
+export const getMyMonthlyEarnings = async (
+  params?: MonthlyEarningsQueryParams
+): Promise<MonthlyEarningsResponse> => {
+  return apiHelper.get('/financials/monthly-earnings', undefined, params);
+};
+
+/** Instructor: Lấy phân tích doanh thu theo khóa học */
+export const getMyRevenueByCourse = async (
+  params?: CourseRevenueQueryParams
+): Promise<CourseRevenueResponse> => {
+  return apiHelper.get('/financials/revenue-by-course', undefined, params);
 };

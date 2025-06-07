@@ -46,7 +46,7 @@ export const TreeModelSimple = memo(
   }: TreeModelSimpleProps) => {
     // Đường dẫn đến file GLB đã được transform (nếu có) hoặc file GLB gốc
     // Đảm bảo file này nằm trong thư mục `public`
-    const gltfPath = '/models/my_tree_otp-transformed.glb'; // << THAY ĐỔI NẾU CẦN
+    const gltfPath = '/models/my_tree_otp-transformed.glb'; //
     const { nodes, materials } = useGLTF(gltfPath) as GLTFResult;
 
     // Log ra để kiểm tra cấu trúc nodes và materials
@@ -114,7 +114,7 @@ export const TreeModelSimple = memo(
             <animated.meshStandardMaterial
               // Sử dụng các thuộc tính từ currentTrunkMat đã được xác định
               map={currentTrunkMat.map}
-              color={currentTrunkMat.color}
+              color={'#c97e63'}
               roughness={
                 currentTrunkMat.roughness !== undefined
                   ? currentTrunkMat.roughness
@@ -126,7 +126,7 @@ export const TreeModelSimple = memo(
                   : 0.1
               }
               // Emissive được điều khiển bởi spring
-              emissive={'#5c4033'}
+              emissive={currentTrunkMat.emissive}
               emissiveIntensity={trunkEmissiveIntensity}
               // Các thuộc tính khác nếu có trong material gốc
               normalMap={currentTrunkMat.normalMap}

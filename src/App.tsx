@@ -17,11 +17,13 @@ const App = () => {
         {' '}
         <TooltipProvider>
           <ThemeProvider>
-            <CartProvider>
-              <Toaster />
-              <Sonner />
-              <AppRouter />
-            </CartProvider>
+            <NotificationProvider>
+              <CartProvider>
+                <Toaster />
+                <Sonner />
+                <AppRouter />
+              </CartProvider>
+            </NotificationProvider>
           </ThemeProvider>
         </TooltipProvider>
       </AuthProvider>

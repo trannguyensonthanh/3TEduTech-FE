@@ -9,6 +9,7 @@ export interface Category {
   iconUrl?: string | null;
   createdAt: string;
   updatedAt: string;
+  courseCount?: number;
 }
 
 export interface CategoryListData {
@@ -55,6 +56,17 @@ export const getCategoryById = async (
   categoryId: number
 ): Promise<Category> => {
   return apiHelper.get(`/categories/${categoryId}`);
+};
+
+/**
+ * Lấy chi tiết một category bằng slug của nó.
+ * @param {string} categorySlug - Slug của category.
+ * @returns {Promise<Category>} - Chi tiết đối tượng Category.
+ */
+export const getCategoryBySlug = async (
+  categorySlug: string
+): Promise<Category> => {
+  return apiHelper.get(`/categories/slug/${categorySlug}`);
 };
 
 export const updateCategory = async (

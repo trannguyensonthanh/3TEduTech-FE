@@ -20,6 +20,7 @@ interface PaginationControlsProps {
   /** Có luôn hiển thị nút trang đầu và cuối không */
   showFirstLastButtons?: boolean;
   isDisabled?: boolean; // Thêm prop để vô hiệu hóa toàn bộ
+  className?: string; // Thêm prop className để tùy chỉnh style
 }
 
 const DOTS = '...';
@@ -36,6 +37,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   siblingCount = 1, // Mặc định hiển thị 1 nút ở mỗi bên trang hiện tại
   showFirstLastButtons = true, // Mặc định hiển thị nút trang đầu và cuối
   isDisabled = false,
+  className,
 }) => {
   const paginationRange = React.useMemo(() => {
     const totalPageNumbers = siblingCount + 5; // siblingCount + firstPage + lastPage + currentPage + 2*DOTS
@@ -104,7 +106,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   };
 
   return (
-    <Pagination>
+    <Pagination className={className}>
       <PaginationContent>
         {/* Nút Previous */}
         <PaginationItem>

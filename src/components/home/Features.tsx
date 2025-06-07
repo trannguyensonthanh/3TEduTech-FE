@@ -1,122 +1,230 @@
+// src/components/home/Features.tsx
 import { Icons } from '../common/Icons';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button'; // Nếu cần nút CTA
+import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 
-const Features = () => {
+const featureItems = [
+  {
+    icon: <Icons.ai className="h-10 w-10" />, // Dùng component Icon trực tiếp
+    title: 'AI-Powered Learning',
+    description:
+      'Our AI learning assistant provides personalized help, answers questions, and guides you through challenging concepts.',
+    color: 'text-blue-500 dark:text-blue-400',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+  },
+  {
+    icon: <Icons.expert className="h-10 w-10" />,
+    title: 'Expert Instructors',
+    description:
+      'Learn from industry professionals with real-world experience who are passionate about sharing their knowledge.',
+    color: 'text-green-500 dark:text-green-400',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+  },
+  {
+    icon: <Icons.learnAnywhere className="h-10 w-10" />,
+    title: 'Learn Anywhere, Anytime',
+    description:
+      'Access your courses on any device, with mobile and offline viewing options to fit your busy schedule.',
+    color: 'text-purple-500 dark:text-purple-400',
+    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+  },
+  // Thêm các feature khác nếu muốn, ví dụ:
+  {
+    icon: <Icons.shieldCheck className="h-10 w-10" />,
+    title: 'Trusted & Up-to-Date Content',
+    description:
+      'Curated courses with the latest industry knowledge, ensuring you learn relevant and valuable skills.',
+    color: 'text-yellow-500 dark:text-yellow-400',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+  },
+  {
+    icon: <Icons.zap className="h-10 w-10" />,
+    title: 'Interactive Exercises',
+    description:
+      'Engage with hands-on projects, quizzes, and assignments to solidify your understanding.',
+    color: 'text-red-500 dark:text-red-400',
+    bgColor: 'bg-red-100 dark:bg-red-900/30',
+  },
+  {
+    icon: <Icons.palette className="h-10 w-10" />,
+    title: 'Creative Learning Tools',
+    description:
+      'Utilize innovative tools and resources designed to make your learning experience more engaging and effective.',
+    color: 'text-pink-500 dark:text-pink-400',
+    bgColor: 'bg-pink-100 dark:bg-pink-900/30',
+  },
+];
+
+const sectionVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: 'easeOut' },
+  },
+};
+
+const gridItemVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: (i: number) => ({
+    opacity: 1,
+    scale: 1,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.5,
+      ease: 'easeOut',
+    },
+  }),
+};
+
+const FeaturesSection = () => {
   return (
-    <section className="py-16">
+    <section className="py-16 md:py-24 bg-slate-100 dark:bg-slate-900">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Why Learn with 3TEduTech?
+        <motion.div
+          variants={sectionVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          className="text-center mb-12 md:mb-16"
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+            Why Learn with{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-teal-500">
+              3TEduTech
+            </span>
+            ?
           </h2>
-          <p className="mt-4 text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
             Our platform combines expert-led courses with cutting-edge AI
-            technology for a truly personalized learning experience
+            technology for a truly personalized and effective learning
+            experience.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-            <div className="bg-brand-100 dark:bg-brand-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Icons.sparkles className="h-8 w-8 text-brand-600 dark:text-brand-300" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-              AI-Powered Learning
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              Our AI learning assistant provides personalized help, answers
-              questions, and guides you through challenging concepts.
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-            <div className="bg-teal-100 dark:bg-teal-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Icons.course className="h-8 w-8 text-teal-600 dark:text-teal-300" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-              Expert Instructors
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              Learn from industry professionals with real-world experience who
-              are passionate about sharing their knowledge.
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center">
-            <div className="bg-purple-100 dark:bg-purple-700 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Icons.globe className="h-8 w-8 text-purple-600 dark:text-purple-300" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-              Learn Anywhere
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300">
-              Access your courses anytime, anywhere, with mobile and offline
-              viewing options to fit your busy schedule.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-20">
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="p-8 md:p-12 flex flex-col justify-center">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-                  AI-Powered Chatbot in Every Lesson
-                </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                  Our revolutionary AI chatbot is integrated directly into each
-                  lesson, providing immediate assistance whenever you need it.
-                </p>
-                <ul className="space-y-4">
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Icons.check className="h-6 w-6 text-brand-500 dark:text-brand-300" />
-                    </div>
-                    <p className="ml-3 text-gray-600 dark:text-gray-300">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        24/7 Support:
-                      </span>{' '}
-                      Get help with concepts anytime, even outside of class
-                      hours
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Icons.check className="h-6 w-6 text-brand-500 dark:text-brand-300" />
-                    </div>
-                    <p className="ml-3 text-gray-600 dark:text-gray-300">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        Personalized Learning:
-                      </span>{' '}
-                      The AI adapts to your learning style and pace
-                    </p>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Icons.check className="h-6 w-6 text-brand-500 dark:text-brand-300" />
-                    </div>
-                    <p className="ml-3 text-gray-600 dark:text-gray-300">
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        Interactive Exercises:
-                      </span>{' '}
-                      Practice with AI-generated examples and problems
-                    </p>
-                  </li>
-                </ul>
+        {/* Grid for general features */}
+        <motion.div
+          // variants={containerVariants} // Nếu muốn staggerChildren cho cả grid này
+          // initial="hidden"
+          // whileInView="visible"
+          // viewport={{ once: true, amount: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 md:mb-24"
+        >
+          {featureItems.map((item, index) => (
+            <motion.div
+              key={item.title}
+              custom={index}
+              variants={gridItemVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+              className="bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 p-8 flex flex-col items-center text-center transform hover:-translate-y-2"
+            >
+              <div
+                className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${item.bgColor} ${item.color} transition-all duration-300 group-hover:scale-110`}
+              >
+                {item.icon}
               </div>
-              <div className="relative hidden lg:block">
-                <img
-                  src="https://images.unsplash.com/photo-1612299065617-f928c5fb848d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=900&q=80"
-                  alt="AI learning assistant"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-600/20 to-transparent"></div>
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-3">
+                {item.title}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                {item.description}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Dedicated section for AI Chatbot Feature */}
+        <motion.div
+          variants={sectionVariants} // Dùng lại sectionVariants hoặc tạo mới
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 dark:from-blue-700 dark:via-indigo-700 dark:to-purple-800 rounded-2xl shadow-2xl p-8 md:p-12 lg:p-16 text-white"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <Badge
+                variant="secondary"
+                className="mb-4 bg-white/20 text-white border-transparent backdrop-blur-sm"
+              >
+                <Icons.sparkles className="w-4 h-4 mr-2 text-yellow-300" />
+                Revolutionary AI
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
+                Meet Your Personal AI Learning Assistant
+              </h2>
+              <p className="text-lg text-blue-100 dark:text-indigo-200 mb-8 opacity-90">
+                Integrated directly into each lesson, our AI chatbot provides
+                instant, context-aware support, explanations, and guidance
+                whenever you need it.
+              </p>
+              <ul className="space-y-4 mb-10">
+                {[
+                  {
+                    icon: <Icons.checkCircle2 className="text-green-300" />,
+                    text: '<strong>24/7 Instant Help:</strong> Get unstuck anytime with immediate answers.',
+                  },
+                  {
+                    icon: <Icons.checkCircle2 className="text-green-300" />,
+                    text: '<strong>Personalized Explanations:</strong> AI adapts to your understanding level.',
+                  },
+                  {
+                    icon: <Icons.checkCircle2 className="text-green-300" />,
+                    text: '<strong>Interactive Practice:</strong> Reinforce learning with AI-generated examples.',
+                  },
+                ].map((item, idx) => (
+                  <li key={idx} className="flex items-start">
+                    <div className="flex-shrink-0 w-6 h-6 mt-0.5">
+                      {item.icon}
+                    </div>
+                    <p
+                      className="ml-3 text-blue-50 dark:text-indigo-100"
+                      dangerouslySetInnerHTML={{ __html: item.text }}
+                    />
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Button
+                  asChild // Sử dụng asChild để Button hoạt động như Link
+                  size="lg"
+                  className="bg-white text-blue-700 hover:bg-slate-100 font-semibold px-8 py-3 text-base shadow-lg hover:shadow-slate-400/30 transition-all duration-300 transform hover:scale-105"
+                >
+                  <Link to="/courses">Explore AI-Enhanced Courses</Link>
+                </Button>
+                {/* <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 font-semibold">
+                  Learn More About AI Tutor
+                </Button> */}
               </div>
             </div>
+
+            {/* Placeholder for AI Chatbot Visual - Cần thay thế bằng hình ảnh/animation thực tế */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+              whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.7, delay: 0.2, ease: 'circOut' }}
+              className="relative h-80 md:h-96 lg:h-[450px] bg-slate-800/30 dark:bg-black/30 rounded-xl shadow-2xl p-4 md:p-6 flex items-center justify-center backdrop-blur-sm border border-white/10"
+            >
+              {/* Ý tưởng 1: Ảnh mock-up giao diện chatbot */}
+              {/* <img src="/path-to-your-chatbot-mockup.png" alt="AI Chatbot Interface" className="max-h-full rounded-lg object-contain shadow-lg" /> */}
+
+              {/* Ý tưởng 2: Icon lớn với hiệu ứng */}
+              <Icons.chatbot className="w-32 h-32 md:w-48 md:h-48 text-teal-300 opacity-80 animate-pulse-slow" />
+
+              {/* Ý tưởng 3: Một animation Lottie hoặc R3F đơn giản */}
+              <div className="absolute -top-4 -left-4 w-16 h-16 bg-teal-400/50 rounded-full blur-xl animate-pulse"></div>
+              <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-purple-400/50 rounded-full blur-xl animate-pulse-slower"></div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 };
 
-export default Features;
+export default FeaturesSection; // Đổi tên component

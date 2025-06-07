@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/user.service.ts
-import apiHelper from './apiHelper';
+import apiHelper, { fetchWithAuth } from './apiHelper';
 
 // --- Kiểu dữ liệu (Ví dụ) ---
 export interface UserProfile {
   accountId: number; // ID tài khoản
+  headline?: string | null; // Tiêu đề cá nhân
+  coverImageUrl?: string | null; // URL ảnh bìa (có thể null)
   email: string; // Email của người dùng
   roleId: string; // Vai trò của người dùng (e.g., 'ADMIN', 'INSTRUCTOR', 'STUDENT')
   status: string; // Trạng thái tài khoản (e.g., 'ACTIVE', 'INACTIVE', 'PENDING_VERIFICATION')
@@ -60,10 +62,19 @@ export interface UserQueryParams {
   status?: string;
 }
 
+export interface NotificationPreferences {
+  courseUpdates?: boolean;
+  newRecommendations?: boolean;
+  promotions?: boolean;
+  platformAnnouncements?: boolean;
+  // Thêm các tùy chọn khác nếu có
+}
+
 // --- Các hàm gọi API ---
 
 /** Lấy profile của user đang đăng nhập */
 export const getMyProfile = async (): Promise<UserProfile> => {
+  console.log('Fetching user profile...');
   return apiHelper.get('/users/me');
 };
 
@@ -102,4 +113,36 @@ export const updateUserRole = async (
   roleId: string
 ): Promise<{ message: string }> => {
   return apiHelper.patch(`/users/${userId}/role`, { roleId });
+};
+
+/** Cập nhật avatar của user đang đăng nhập */
+export const updateMyAvatar = async (
+  avatarFile: File
+): Promise<UserProfile> => {
+  const formData = new FormData();
+  formData.append('avatar', avatarFile);
+  // Dùng fetch trực tiếp hoặc tạo hàm riêng trong apiHelper cho FormData
+  // Giả sử apiHelper.patch có thể xử lý FormData (cần kiểm tra lại apiHelper)
+  // return apiHelper.patch(`/courses/${courseId}/thumbnail`, formData, undefined, { 'Content-Type': undefined }); // Xóa content-type
+  const API_BASE_URL: string = 'http://localhost:5000/v1';
+  const url = new URL(`${API_BASE_URL}/users/me/avatar`);
+  return fetchWithAuth(url, {
+    // Sử dụng fetchWithAuth đã có
+    method: 'POST',
+    body: formData,
+    // Không cần set Content-Type, browser tự làm cho FormData
+  });
+};
+
+/** Lấy cài đặt thông báo email của user */
+export const getMyNotificationPreferences =
+  async (): Promise<NotificationPreferences> => {
+    return apiHelper.get('/users/me/notification-preferences');
+  };
+
+/** Cập nhật cài đặt thông báo email của user */
+export const updateMyNotificationPreferences = async (
+  preferences: Partial<NotificationPreferences> // Cho phép cập nhật một phần
+): Promise<NotificationPreferences> => {
+  return apiHelper.put('/users/me/notification-preferences', preferences);
 };

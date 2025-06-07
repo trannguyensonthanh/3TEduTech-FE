@@ -4,6 +4,9 @@ import apiHelper from './apiHelper';
 export interface Thread {
   threadId: number;
   courseId: number;
+  courseName?: string;
+  courseSlug?: string;
+  lessonName?: string;
   lessonId?: number | null;
   title: string;
   createdByAccountId: number;

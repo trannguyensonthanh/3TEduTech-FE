@@ -2,10 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Index from './pages/Index';
 import Courses from './pages/Courses';
 import Categories from './pages/Categories';
-import CategoryDetail from './pages/CategoryDetail';
-import Instructors from './pages/Instructors';
-import InstructorDetail from './pages/InstructorDetail';
-import About from './pages/About';
+import CategoryDetail from './pages/CategoryDetailPage';
+import Instructors from './pages/AllInstructorsPage';
+import InstructorDetail from './pages/InstructorProfilePage';
+import About from './pages/AboutPage';
 import CourseDetail from './pages/CourseDetail';
 import CourseSectionDetail from './pages/CourseSectionDetail';
 // import LessonView from './pages/LessonView';
@@ -17,38 +17,36 @@ import SocialLoginCallback from './pages/auth/SocialLoginCallback';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersManagement from './pages/admin/UsersManagement';
 import CoursesManagement from './pages/admin/CoursesManagement';
-import InstructorManagement from './pages/admin/InstructorManagement';
 import CourseApprovals from './pages/admin/CourseApprovals';
-import PaymentManagement from './pages/admin/PaymentManagement';
-import PayoutManagement from './pages/admin/PayoutManagement';
+// import PaymentManagement from './pages/admin/PaymentManagement';
+// import PayoutManagement from './pages/admin/PayoutManagement';
 import CategoriesManagement from './pages/admin/CategoriesManagement';
 import PromotionsManagement from './pages/admin/PromotionsManagement';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminSettings from './pages/admin/AdminSettings';
+// import AdminSettings from './pages/admin/AdminSettings';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorCourses from './pages/instructor/InstructorCourses';
 import CourseCreation from './pages/instructor/CourseCreation';
 // import CourseEdit from './pages/instructor/CourseEditt';
-import InstructorAnalytics from './pages/instructor/InstructorAnalytics';
+// import InstructorAnalytics from './pages/instructor/InstructorAnalytics';
 import InstructorStudents from './pages/instructor/InstructorStudents';
 import InstructorEarnings from './pages/instructor/InstructorEarnings';
 // import InstructorEarnings_v2 from '@/pages/instructor/InstructorEarnings_v2';
 import InstructorRegister from './pages/instructor/InstructorRegister';
 import InstructorRegisterSuccess from './pages/instructor/InstructorRegisterSuccess';
 import InstructorProfile from './pages/instructor/InstructorProfile';
-import InstructorSettings from './pages/instructor/InstructorSettings';
+// import InstructorSettings from './pages/instructor/InstructorSettings';
 import InstructorCourseApprovals from './pages/instructor/InstructorCourseApprovals';
-import InstructorQnA from '@/pages/instructor/InstructorQnA';
+// import InstructorQnA from '@/pages/instructor/InstructorQnA';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import MyCourses from './pages/MyCourses';
-import UserProfile from './pages/UserProfile';
+import UserProfile from './pages/UserProfilePage';
 import CheckoutReturn from './pages/CheckoutReturn';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCanceled from './pages/PaymentCanceled';
 import OrderHistory from '@/pages/OrderHistory';
 import Certificates from '@/pages/Certificates';
-import NotificationSettings from '@/pages/user/NotificationSettings';
+// import NotificationSettings from '@/pages/user/NotificationSettings';
 import CourseLearningPage from '@/pages/CourseLearningPage';
 import SkillsManagement from '@/pages/admin/SkillsManagement';
 import LevelsManagement from './pages/admin/LevelsManagement';
@@ -58,10 +56,15 @@ import ExchangeRatesManagement from './pages/admin/ExchangeRatesManagement';
 import CourseEdit from '@/pages/instructor/CourseEdit';
 import Notifications from '@/pages/user/Notifications';
 import IntroPage from '@/pages/IntroPage';
+import Privacy from '@/pages/Privacy';
+import TermsInstructor from '@/pages/TermsInstructor';
+import ScrollToTopHandler from '@/utils/ScrollToTopHandler';
 const AppRouter = () => {
   const hasSeenIntro = localStorage.getItem('hasSeenIntro') === 'true';
+
   return (
     <BrowserRouter>
+      <ScrollToTopHandler />
       <Routes>
         <Route
           path="/"
@@ -76,15 +79,18 @@ const AppRouter = () => {
         <Route path="/user/notifications" element={<Notifications />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/orders" element={<OrderHistory />} />
-        <Route
+
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms-instructor" element={<TermsInstructor />} />
+        {/* <Route
           path="/profile/notifications"
           element={<NotificationSettings />}
-        />
+        /> */}
         <Route path="/certificates" element={<Certificates />} />
         <Route path="/categories" element={<Categories />} />
-        <Route path="/categories/:id" element={<CategoryDetail />} />
+        <Route path="/categories/:slug" element={<CategoryDetail />} />
         <Route path="/instructors" element={<Instructors />} />
-        <Route path="/instructors/:id" element={<InstructorDetail />} />
+        <Route path="/instructors/:idOrSlug" element={<InstructorDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/verify-email" element={<ActivateAccount />} />
         <Route path="/auth/forgot-password" element={<ForgotPassword />} />
@@ -93,10 +99,9 @@ const AppRouter = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<UsersManagement />} />
         <Route path="/admin/courses" element={<CoursesManagement />} />
-        <Route path="/admin/instructors" element={<InstructorManagement />} />
         <Route path="/admin/course-approvals" element={<CourseApprovals />} />
-        <Route path="/admin/payments" element={<PaymentManagement />} />
-        <Route path="/admin/payouts" element={<PayoutManagement />} />
+        {/* <Route path="/admin/payments" element={<PaymentManagement />} /> */}
+        {/* <Route path="/admin/payouts" element={<PayoutManagement />} /> */}
         <Route path="/admin/categories" element={<CategoriesManagement />} />
         <Route path="/admin/promotions" element={<PromotionsManagement />} />
         <Route path="/admin/skills" element={<SkillsManagement />} />
@@ -110,8 +115,7 @@ const AppRouter = () => {
           path="/admin/exchange-rates"
           element={<ExchangeRatesManagement />}
         />
-        <Route path="/admin/analytics" element={<AdminAnalytics />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
+        {/* <Route path="/admin/settings" element={<AdminSettings />} /> */}
         <Route path="/instructor" element={<InstructorDashboard />} />
         <Route path="/instructor/courses" element={<InstructorCourses />} />
         <Route path="/instructor/courses/create" element={<CourseCreation />} />
@@ -119,7 +123,7 @@ const AppRouter = () => {
           path="/instructor/courses/:courseSlug/edit"
           element={<CourseEdit />}
         />
-        <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
+        {/* <Route path="/instructor/analytics" element={<InstructorAnalytics />} /> */}
         <Route path="/instructor/students" element={<InstructorStudents />} />
         <Route path="/instructor/earnings" element={<InstructorEarnings />} />
         {/* <Route
@@ -136,8 +140,8 @@ const AppRouter = () => {
           element={<InstructorCourseApprovals />}
         />
         <Route path="/instructor/profile" element={<InstructorProfile />} />
-        <Route path="/instructor/settings" element={<InstructorSettings />} />
-        <Route path="/instructor/qna" element={<InstructorQnA />} />
+        {/* <Route path="/instructor/settings" element={<InstructorSettings />} /> */}
+        {/* <Route path="/instructor/qna" element={<InstructorQnA />} /> */}
         <Route path="/payment/result" element={<CheckoutReturn />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-canceled" element={<PaymentCanceled />} />

@@ -85,6 +85,13 @@ export interface RegisterInstructorResponse {
   };
 }
 
+// Kiểu dữ liệu cho request body của Change Password
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string; // Mặc dù backend có thể không cần field này nếu đã validate newPassword
+}
+
 // Kiểu dữ liệu cho request body của Google Login
 export interface GoogleLoginData {
   idToken: string; // Nhận ID Token từ thư viện @react-oauth/google
@@ -308,6 +315,7 @@ export const loginWithFacebook = async (
 //     return false;
 //   }
 // };
+
 /**
  * Hoàn tất đăng ký bằng Facebook khi người dùng tự cung cấp email.
  * @param {CompleteFacebookRegistrationData} data - Chứa accessToken và email.
@@ -317,4 +325,17 @@ export const completeFacebookRegistration = async (
   data: CompleteFacebookRegistrationData
 ): Promise<CompleteFacebookRegistrationResponse> => {
   return apiHelper.post('/auth/facebook/complete-registration', data);
+};
+
+/** Thay đổi mật khẩu người dùng hiện tại */
+export const changePassword = async (
+  data: ChangePasswordData
+): Promise<{ message: string }> => {
+  // Backend có thể chỉ cần currentPassword và newPassword
+  // confirmNewPassword thường chỉ dùng cho validation ở frontend hoặc schema backend
+  const payload = {
+    currentPassword: data.currentPassword,
+    newPassword: data.newPassword,
+  };
+  return apiHelper.post('/auth/change-password', payload);
 };

@@ -1,3 +1,4 @@
+import { PaymentMethod } from './../types/common.types';
 // src/services/order.service.ts
 import { IsoDateTimeString } from '@/types/common.types';
 import apiHelper from './apiHelper';
@@ -17,6 +18,7 @@ export interface OrderItem {
   courseName?: string;
   slug?: string;
   thumbnailUrl?: string | null;
+  instructorName?: string | null;
 }
 
 export interface Order {
@@ -31,7 +33,8 @@ export interface Order {
   orderStatus: OrderStatus;
   // Thông tin join
   items?: OrderItem[];
-  PaymentStatusID?: string | null; // PaymentStatus Enum
+  paymentStatusId?: string | null; // PaymentStatus Enum
+  paymentMethodName?: string | null; // Tên phương thức thanh toán
 }
 
 export interface OrderListResponse {
@@ -70,5 +73,3 @@ export const getMyOrders = async (
 export const getMyOrderDetails = async (orderId: number): Promise<Order> => {
   return apiHelper.get(`/orders/${orderId}`);
 };
-
-// Hàm xử lý webhook không cần gọi từ FE

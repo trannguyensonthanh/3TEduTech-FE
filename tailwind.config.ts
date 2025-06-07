@@ -93,6 +93,16 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
+        bounce_custom: {
+          '0%, 100%': {
+            transform: 'translateY(-25%)',
+            animationTimingFunction: 'cubic-bezier(0.8,0,1,1)',
+          },
+          '50%': {
+            transform: 'none',
+            animationTimingFunction: 'cubic-bezier(0,0,0.2,1)',
+          },
+        },
         'accordion-down': {
           from: {
             height: '0',
@@ -118,6 +128,7 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         float: 'float 5s ease-in-out infinite',
+        bounce_custom: 'bounce_custom 1s infinite',
       },
       fontFamily: {
         sans: ['Open Sans', ...fontFamily.sans],

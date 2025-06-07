@@ -38,7 +38,11 @@ import {
   getApprovalRequests, // *** Import hàm service mới ***
   getApprovalRequestDetails, // *** Import hàm service mới ***
   ApprovalRequestListResponse, // *** Import kiểu dữ liệu mới ***
-  ApprovalRequestQueryParams, // *** Import kiểu dữ liệu mới ***
+  ApprovalRequestQueryParams,
+  GetCoursesByCategorySlugParams,
+  getCoursesByCategorySlug,
+  GetCoursesByInstructorParams,
+  getCoursesByInstructorId, // *** Import kiểu dữ liệu mới ***
 } from '@/services/course.service'; // Điều chỉnh đường dẫn nếu cần
 
 // Query Key Factory
@@ -59,6 +63,22 @@ export const courseKeys = {
     [...courseKeys.approvalRequests, 'detail'] as const,
   approvalRequestDetail: (id: number | undefined) =>
     [...courseKeys.approvalRequestDetails(), id] as const,
+  byCategorySlug: (
+    slug: string | undefined,
+    params?: GetCoursesByCategorySlugParams
+  ) => [...courseKeys.all, 'byCategorySlug', slug, params || {}] as const,
+  byInstructorId: (
+    // New key factory for courses by instructor
+    instructorId: number | string | undefined,
+    params?: GetCoursesByInstructorParams
+  ) =>
+    [
+      ...courseKeys.all,
+      'instructor',
+      instructorId,
+      'list',
+      params || {},
+    ] as const,
 };
 
 // --- Queries ---
@@ -517,3 +537,66 @@ export const useCourseStatuses = (
 //     ...options,
 //   });
 // };
+
+// --- Hook mới để lấy danh sách khóa học theo category slug ---
+export const useCoursesByCategorySlug = (
+  categorySlug: string | undefined,
+  params?: GetCoursesByCategorySlugParams,
+  options?: Omit<
+    UseQueryOptions<CourseListResponse, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  const queryKey = courseKeys.byCategorySlug(categorySlug, params);
+  return useQuery<CourseListResponse, Error>({
+    queryKey: queryKey,
+    queryFn: () => {
+      if (!categorySlug) {
+        // Hoặc trả về một Promise rỗng/ lỗi tùy theo logic mong muốn
+        return Promise.reject(new Error('Category slug is required'));
+      }
+      return getCoursesByCategorySlug(categorySlug, params);
+    },
+    enabled: !!categorySlug, // Chỉ chạy query khi categorySlug có giá trị
+    staleTime: 5 * 60 * 1000, // 5 phút, dữ liệu khóa học ít thay đổi hơn category
+    // cacheTime: 10 * 60 * 1000, // Giữ cache lâu hơn một chút
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy danh sách khóa học theo ID của giảng viên.
+ */
+export const useCoursesByInstructorId = (
+  instructorId: number | string | undefined,
+  params?: GetCoursesByInstructorParams,
+  options?: Omit<
+    UseQueryOptions<
+      CourseListResponse,
+      Error,
+      CourseListResponse,
+      (string | number | GetCoursesByInstructorParams | undefined)[]
+    >,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  const queryKey = courseKeys.byInstructorId(instructorId, params);
+  return useQuery<
+    CourseListResponse,
+    Error,
+    CourseListResponse,
+    (string | number | GetCoursesByInstructorParams | undefined)[]
+  >({
+    queryKey: [...queryKey],
+    queryFn: () => {
+      if (!instructorId) {
+        return Promise.reject(new Error('Instructor ID is required'));
+      }
+      return getCoursesByInstructorId(instructorId, params);
+    },
+    enabled: !!instructorId, // Chỉ fetch khi instructorId có giá trị
+    staleTime: 1000 * 60 * 5, // Cache trong 5 phút
+    // keepPreviousData: true, // Cân nhắc sử dụng nếu muốn giữ dữ liệu cũ khi params thay đổi
+    ...options,
+  });
+};

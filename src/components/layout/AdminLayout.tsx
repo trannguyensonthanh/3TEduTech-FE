@@ -58,12 +58,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       notifications: 0,
     },
     {
-      name: 'Instructors',
-      icon: ShieldCheck,
-      href: '/admin/instructors',
-      notifications: 0,
-    },
-    {
       name: 'Course Approvals',
       icon: BookOpen,
       href: '/admin/course-approvals',
@@ -105,36 +99,30 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       href: '/admin/levels',
       notifications: 0,
     },
-    {
-      name: 'Payments',
-      icon: CreditCard,
-      href: '/admin/payments',
-      notifications: 0,
-    },
-    {
-      name: 'Payouts',
-      icon: BadgeDollarSign,
-      href: '/admin/payouts',
-      notifications: 2,
-    },
+    // {
+    //   name: 'Payments',
+    //   icon: CreditCard,
+    //   href: '/admin/payments',
+    //   notifications: 0,
+    // },
+    // {
+    //   name: 'Payouts',
+    //   icon: BadgeDollarSign,
+    //   href: '/admin/payouts',
+    //   notifications: 2,
+    // },
     {
       name: 'Promotions',
       icon: Tag,
       href: '/admin/promotions',
       notifications: 0,
     },
-    {
-      name: 'Analytics',
-      icon: BarChart2,
-      href: '/admin/analytics',
-      notifications: 0,
-    },
-    {
-      name: 'Settings',
-      icon: Settings,
-      href: '/admin/settings',
-      notifications: 0,
-    },
+    // {
+    //   name: 'Settings',
+    //   icon: Settings,
+    //   href: '/admin/settings',
+    //   notifications: 0,
+    // },
   ];
 
   return (

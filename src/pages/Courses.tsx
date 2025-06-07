@@ -1,475 +1,268 @@
 // src/pages/CoursesPage.tsx
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import Layout from '@/components/layout/Layout'; // Layout chung
+import { useLocation, useNavigate } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import {
-  Star,
-  Clock,
-  Filter as FilterIcon,
-  Search,
-  Loader2,
-  XCircle,
-  ListRestart,
-  ChevronDown,
-} from 'lucide-react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet'; // For mobile filters
-import {
-  CourseListItem,
-  CourseQueryParams,
-  CategoryFilterItem,
-  LevelFilterItem,
-  LanguageFilterItem,
-  SORT_OPTIONS,
-  SortByValue,
-} from '@/types/common.types'; // Import types
-import { useCourses } from '@/hooks/queries/course.queries'; // Hook fetch courses
-
-import { useCategories } from '@/hooks/queries/category.queries'; // Giả định có các hook này
-import { useLevels } from '@/hooks/queries/level.queries'; // Giả định có các hook này
-import { useDebounce } from '@/hooks/useDebounce';
-import PaginationControls from '@/components/admin/PaginationControls';
-import CourseCard from '@/components/courses/CourseCard'; // Import CourseCard
-import { Skeleton } from '@/components/ui/skeleton'; // Skeleton
-import CourseCardv2 from '@/components/courses/CourseCardv2';
-import { ScrollArea } from '@/components/ui/scroll-area';
+  SheetClose, // Import SheetClose
+} from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
-} from '@/components/ui/card';
+  CardFooter,
+} from '@/components/ui/card'; // Import từ ui/card
+import { Icons } from '@/components/common/Icons'; // Search, Loader2, XCircle, PackageOpen, Filter, ChevronDown, ListRestart
+import {
+  CourseFiltersSidebar,
+  CourseFilterKey,
+  MAX_COURSE_PRICE,
+} from '@/components/courses/CourseFiltersSidebar'; // Import sidebar mới
+import CourseCardv2 from '@/components/courses/CourseCardv2'; // Hoặc CourseCard nếu bạn dùng tên đó
+import { useCourses } from '@/hooks/queries/course.queries';
+import { useCategories } from '@/hooks/queries/category.queries';
+import { useLevels } from '@/hooks/queries/level.queries';
 import { useLanguages } from '@/hooks/queries/language.queries';
+import { useDebounce } from '@/hooks/useDebounce'; // Đảm bảo hook này tồn tại
+import PaginationControls from '@/components/admin/PaginationControls'; // Đảm bảo component này tồn tại và đúng props
+import {
+  CourseQueryParams,
+  SortByValue,
+  SORT_OPTIONS,
+} from '@/types/common.types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
+import { Loader2 } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 12;
-const MAX_PRICE = 200; // Hoặc lấy động từ API
-
-const CourseFiltersSidebar: React.FC<{
-  filters: Omit<CourseQueryParams, 'page' | 'limit' | 'sortBy' | 'searchTerm'>;
-  onFilterChange: <K extends keyof CourseQueryParams>(
-    key: K,
-    value: CourseQueryParams[K]
-  ) => void;
-  onResetFilters: () => void;
-  categories?: CategoryFilterItem[];
-  levels?: LevelFilterItem[];
-  languages?: LanguageFilterItem[];
-  isLoadingFilters: boolean;
-}> = ({
-  filters,
-  onFilterChange,
-  onResetFilters,
-  categories = [],
-  levels = [],
-  languages = [],
-  isLoadingFilters,
-}) => {
-  const handlePriceChange = (newRange: number[]) => {
-    onFilterChange('minPrice', newRange[0] > 0 ? newRange[0] : null);
-    onFilterChange('maxPrice', newRange[1] < MAX_PRICE ? newRange[1] : null);
-  };
-
-  const handleCheckboxChange = (
-    filterKey: 'isFree' | 'isFeatured',
-    checked: boolean | 'indeterminate'
-  ) => {
-    onFilterChange(
-      filterKey,
-      checked === true ? true : checked === false ? false : null
-    );
-  };
-
-  const renderFilterSkeleton = (count = 3) => (
-    <div className="space-y-2">
-      {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} className="h-8 w-full" />
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="rounded-lg border p-4 lg:p-6 space-y-6 bg-card shadow-sm">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Filters</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onResetFilters}
-          className="text-xs"
-        >
-          <ListRestart size={14} className="mr-1" /> Reset
-        </Button>
-      </div>
-
-      <Accordion
-        type="multiple"
-        defaultValue={['category', 'level', 'price']}
-        className="w-full"
-      >
-        {/* Category Filter */}
-        <AccordionItem value="category">
-          <AccordionTrigger className="py-3 text-sm font-medium">
-            Category
-          </AccordionTrigger>
-          <AccordionContent className="pt-1">
-            {isLoadingFilters ? (
-              renderFilterSkeleton()
-            ) : (
-              <Select
-                value={filters.categoryId?.toString() || 'all'}
-                onValueChange={(value) =>
-                  onFilterChange(
-                    'categoryId',
-                    value === 'all' ? null : Number(value)
-                  )
-                }
-              >
-                <SelectTrigger className="w-full text-sm">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem
-                      key={cat.categoryId}
-                      value={cat.categoryId.toString()}
-                    >
-                      {cat.categoryName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Level Filter */}
-        <AccordionItem value="level">
-          <AccordionTrigger className="py-3 text-sm font-medium">
-            Level
-          </AccordionTrigger>
-          <AccordionContent className="pt-1">
-            {isLoadingFilters ? (
-              renderFilterSkeleton()
-            ) : (
-              <Select
-                value={filters.levelId?.toString() || 'all'}
-                onValueChange={(value) =>
-                  onFilterChange(
-                    'levelId',
-                    value === 'all' ? null : Number(value)
-                  )
-                }
-              >
-                <SelectTrigger className="w-full text-sm">
-                  <SelectValue placeholder="All Levels" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  {levels.map((level) => (
-                    <SelectItem
-                      key={level.levelId}
-                      value={level.levelId.toString()}
-                    >
-                      {level.levelName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Price Filter */}
-        <AccordionItem value="price">
-          <AccordionTrigger className="py-3 text-sm font-medium">
-            Price Range
-          </AccordionTrigger>
-          <AccordionContent className="pt-3 space-y-3">
-            <Slider
-              defaultValue={[0, MAX_PRICE]}
-              max={MAX_PRICE}
-              step={5} // Bước nhảy giá
-              value={[filters.minPrice || 0, filters.maxPrice || MAX_PRICE]}
-              onValueChange={(value) =>
-                handlePriceChange(value as [number, number])
-              }
-              className="my-2"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>${filters.minPrice || 0}</span>
-              <span>${filters.maxPrice || MAX_PRICE}</span>
-            </div>
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="free-courses-filter"
-                checked={filters.isFree === true}
-                onCheckedChange={(checked) =>
-                  handleCheckboxChange('isFree', checked)
-                }
-              />
-              <Label
-                htmlFor="free-courses-filter"
-                className="text-sm font-normal"
-              >
-                Only Free Courses
-              </Label>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Language Filter */}
-        <AccordionItem value="language">
-          <AccordionTrigger className="py-3 text-sm font-medium">
-            Language
-          </AccordionTrigger>
-          <AccordionContent className="pt-1">
-            {isLoadingFilters ? (
-              renderFilterSkeleton()
-            ) : (
-              <Select
-                value={filters.language || 'all'}
-                onValueChange={(value) =>
-                  onFilterChange('language', value === 'all' ? null : value)
-                }
-              >
-                <SelectTrigger className="w-full text-sm">
-                  <SelectValue placeholder="All Languages" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Languages</SelectItem>
-                  {languages.map((lang) => (
-                    <SelectItem
-                      key={lang.languageCode}
-                      value={lang.languageCode}
-                    >
-                      {lang.languageName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Rating Filter */}
-        <AccordionItem value="rating">
-          <AccordionTrigger className="py-3 text-sm font-medium">
-            Rating
-          </AccordionTrigger>
-          <AccordionContent className="pt-2 space-y-1">
-            {[4, 3, 2, 1].map((rating) => (
-              <div key={rating} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`rating-${rating}`}
-                  checked={filters.minRating === rating}
-                  onCheckedChange={(checked) =>
-                    onFilterChange('minRating', checked ? rating : null)
-                  }
-                />
-                <Label
-                  htmlFor={`rating-${rating}`}
-                  className="flex items-center text-sm font-normal"
-                >
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      className={`mr-0.5 ${
-                        i < rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'fill-muted stroke-muted-foreground'
-                      }`}
-                    />
-                  ))}
-                  <span className="ml-1">& Up</span>
-                </Label>
-              </div>
-            ))}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Featured Filter */}
-        <AccordionItem value="featured">
-          <AccordionTrigger className="py-3 text-sm font-medium">
-            Others
-          </AccordionTrigger>
-          <AccordionContent className="pt-2 space-y-1">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="featured-courses-filter"
-                checked={filters.isFeatured === 1}
-                onCheckedChange={(checked) =>
-                  handleCheckboxChange('isFeatured', checked)
-                }
-              />
-              <Label
-                htmlFor="featured-courses-filter"
-                className="text-sm font-normal"
-              >
-                Featured Courses
-              </Label>
-            </div>
-            {/* Thêm các checkbox khác cho hasCertificate, hasAssignments nếu backend hỗ trợ */}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
-  );
-};
+const ITEMS_PER_PAGE = 9; // Giảm số lượng item để grid 3 cột trông đẹp hơn
 
 const CoursesPage: React.FC = () => {
-  const [filterState, setFilterState] = useState<
-    Omit<CourseQueryParams, 'page' | 'limit' | 'sortBy' | 'searchTerm'>
-  >({
-    categoryId: null,
-    levelId: null,
-    language: null,
-    minPrice: 0,
-    maxPrice: MAX_PRICE,
-    minRating: null,
-    isFree: null,
-    isFeatured: null,
-  });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<SortByValue>(SORT_OPTIONS[0].value);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  // --- State Quản lý Filters, Search, Sort, Pagination ---
+  const queryParamsFromUrl = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+
+  const [searchTerm, setSearchTerm] = useState(
+    queryParamsFromUrl.get('q') || ''
+  );
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const { data: { categories = [] } = {}, isLoading: isLoadingCategories } =
-    useCategories?.() || {};
-  const { data: { levels = [] } = {}, isLoading: isLoadingLevels } =
-    useLevels?.() || {};
-  const { data: { languages = [] } = {}, isLoading: isLoadingLanguages } =
-    useLanguages?.() || {};
+  const [sortBy, setSortBy] = useState<SortByValue>(
+    (queryParamsFromUrl.get('sort') as SortByValue) || SORT_OPTIONS[0].value
+  );
+  const [currentPage, setCurrentPage] = useState(
+    parseInt(queryParamsFromUrl.get('page') || '1', 10)
+  );
 
-  const queryParams: CourseQueryParams = useMemo(
+  const [activeFilters, setActiveFilters] = useState<CourseFilterKey>(() => {
+    const levelsStr = queryParamsFromUrl.get('levels');
+    const ratingStr = queryParamsFromUrl.get('rating');
+    const categoryIdStr = queryParamsFromUrl.get('categoryId');
+    const levelIdStr = queryParamsFromUrl.get('levelId');
+    const languageStr = queryParamsFromUrl.get('language');
+    const minPriceStr = queryParamsFromUrl.get('minPrice');
+    const maxPriceStr = queryParamsFromUrl.get('maxPrice');
+    const isFreeStr = queryParamsFromUrl.get('isFree');
+    const isFeaturedStr = queryParamsFromUrl.get('isFeatured');
+
+    return {
+      categoryId: categoryIdStr ? parseInt(categoryIdStr) : undefined,
+      levelId: levelIdStr ? parseInt(levelIdStr) : undefined,
+      language: languageStr || undefined,
+      minPrice: minPriceStr ? parseInt(minPriceStr) : 0, // Mặc định 0
+      maxPrice: maxPriceStr ? parseInt(maxPriceStr) : MAX_COURSE_PRICE, // Mặc định MAX_PRICE
+      minRating: ratingStr ? parseFloat(ratingStr) : undefined,
+      isFree:
+        isFreeStr === 'true' ? true : isFreeStr === 'false' ? false : undefined,
+      isFeatured:
+        isFeaturedStr === '1' ? 1 : isFeaturedStr === '0' ? 0 : undefined,
+    };
+  });
+
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // --- Fetch dữ liệu cho Filters ---
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useCategories({ limit: 0 }) || {}; // limit 0 để lấy tất cả
+  const { data: levelsData, isLoading: isLoadingLevels } = useLevels() || {};
+  const { data: languagesData, isLoading: isLoadingLanguages } =
+    useLanguages({ isActive: true }) || {}; // Chỉ lấy ngôn ngữ active
+
+  // --- Fetch Khóa học ---
+  const queryParamsForAPI: CourseQueryParams = useMemo(
     () => ({
       page: currentPage,
       limit: ITEMS_PER_PAGE,
       searchTerm: debouncedSearchTerm || undefined,
       sortBy: sortBy,
-      ...filterState, // Spread các filter khác vào
+      categoryId: activeFilters.categoryId,
+      levelId: activeFilters.levelId,
+      language: activeFilters.language,
+      minPrice:
+        activeFilters.minPrice === 0 ? undefined : activeFilters.minPrice, // không gửi nếu là 0
+      maxPrice:
+        activeFilters.maxPrice === MAX_COURSE_PRICE
+          ? undefined
+          : activeFilters.maxPrice, // không gửi nếu là max
+      minRating: activeFilters.minRating,
+      isFree: activeFilters.isFree,
+      isFeatured: activeFilters.isFeatured,
+      userPage: true, // Nếu bạn cần lấy khóa học của người dùng
     }),
-    [currentPage, debouncedSearchTerm, sortBy, filterState]
+    [currentPage, debouncedSearchTerm, sortBy, activeFilters]
   );
 
   const {
     data: courseData,
-    isLoading,
-    isFetching,
+    isLoading: isLoadingCoursesInitial, // Loading ban đầu
+    isFetching: isFetchingCourses, // Fetching cho các lần sau (search, filter, page)
     isError,
     error,
-  } = useCourses(queryParams, {
-    placeholderData: (prevData) => prevData,
+  } = useCourses(queryParamsForAPI, {
+    placeholderData: (prevData) => prevData, // Giữ data cũ khi fetching
   });
 
   const courses = courseData?.courses || [];
   const totalItems = courseData?.total || 0;
   const totalPages =
-    courseData?.totalPages || Math.ceil(totalItems / ITEMS_PER_PAGE);
+    courseData?.totalPages || Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
 
+  // --- Xử lý thay đổi URL khi state thay đổi ---
   useEffect(() => {
-    setCurrentPage(1); // Reset về trang 1 khi filter hoặc search term thay đổi
-  }, [debouncedSearchTerm, filterState, sortBy]);
+    const params = new URLSearchParams();
+    if (debouncedSearchTerm) params.set('q', debouncedSearchTerm);
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    if (sortBy !== SORT_OPTIONS[0].value) params.set('sort', sortBy);
+
+    if (activeFilters.categoryId)
+      params.set('categoryId', activeFilters.categoryId.toString());
+    if (activeFilters.levelId)
+      params.set('levelId', activeFilters.levelId.toString());
+    if (activeFilters.language) params.set('language', activeFilters.language);
+    if (activeFilters.minPrice && activeFilters.minPrice > 0)
+      params.set('minPrice', activeFilters.minPrice.toString());
+    if (activeFilters.maxPrice && activeFilters.maxPrice < MAX_COURSE_PRICE)
+      params.set('maxPrice', activeFilters.maxPrice.toString());
+    if (activeFilters.minRating)
+      params.set('rating', activeFilters.minRating.toString());
+    if (activeFilters.isFree !== undefined)
+      params.set('isFree', activeFilters.isFree.toString());
+    if (activeFilters.isFeatured !== undefined)
+      params.set('isFeatured', activeFilters.isFeatured.toString());
+
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+  }, [
+    debouncedSearchTerm,
+    currentPage,
+    sortBy,
+    activeFilters,
+    location.pathname,
+    navigate,
+  ]);
+
+  // Reset về trang 1 khi filter, search, sort thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, activeFilters, sortBy]);
 
   const handleFilterChange = useCallback(
-    <K extends keyof CourseQueryParams>(
+    <K extends keyof CourseFilterKey>(
       key: K,
-      value: CourseQueryParams[K]
+      value: CourseFilterKey[K] | null
     ) => {
-      setFilterState((prev) => ({ ...prev, [key]: value }));
+      setActiveFilters((prev) => {
+        const newState = {
+          ...prev,
+          [key]: value === undefined || value === '' ? null : value,
+        };
+        // Nếu clear một filter, giá trị có thể là null/undefined
+        if (value === null || value === undefined || value === '') {
+          delete newState[key]; // Xóa key nếu giá trị là null/undefined/empty string để URL sạch hơn
+        }
+        return newState;
+      });
     },
     []
   );
 
   const handleResetFilters = useCallback(() => {
-    setFilterState({
-      categoryId: null,
-      levelId: null,
-      language: null,
+    setActiveFilters({
+      categoryId: undefined,
+      levelId: undefined,
+      language: undefined,
       minPrice: 0,
-      maxPrice: MAX_PRICE,
-      minRating: null,
-      isFree: null,
-      isFeatured: null,
+      maxPrice: MAX_COURSE_PRICE,
+      minRating: undefined,
+      isFree: undefined,
+      isFeatured: undefined,
     });
-    // Không reset searchTerm và sortBy ở đây
+    // setSearchTerm(''); // Tùy bạn muốn reset cả search term không
+    // setSortBy(SORT_OPTIONS[0].value); // Tùy bạn muốn reset cả sort không
   }, []);
 
-  const renderCourseGridSkeleton = (count = ITEMS_PER_PAGE) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-      {Array.from({ length: count }).map((_, index) => (
-        <Card key={`course-skeleton-${index}`} className="flex flex-col">
-          <Skeleton className="aspect-video w-full rounded-t-lg" />
-          <CardHeader className="p-3 md:p-4 pb-2">
-            <Skeleton className="h-4 w-1/3 mb-1" />
-            <Skeleton className="h-5 w-full mb-1" />
-            <Skeleton className="h-3 w-1/2" />
-          </CardHeader>
-          <CardContent className="p-3 md:p-4 pt-1 flex-grow">
-            <Skeleton className="h-3 w-3/4 mb-2" />
-            <Skeleton className="h-3 w-1/2" />
-          </CardContent>
-          <CardFooter className="p-3 md:p-4 pt-2 border-t mt-auto">
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-4 w-1/4 ml-auto" />
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  );
+  const isLoadingAllFiltersData =
+    isLoadingCategories || isLoadingLevels || isLoadingLanguages;
+
+  // --- Animation Variants ---
+  const headerVariants = {
+    /* ... giữ nguyên ... */
+  };
+  const listContainerVariants = {
+    hidden: { opacity: 1 }, // Để skeleton không bị FOUC
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 },
+    },
+  };
 
   return (
     <Layout>
-      <div className="container mx-auto py-6 md:py-8 px-4">
-        {/* Header Section */}
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-3 sm:mb-4">
+      {/* Header Section */}
+      <div className="bg-gradient-to-b from-slate-100 via-slate-50 to-background dark:from-slate-900 dark:via-slate-800/70 dark:to-background border-b dark:border-slate-700/50">
+        <motion.div
+          variants={headerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-12 text-center"
+        >
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-4 tracking-tight">
             Explore Our Courses
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover thousands of courses to help you learn new skills, advance
-            your career, or explore your hobbies.
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+            Find your next learning adventure. Filter by category, level, price,
+            and more to discover the perfect course.
           </p>
-        </div>
+        </motion.div>
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Filters Sidebar - Sử dụng Sheet cho mobile */}
-          <div className="lg:w-1/4 lg:sticky lg:top-20 self-start">
+      <div className="container mx-auto px-4 py-8 md:py-10">
+        <div className="flex flex-col lg:flex-row gap-x-8 gap-y-6">
+          {/* Filters Sidebar */}
+          <div className="lg:w-1/4 xl:w-1/5 lg:sticky lg:top-24 self-start max-h-[calc(100vh-120px)] lg:overflow-y-auto custom-scrollbar">
             {' '}
-            {/* Sticky cho sidebar */}
+            {/* Sticky và scroll cho sidebar */}
             {/* Mobile Filter Button */}
-            <div className="lg:hidden mb-4">
+            <div className="lg:hidden mb-6">
               <Sheet
                 open={showMobileFilters}
                 onOpenChange={setShowMobileFilters}
@@ -477,154 +270,228 @@ const CoursesPage: React.FC = () => {
                 <SheetTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full flex items-center justify-center"
+                    className="w-full h-12 text-base flex items-center justify-center gap-2 shadow-sm"
                   >
-                    <FilterIcon className="mr-2 h-4 w-4" /> Apply Filters
+                    <Icons.filter className="h-5 w-5" /> Show Filters & Sort
                   </Button>
                 </SheetTrigger>
                 <SheetContent
                   side="left"
-                  className="w-[300px] sm:w-[350px] p-0"
+                  className="w-[320px] sm:w-[350px] p-0 flex flex-col"
                 >
-                  <SheetHeader className="p-4 border-b">
-                    <SheetTitle>Filter Courses</SheetTitle>
+                  <SheetHeader className="p-5 pb-3 border-b dark:border-slate-700">
+                    <SheetTitle className="text-xl">Filters & Sort</SheetTitle>
                   </SheetHeader>
-                  <ScrollArea className="h-[calc(100vh-120px)]">
-                    {' '}
-                    {/* Điều chỉnh chiều cao */}
-                    <div className="p-4">
+                  <ScrollArea className="flex-grow">
+                    <div className="p-5">
                       <CourseFiltersSidebar
-                        filters={filterState}
+                        filters={activeFilters}
                         onFilterChange={handleFilterChange}
                         onResetFilters={handleResetFilters}
-                        categories={categories || []}
-                        levels={levels || []}
-                        languages={languages || []}
-                        isLoadingFilters={
-                          isLoadingCategories ||
-                          isLoadingLevels ||
-                          isLoadingLanguages
-                        }
+                        categories={categoriesData?.categories || []}
+                        levels={levelsData?.levels || []}
+                        languages={languagesData?.languages || []}
+                        isLoadingFilters={isLoadingAllFiltersData}
                       />
                     </div>
                   </ScrollArea>
+                  <div className="p-4 border-t dark:border-slate-700">
+                    <SheetClose asChild>
+                      <Button
+                        className="w-full h-11 text-base"
+                        onClick={() => setShowMobileFilters(false)}
+                      >
+                        Apply & View Courses
+                      </Button>
+                    </SheetClose>
+                  </div>
                 </SheetContent>
               </Sheet>
             </div>
             {/* Desktop Filter Sidebar */}
             <div className="hidden lg:block">
               <CourseFiltersSidebar
-                filters={filterState}
+                filters={activeFilters}
                 onFilterChange={handleFilterChange}
                 onResetFilters={handleResetFilters}
-                categories={categories || []}
-                levels={levels || []}
-                languages={languages || []}
-                isLoadingFilters={
-                  isLoadingCategories || isLoadingLevels || isLoadingLanguages
-                }
+                categories={categoriesData?.categories || []}
+                levels={levelsData?.levels || []}
+                languages={languagesData?.languages || []}
+                isLoadingFilters={isLoadingAllFiltersData}
               />
             </div>
           </div>
 
           {/* Main Content Area */}
-          <div className="w-full lg:w-3/4">
+          <div className="w-full lg:flex-1 min-w-0">
+            {' '}
+            {/* min-w-0 quan trọng cho flex item */}
             {/* Search and Sort Controls */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start sm:items-center">
-              <div className="relative flex-1 w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8 items-center">
+              <div className="relative flex-grow w-full">
+                <Icons.search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                 <Input
                   type="search"
-                  placeholder="Search courses, instructors..."
-                  className="pl-10 w-full"
+                  placeholder="Search courses, e.g., 'Python', 'Web Design'..."
+                  className="pl-11 h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 focus-visible:ring-primary"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                {isFetching && searchTerm && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
+                {(isLoadingCoursesInitial || isFetchingCourses) &&
+                  debouncedSearchTerm && (
+                    <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
+                  )}
               </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto min-w-[180px] justify-between"
-                  >
-                    Sort by:{' '}
-                    {SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label ||
-                      'Select'}
-                    <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-[220px] p-0">
-                  {SORT_OPTIONS.map((opt) => (
-                    <Button
-                      key={opt.value}
-                      variant={sortBy === opt.value ? 'default' : 'ghost'}
-                      className="w-full justify-start px-3 py-2 rounded-none text-sm"
-                      onClick={() => {
-                        setSortBy(opt.value as SortByValue);
-                        const RopoverTrigger = document.querySelector(
-                          '[data-state="open"]'
-                        );
-                        if (RopoverTrigger)
-                          (RopoverTrigger as HTMLElement).click();
-                      }}
-                    >
-                      {opt.label}
-                    </Button>
-                  ))}
-                </PopoverContent>
-              </Popover>
+              <Select
+                value={sortBy}
+                onValueChange={(value) => setSortBy(value as SortByValue)}
+              >
+                <SelectTrigger className="w-full md:w-[240px] h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 focus:ring-primary">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel className="px-3 py-1.5">Sort By</SelectLabel>
+                    {SORT_OPTIONS.map((opt) => (
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        className="text-base h-10"
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
-
-            {/* Results Count */}
-            {!isLoading && !isError && (
-              <div className="mb-4 text-sm text-muted-foreground">
-                Showing <span className="font-semibold">{courses.length}</span>{' '}
-                of <span className="font-semibold">{totalItems}</span> results
+            {/* Results Count and Status */}
+            {(isLoadingCoursesInitial || isFetchingCourses) && !courseData && (
+              <div className="text-sm text-muted-foreground mb-4 flex items-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading
+                courses...
               </div>
             )}
-
+            {!isLoadingCoursesInitial && !isFetchingCourses && !isError && (
+              <div className="mb-5 text-sm text-muted-foreground">
+                Showing{' '}
+                <span className="font-semibold text-foreground">
+                  {courses.length}
+                </span>{' '}
+                of{' '}
+                <span className="font-semibold text-foreground">
+                  {totalItems}
+                </span>{' '}
+                courses.
+                {isFetchingCourses && (
+                  <Loader2 className="inline ml-2 h-4 w-4 animate-spin" />
+                )}
+              </div>
+            )}
             {/* Course Grid or Skeletons or Error Message */}
-            {isLoading && !courseData ? ( // Chỉ hiển thị skeleton khi tải lần đầu và chưa có data cũ
-              renderCourseGridSkeleton()
+            {isLoadingCoursesInitial && !courseData ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+                {[...Array(ITEMS_PER_PAGE)].map((_, index) => (
+                  <Card
+                    key={`course-skeleton-${index}`}
+                    className="flex flex-col rounded-xl overflow-hidden"
+                  >
+                    <Skeleton className="aspect-video w-full" />
+                    <CardHeader className="p-4 pb-2">
+                      <Skeleton className="h-4 w-1/3 mb-1.5" />
+                      <Skeleton className="h-5 w-full mb-1" />
+                      <Skeleton className="h-3.5 w-3/4" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-1 flex-grow">
+                      <Skeleton className="h-3 w-full mb-2" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </CardContent>
+                    <CardFooter className="p-4 pt-2 border-t mt-auto dark:border-slate-700">
+                      <Skeleton className="h-7 w-1/3" />
+                      <Skeleton className="h-5 w-1/4 ml-auto" />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
             ) : isError ? (
-              <div className="text-center py-10 text-red-500 bg-red-50 border border-red-200 rounded-md p-4">
-                <XCircle className="mx-auto h-10 w-10 mb-2" />
-                <p className="font-medium">Could not load courses</p>
-                <p className="text-sm">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-16 bg-destructive/10 dark:bg-destructive/20 p-8 rounded-lg border border-destructive/30"
+              >
+                <Icons.alertTriangle className="mx-auto h-16 w-16 mb-6 text-destructive" />
+                <h3 className="text-2xl font-semibold mb-3 text-destructive-foreground dark:text-destructive">
+                  Failed to Load Courses
+                </h3>
+                <p className="text-destructive/80 dark:text-destructive/90 mb-6">
                   {error?.message || 'An unexpected error occurred.'}
                 </p>
-                {/* Có thể thêm nút retry */}
-              </div>
+                <Button
+                  variant="destructive"
+                  onClick={() => window.location.reload()}
+                >
+                  Try Again
+                </Button>
+              </motion.div>
             ) : courses.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+              <motion.div
+                variants={listContainerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6"
+              >
                 {courses.map((course) => (
                   <CourseCardv2 key={course.courseId} course={course} />
                 ))}
-              </div>
+              </motion.div>
             ) : (
-              !isFetching && ( // Chỉ hiển thị "No courses" nếu không đang fetch
-                <div className="text-center py-20 col-span-full">
-                  <Search className="mx-auto h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-                  <h3 className="text-xl font-semibold">No Courses Found</h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Try adjusting your search or filter criteria.
+              !isFetchingCourses && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-20 col-span-full bg-slate-50 dark:bg-slate-800/30 p-8 rounded-lg border-2 border-dashed dark:border-slate-700"
+                >
+                  <Icons.packageOpen className="mx-auto h-20 w-20 text-muted-foreground opacity-60 mb-6" />
+                  <h3 className="text-2xl font-semibold text-foreground">
+                    No Courses Found
+                  </h3>
+                  <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+                    We couldn't find any courses matching your current criteria.
+                    Try adjusting your search or filters, or check back later
+                    for new additions!
                   </p>
-                </div>
+                  {(debouncedSearchTerm ||
+                    Object.values(activeFilters).some(
+                      (v) =>
+                        v !== null &&
+                        v !== undefined &&
+                        v !== 0 &&
+                        v !== MAX_COURSE_PRICE
+                    )) && (
+                    <Button
+                      variant="outline"
+                      className="mt-6"
+                      onClick={() => {
+                        setSearchTerm('');
+                        handleResetFilters();
+                      }}
+                    >
+                      <Icons.listRestart className="mr-2 h-4 w-4" /> Clear All
+                      Filters & Search
+                    </Button>
+                  )}
+                </motion.div>
               )
             )}
-
             {/* Pagination */}
-            {totalPages > 1 && !isError && (
-              <div className="flex justify-center mt-8 md:mt-10">
+            {!isError && totalItems > 0 && totalPages > 1 && (
+              <div className="flex justify-center mt-10 md:mt-12">
                 <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  setCurrentPage={setCurrentPage}
-                  isDisabled={isFetching}
+                  setCurrentPage={(page) => setCurrentPage(page)} // Sửa lại prop name nếu PaginationControls dùng khác
+                  isDisabled={isFetchingCourses}
                 />
               </div>
             )}

@@ -26,7 +26,6 @@ import {
   // useUpdateCourseIntroVideo, // Nếu dùng upload video intro
 } from '@/hooks/queries/course.queries';
 import { Save, Loader2 } from 'lucide-react';
-import { Course } from '@/types/common.types'; // Import Course type
 import PricingTab from '@/components/instructor/courseCreate/PricingTab';
 import { Form } from '@/components/ui/form';
 import { useLanguages } from '@/hooks/queries/language.queries';

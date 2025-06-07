@@ -8,9 +8,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ? JSON.parse(localStorage.getItem('user'))
     : null;
   const userRole = userData ? userData.role : null;
-
+  const isAuthenticated = !!userData;
   return (
-    <AuthContext.Provider value={{ userData, userRole }}>
+    <AuthContext.Provider value={{ userData, userRole, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

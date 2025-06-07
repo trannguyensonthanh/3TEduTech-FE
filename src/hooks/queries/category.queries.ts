@@ -18,6 +18,7 @@ import {
   Category,
   CreateCategoryData,
   UpdateCategoryData,
+  getCategoryBySlug,
 } from '@/services/category.service';
 import { CategoryFilterItem } from '@/types/common.types';
 
@@ -28,6 +29,8 @@ const categoryKeys = {
     [...categoryKeys.all, 'list', params || {}] as const,
   details: () => [...categoryKeys.all, 'detail'] as const,
   detail: (id: number | undefined) => [...categoryKeys.details(), id] as const,
+  detailBySlug: (slug: string | undefined) =>
+    [...categoryKeys.details(), 'slug', slug] as const, // Key mới cho slug
 };
 
 // --- Queries ---
@@ -157,6 +160,26 @@ export const useDeleteCategory = (
       console.error('Category deletion failed:', error.message);
       // toast.error(error.message || 'Xóa danh mục thất bại.');
     },
+    ...options,
+  });
+};
+
+/** Hook lấy chi tiết category bằng Slug */
+export const useCategoryBySlug = (
+  categorySlug: string | undefined,
+  options?: Omit<UseQueryOptions<Category, Error>, 'queryKey' | 'queryFn'>
+) => {
+  const queryKey = categoryKeys.detailBySlug(categorySlug);
+  return useQuery<Category, Error>({
+    queryKey: queryKey,
+    queryFn: () => {
+      if (!categorySlug) {
+        return Promise.reject(new Error('Category slug is required'));
+      }
+      return getCategoryBySlug(categorySlug);
+    },
+    enabled: !!categorySlug, // Chỉ chạy query khi categorySlug có giá trị
+    staleTime: 1000 * 60 * 5, // Cache chi tiết category 5 phút
     ...options,
   });
 };

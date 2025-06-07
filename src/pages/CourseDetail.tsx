@@ -16,7 +16,6 @@ import {
   CourseReviewQueryParams,
   CreateReviewPayload,
   UserLessonProgress,
-  Section,
   Lesson,
   CourseReview,
 } from '@/types/common.types'; // Đảm bảo đường dẫn và types đúng
@@ -73,6 +72,7 @@ import { Label } from '@/components/ui/label';
 import { useAddCourseToCart, useMyCart } from '@/hooks/queries/cart.queries';
 import { useInstructorPublicProfile } from '@/hooks/queries/instructor.queries';
 import { Review } from '@/services/review.service';
+import { Section } from '@/services/section.service';
 
 // --- Sub-Components ---
 

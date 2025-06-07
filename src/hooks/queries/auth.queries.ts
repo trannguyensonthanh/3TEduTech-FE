@@ -26,6 +26,8 @@ import {
   completeFacebookRegistration,
   CompleteFacebookRegistrationData,
   CompleteFacebookRegistrationResponse,
+  ChangePasswordData,
+  changePassword,
 } from '@/services/auth.service'; // Điều chỉnh đường dẫn nếu cần
 import TokenService from '@/services/token.service';
 import { toast } from 'sonner';
@@ -96,6 +98,7 @@ export const useLogoutMutation = (
       // Chuyển hướng xử lý ở component
       // router.push('/login');
       toast.success('Đăng xuất thành công.');
+      window.location.href = '/'; // Hoặc router.push('/login');
     },
     onError: (error) => {
       console.error('Logout failed:', error.message);
@@ -297,6 +300,26 @@ export const useCompleteFacebookRegistrationMutation = (
       console.error('Facebook registration completion failed:', error.message);
       // Hiển thị lỗi cho người dùng trên form/modal nhập email
       // toast.error(error.message || 'Hoàn tất đăng ký thất bại.');
+    },
+    ...options,
+  });
+};
+
+/** Hook để thay đổi mật khẩu */
+export const useChangePasswordMutation = (
+  options?: UseMutationOptions<{ message: string }, Error, ChangePasswordData>
+) => {
+  return useMutation<{ message: string }, Error, ChangePasswordData>({
+    mutationFn: (data: ChangePasswordData) => changePassword(data),
+    onSuccess: (data) => {
+      console.log('Password change successful:', data.message);
+      toast.success(data.message || 'Đổi mật khẩu thành công!');
+      // Không cần invalidate userProfile vì mật khẩu thay đổi không ảnh hưởng trực tiếp đến profile data
+      // Có thể cân nhắc logout user ở các thiết bị khác nếu backend hỗ trợ
+    },
+    onError: (error) => {
+      console.error('Password change failed:', error.message);
+      toast.error(error.message || 'Đổi mật khẩu thất bại.');
     },
     ...options,
   });

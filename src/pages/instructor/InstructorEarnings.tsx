@@ -1,1177 +1,761 @@
-import { useState } from "react";
-import InstructorLayout from "@/components/layout/InstructorLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/pages/instructor/InstructorEarningsPage.tsx
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import InstructorLayout from '@/components/layout/InstructorLayout';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+  CardDescription,
+  CardFooter,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
+
+import { Progress } from '@/components/ui/progress';
+import { Icons } from '@/components/common/Icons'; // Đảm bảo có đủ icons (DollarSign, Wallet, Users, Clock, Download, CreditCard, HelpCircle, BarChart3, ListChecks, Settings2, AlertTriangle, ExternalLink)
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  BarChart,
-  Line,
-  LineChart,
+  useMyMonthlyEarnings,
+  useMyRevenueByCourse,
+} from '@/hooks/queries/financials.queries'; // Gộp các hook financials
+import { useAuth } from '@/contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import {
   ResponsiveContainer,
-  Tooltip,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
-  Bar,
-} from "recharts";
-import { Badge } from "@/components/ui/badge";
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
+import { ManagePayoutMethodsDialog } from '@/components/financials/ManagePayoutMethodsDialog';
+import { RequestWithdrawalDialog } from '@/components/financials/RequestWithdrawalDialog';
+import { AllTransactionsTabContent } from '@/components/financials/AllTransactionsTabContent';
+import { PayoutHistoryTabContent } from '@/components/financials/PayoutHistoryTabContent';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMyFinancialOverview } from '@/hooks/queries/instructor.queries';
 import {
-  BanIcon,
-  CalendarIcon,
-  Check,
-  CreditCard,
-  DollarSign,
-  Download,
-  ExternalLink,
-  Filter,
-  HelpCircle,
-  Plus,
-  Search,
-  Wallet,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { Icons } from "@/components/common/Icons";
+  CourseRevenueQueryParams,
+  MonthlyEarningsQueryParams,
+} from '@/services/financials.service';
 
-// Mock data for demonstration
-const mockEarningsData = [
-  { month: "Jan", earnings: 1200 },
-  { month: "Feb", earnings: 1900 },
-  { month: "Mar", earnings: 1600 },
-  { month: "Apr", earnings: 2100 },
-  { month: "May", earnings: 1800 },
-  { month: "Jun", earnings: 2400 },
-  { month: "Jul", earnings: 2800 },
-  { month: "Aug", earnings: 3100 },
-  { month: "Sep", earnings: 2700 },
-  { month: "Oct", earnings: 3200 },
-  { month: "Nov", earnings: 3800 },
-  { month: "Dec", earnings: 4200 },
-];
-
-const mockEarningsSummary = {
-  totalEarnings: 12485.75,
-  pendingPayouts: 1250.5,
-  lifetimeStudents: 3245,
-  monthlyTrends: [
-    { month: "Jan", earnings: 1200, students: 95 },
-    { month: "Feb", earnings: 1450, students: 112 },
-    { month: "Mar", earnings: 1950, students: 128 },
-    { month: "Apr", earnings: 2100, students: 145 },
-    { month: "May", earnings: 1850, students: 131 },
-    { month: "Jun", earnings: 1600, students: 120 },
-  ],
-  courseSales: [
-    {
-      id: 1,
-      title: "Complete Web Development Bootcamp",
-      sales: 145,
-      revenue: 2900,
-      enrollmentRate: 75,
-      thumbnail: "https://via.placeholder.com/150?text=Web+Dev",
-    },
-    {
-      id: 2,
-      title: "Advanced JavaScript Masterclass",
-      sales: 98,
-      revenue: 1960,
-      enrollmentRate: 62,
-      thumbnail: "https://via.placeholder.com/150?text=JavaScript",
-    },
-    {
-      id: 3,
-      title: "Python for Data Science",
-      sales: 122,
-      revenue: 2440,
-      enrollmentRate: 80,
-      thumbnail: "https://via.placeholder.com/150?text=Python",
-    },
-    {
-      id: 4,
-      title: "Mobile App Development with React Native",
-      sales: 76,
-      revenue: 1520,
-      enrollmentRate: 54,
-      thumbnail: "https://via.placeholder.com/150?text=React+Native",
-    },
-  ],
-  recentTransactions: [
-    {
-      id: 1,
-      date: "2025-04-15",
-      amount: 350.25,
-      status: "Paid",
-      description: "Monthly payout",
-      method: "PayPal",
-    },
-    {
-      id: 2,
-      date: "2025-03-15",
-      amount: 420.75,
-      status: "Paid",
-      description: "Monthly payout",
-      method: "PayPal",
-    },
-    {
-      id: 3,
-      date: "2025-02-15",
-      amount: 315.5,
-      status: "Paid",
-      description: "Monthly payout",
-      method: "Bank Account",
-    },
-    {
-      id: 4,
-      date: "2025-01-15",
-      amount: 390.2,
-      status: "Paid",
-      description: "Monthly payout",
-      method: "Bank Account",
-    },
-  ],
-  paymentMethods: [
-    {
-      id: 1,
-      type: "PayPal",
-      email: "instructor@example.com",
-      isDefault: true,
-    },
-    {
-      id: 2,
-      type: "Bank Account",
-      accountName: "John Doe",
-      accountNumber: "****6789",
-      isDefault: false,
-      bankName: "Vietcombank",
-    },
-  ],
+// Animation Variants
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.07, duration: 0.4, ease: 'easeOut' },
+  }),
 };
 
-const paymentMethods = [
-  {
-    id: 1,
-    type: "PayPal",
-    email: "instructor@example.com",
-    isDefault: true,
-  },
-  {
-    id: 2,
-    type: "Bank Account",
-    accountName: "John Doe",
-    accountNumber: "****6789",
-    isDefault: false,
-    bankName: "Vietcombank",
-  },
+// Time period options
+const timePeriodOptions = [
+  { value: 'last_3_months', label: 'Last 3 Months' },
+  { value: 'last_6_months', label: 'Last 6 Months' },
+  { value: 'last_12_months', label: 'Last 12 Months' },
+  { value: 'current_year', label: `Year ${new Date().getFullYear()}` },
+  { value: 'all_time', label: 'All Time' },
 ];
+type TimePeriodValue = (typeof timePeriodOptions)[number]['value'];
 
-const mockCourseEarnings = [
-  { name: "Course 1: Web Development", earnings: 12450, percentage: 30 },
-  { name: "Course 2: Python Basics", earnings: 8700, percentage: 25 },
-  { name: "Course 3: Data Science", earnings: 6900, percentage: 20 },
-  { name: "Course 4: Mobile App Dev", earnings: 4800, percentage: 14 },
-  { name: "Course 5: UI/UX Design", earnings: 3750, percentage: 11 },
-];
-
-const mockTransactions = Array.from({ length: 50 }).map((_, i) => ({
-  id: i + 1,
-  type: Math.random() > 0.2 ? "PAYMENT" : "PAYOUT",
-  amount:
-    Math.random() > 0.2
-      ? Math.floor(Math.random() * 200) + 9.99
-      : Math.floor(Math.random() * 2000) + 100,
-  date: new Date(Date.now() - Math.floor(Math.random() * 10000000000))
-    .toISOString()
-    .split("T")[0],
-  courseName:
-    Math.random() > 0.2
-      ? `Course ${Math.floor(Math.random() * 5) + 1}: Learn Something Amazing`
-      : null,
-  studentName:
-    Math.random() > 0.2
-      ? `Student ${Math.floor(Math.random() * 100) + 1}`
-      : null,
-  status:
-    Math.random() > 0.1
-      ? "COMPLETED"
-      : ["PENDING", "PROCESSING", "FAILED"][Math.floor(Math.random() * 3)],
-  transactionId: `TRX${Math.floor(Math.random() * 1000000)}`,
-  paymentMethod:
-    Math.random() > 0.2
-      ? ["CREDIT_CARD", "PAYPAL", "BANK_TRANSFER"][
-          Math.floor(Math.random() * 3)
-        ]
-      : "BANK_TRANSFER",
-}));
-
-const mockPayoutRequests = Array.from({ length: 5 }).map((_, i) => ({
-  id: i + 1,
-  amount: Math.floor(Math.random() * 3000) + 1000,
-  requestDate: new Date(Date.now() - Math.floor(Math.random() * 10000000000))
-    .toISOString()
-    .split("T")[0],
-  status: ["PENDING", "PROCESSING", "COMPLETED", "REJECTED"][
-    Math.floor(Math.random() * 4)
-  ],
-  processedDate:
-    Math.random() > 0.5
-      ? new Date(Date.now() - Math.floor(Math.random() * 5000000000))
-          .toISOString()
-          .split("T")[0]
-      : null,
-  notes:
-    Math.random() > 0.7
-      ? "Please process this payment as soon as possible."
-      : null,
-  adminNotes:
-    Math.random() > 0.8 ? "Payment processed via bank transfer." : null,
-}));
-
-const InstructorEarnings = () => {
-  const { toast } = useToast();
-  const [transactionSearchTerm, setTransactionSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState("all");
-  const [selectedPeriod, setSelectedPeriod] = useState("year");
-  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [paymentMethodsOpen, setPaymentMethodsOpen] = useState(false);
-  const [addPaymentMethodOpen, setAddPaymentMethodOpen] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState(
-    mockEarningsSummary.paymentMethods
+// StatCard Component
+const StatCard: React.FC<{
+  title: string;
+  value?: number | string;
+  icon: React.ReactNode;
+  description: string;
+  currency?: string;
+  isLoading?: boolean;
+  colorClass?: string;
+  smallerText?: boolean;
+}> = ({
+  title,
+  value,
+  icon,
+  description,
+  currency,
+  isLoading,
+  colorClass = 'text-primary',
+  smallerText = false,
+}) => {
+  return (
+    <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70 hover:shadow-xl transition-shadow duration-300 h-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        <div className={cn('h-5 w-5 sm:h-6 sm:w-6', colorClass)}>{icon}</div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <>
+            {' '}
+            <Skeleton
+              className={cn('h-7 w-3/4 mb-1.5', smallerText && 'h-6')}
+            />{' '}
+            <Skeleton className="h-4 w-1/2" />{' '}
+          </>
+        ) : (
+          <>
+            <div
+              className={cn(
+                'font-bold',
+                colorClass,
+                smallerText ? 'text-2xl' : 'text-3xl'
+              )}
+            >
+              {typeof value === 'number'
+                ? `${currency || ''}${value.toLocaleString(undefined, {
+                    minimumFractionDigits:
+                      currency === '₫' || currency === 'VND' ? 0 : 2,
+                    maximumFractionDigits:
+                      currency === '₫' || currency === 'VND' ? 0 : 2,
+                  })}`
+                : value || 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground pt-1">{description}</p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
-  const itemsPerPage = 10;
+};
 
-  // Filter transactions based on search and transaction type
-  const filteredTransactions = mockTransactions.filter((transaction) => {
-    const matchesSearch =
-      transaction.courseName
-        ?.toLowerCase()
-        .includes(transactionSearchTerm.toLowerCase()) ||
-      "" ||
-      transaction.transactionId
-        .toLowerCase()
-        .includes(transactionSearchTerm.toLowerCase());
+// Custom Tooltip for Recharts
+const CustomTooltipMonthlyEarnings = ({
+  active,
+  payload,
+  label,
+  currencySymbol,
+}: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-popover p-3 rounded-lg shadow-lg border border-border text-popover-foreground">
+        <p className="label font-semibold">
+          {label ? format(parseISO(label + '-01'), 'MMM yyyy') : ''}
+        </p>
+        {payload.map((entry: any) => (
+          <p
+            key={entry.name}
+            style={{ color: entry.color }}
+            className="text-sm"
+          >
+            {`${entry.name}: ${currencySymbol}${entry.value.toLocaleString(
+              undefined,
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            )}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
-    const matchesType =
-      activeTab === "all" ||
-      (activeTab === "payments" && transaction.type === "PAYMENT") ||
-      (activeTab === "payouts" && transaction.type === "PAYOUT");
+const InstructorEarningsPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-    return matchesSearch && matchesType;
+  const queryParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search]
+  );
+  const initialTab = queryParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  const [showManagePayoutMethodsDialog, setShowManagePayoutMethodsDialog] =
+    useState(false);
+  const [showRequestWithdrawalDialog, setShowRequestWithdrawalDialog] =
+    useState(false);
+
+  const {
+    data: overviewData,
+    isLoading: isLoadingOverview,
+    error: overviewError,
+    refetch: refetchFinancialOverview,
+  } = useMyFinancialOverview();
+  const currencySymbol = useMemo(
+    () =>
+      overviewData?.currencyId === 'VND'
+        ? '₫'
+        : overviewData?.currencyId
+        ? `${overviewData.currencyId} `
+        : '$',
+    [overviewData?.currencyId]
+  );
+  const currentBalance = overviewData?.currentBalance || 0;
+
+  const [monthlyEarningsPeriod, setMonthlyEarningsPeriod] =
+    useState<TimePeriodValue>('last_12_months');
+  const [courseRevenuePeriod, setCourseRevenuePeriod] =
+    useState<TimePeriodValue>('last_12_months');
+
+  const monthlyEarningsParams: MonthlyEarningsQueryParams = useMemo(
+    () => ({ period: monthlyEarningsPeriod }),
+    [monthlyEarningsPeriod]
+  );
+  const {
+    data: monthlyEarningsData,
+    isLoading: isLoadingMonthly,
+    error: monthlyError,
+  } = useMyMonthlyEarnings(monthlyEarningsParams, {
+    enabled: activeTab === 'overview',
   });
 
-  // Paginate transactions
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedTransactions = filteredTransactions.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const courseRevenueParams: CourseRevenueQueryParams = useMemo(
+    () => ({ period: courseRevenuePeriod, limit: 5 }),
+    [courseRevenuePeriod]
+  ); // Limit 5 for overview
+  const {
+    data: courseRevenueData,
+    isLoading: isLoadingCourseRevenue,
+    error: courseRevenueError,
+  } = useMyRevenueByCourse(courseRevenueParams, {
+    enabled: activeTab === 'overview',
+  });
 
-  // Calculate summary statistics
-  const totalEarnings = mockTransactions
-    .filter((t) => t.type === "PAYMENT" && t.status === "COMPLETED")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalPayouts = mockTransactions
-    .filter((t) => t.type === "PAYOUT" && t.status === "COMPLETED")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const currentBalance = totalEarnings - totalPayouts;
-
-  const pendingPayouts = mockPayoutRequests
-    .filter((p) => p.status === "PENDING" || p.status === "PROCESSING")
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const handleWithdrawalSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Withdrawal requested for amount:", withdrawAmount);
-    // Here you would handle the actual withdrawal request
-    setShowWithdrawDialog(false);
-    setWithdrawAmount("");
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`${location.pathname}?tab=${value}`, { replace: true });
   };
 
-  const handleSetDefaultPaymentMethod = (id: number) => {
-    setPaymentMethods(
-      paymentMethods.map((method) => ({
-        ...method,
-        isDefault: method.id === id,
-      }))
-    );
-    toast({
-      title: "Default payment method updated",
-      description: "Your default payment method has been updated.",
-    });
-  };
-
-  const handleRemovePaymentMethod = (id: number) => {
-    setPaymentMethods(paymentMethods.filter((method) => method.id !== id));
-    toast({
-      title: "Payment method removed",
-      description: "Your payment method has been removed.",
-    });
-  };
+  useEffect(() => {
+    // Sync tab state if URL changes (e.g., browser back/forward)
+    const tabFromUrl = queryParams.get('tab') || 'overview';
+    if (tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [queryParams, activeTab]);
 
   return (
-    <InstructorLayout>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Earnings & Finances</h1>
-          <div className="space-x-2">
-            {/* <Dialog
-              open={showWithdrawDialog}
-              onOpenChange={setShowWithdrawDialog}
+    <InstructorLayout
+      pageTitle="Earnings & Finances"
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/instructor/dashboard' },
+        { label: 'Earnings' },
+      ]}
+    >
+      <div className="space-y-6 md:space-y-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              Earnings Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1 text-base">
+              Track your revenue, manage payouts, and understand your financial
+              performance.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button
+              size="lg"
+              className="h-11 px-5 text-base w-full sm:w-auto bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-shadow"
+              onClick={() => setShowRequestWithdrawalDialog(true)}
+              disabled={
+                isLoadingOverview ||
+                currentBalance < (overviewData?.minWithdrawalAmount || 10)
+              }
             >
-              <DialogTrigger asChild>
-                <Button>
-                  <Wallet className="mr-2 h-4 w-4" /> Request Withdrawal
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Request a Withdrawal</DialogTitle>
-                  <DialogDescription>
-                    Enter the amount you'd like to withdraw from your balance.
-                  </DialogDescription>
-                </DialogHeader>
-                <form
-                  onSubmit={handleWithdrawalSubmit}
-                  className="space-y-4 py-4"
-                >
-                  <div className="space-y-2">
-                    <label htmlFor="amount" className="text-sm font-medium">
-                      Amount (USD)
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="amount"
-                        className="pl-9"
-                        placeholder="Enter amount"
-                        type="number"
-                        value={withdrawAmount}
-                        onChange={(e) => setWithdrawAmount(e.target.value)}
-                        min={1}
-                        max={currentBalance}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Available balance: ${currentBalance.toFixed(2)}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Withdrawal Method
-                    </label>
-                    <Select defaultValue="bank">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bank">Bank Transfer</SelectItem>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="pt-4 flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => setShowWithdrawDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit">Request Withdrawal</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog> */}
-
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" /> Download Statement
+              <Icons.wallet className="w-5 h-5 mr-2" /> Request Withdrawal
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-11 px-5 text-base w-full sm:w-auto"
+            >
+              <Icons.download className="w-5 h-5 mr-2" /> Download Report
             </Button>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">
-                Current Balance
-              </CardTitle>
-              <DollarSign className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${currentBalance.toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Available for withdrawal
-              </p>
+        <motion.div
+          variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+          initial="hidden"
+          animate="visible"
+          className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        >
+          {[
+            {
+              custom: 0,
+              title: 'Current Balance',
+              value: overviewData?.currentBalance,
+              icon: <Icons.wallet className="opacity-80" />,
+              description: 'Available for your next payout',
+              colorClass: 'text-green-500 dark:text-green-400',
+            },
+            {
+              custom: 1,
+              title: 'Lifetime Earnings',
+              value: overviewData?.totalLifetimeEarnings,
+              icon: <Icons.dollarSign className="opacity-80" />,
+              description: 'Total revenue generated',
+            },
+            {
+              custom: 2,
+              title: 'Pending Payouts',
+              value: overviewData?.pendingPayoutsAmount,
+              icon: <Icons.clock className="opacity-80" />,
+              description: 'Withdrawals being processed',
+              colorClass: 'text-orange-500 dark:text-orange-400',
+            },
+            {
+              custom: 3,
+              title: 'Total Students',
+              value: overviewData?.totalStudentsLifetime?.toLocaleString(),
+              icon: <Icons.users className="opacity-80" />,
+              description: 'Across all your courses',
+              colorClass: 'text-purple-500 dark:text-purple-400',
+            },
+          ].map((card) => (
+            <motion.div
+              key={card.title}
+              variants={cardVariants}
+              custom={card.custom}
+            >
+              <StatCard
+                {...card}
+                currency={currencySymbol}
+                isLoading={isLoadingOverview}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {overviewError && (
+          <Card className="bg-destructive/10 border-destructive/30">
+            {' '}
+            <CardContent className="p-4 text-center text-sm text-destructive-foreground">
+              <Icons.alertTriangle className="inline-block h-5 w-5 mr-2" />{' '}
+              Failed to load financial overview:{' '}
+              {(overviewError as Error).message}
             </CardContent>
           </Card>
+        )}
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">
-                Total Earnings
-              </CardTitle>
-              <DollarSign className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${totalEarnings.toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">Lifetime earnings</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">
-                Pending Payouts
-              </CardTitle>
-              <BanIcon className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${pendingPayouts.toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">Being processed</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Earnings Overview</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="payouts">Payout History</TabsTrigger>
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+          className="w-full pt-2"
+        >
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:w-auto md:inline-flex h-12 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shadow-sm">
+            <TabsTrigger
+              value="overview"
+              className="px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md"
+            >
+              <Icons.level className="mr-2 h-5 w-5" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="transactions"
+              className="px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md"
+            >
+              <Icons.listChecks className="mr-2 h-5 w-5" />
+              Transactions
+            </TabsTrigger>
+            <TabsTrigger
+              value="payouts"
+              className="px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md"
+            >
+              <Icons.creditCard className="mr-2 h-5 w-5" />
+              Payouts
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            <div className="flex items-end justify-between">
-              <h2 className="text-xl font-bold">Earnings Summary</h2>
-              <Select
-                defaultValue={selectedPeriod}
-                onValueChange={setSelectedPeriod}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="mt-6"
+            >
+              <TabsContent
+                value="overview"
+                forceMount={true}
+                className={cn(activeTab !== 'overview' && 'hidden', '!mt-0')}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select time range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Last 30 days</SelectItem>
-                  <SelectItem value="quarter">Last 3 months</SelectItem>
-                  <SelectItem value="year">Last 12 months</SelectItem>
-                  <SelectItem value="all">All time</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Monthly Earnings</CardTitle>
-                <CardDescription>
-                  Your earnings over the last 12 months
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={mockEarningsData}
-                    margin={{
-                      top: 20,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
-                    }}
-                  >
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value: number) => [`$${value}`, "Earnings"]}
-                      labelFormatter={(label) => `Month: ${label}`}
-                    />
-                    <Bar dataKey="earnings" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Revenue by Course</CardTitle>
-                  <CardDescription>
-                    Earnings breakdown across your courses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockCourseEarnings.map((course, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="flex-1 truncate mr-2">
-                            <span className="text-sm font-medium">
-                              {course.name}
-                            </span>
-                          </div>
-                          <span className="text-sm">
-                            ${course.earnings.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary rounded-full"
-                            style={{ width: `${course.percentage}%` }}
-                          ></div>
-                        </div>
+                <div className="space-y-6 md:space-y-8">
+                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4">
+                      <div>
+                        <CardTitle className="text-xl md:text-2xl font-semibold">
+                          Monthly Earnings
+                        </CardTitle>
+                        <CardDescription className="text-sm mt-1">
+                          Net earnings trend.
+                        </CardDescription>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white dark:bg-gray-950">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl">Payment Methods</CardTitle>
-                    <CardDescription>
-                      Manage your payout methods
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => setPaymentMethodsOpen(true)}>
-                    <CreditCard className="mr-2 h-4 w-4" /> Manage Methods
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {paymentMethods.map((method) => (
-                      <div
-                        key={method.id}
-                        className="flex items-center justify-between border p-4 rounded-md bg-muted/50"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-primary/10 p-2 rounded-full">
-                            <CreditCard className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{method.type}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {method.type === "PayPal"
-                                ? method.email
-                                : `${method.accountName} - ${method.bankName}`}
-                            </p>
-                          </div>
-                        </div>
-                        {method.isDefault && (
-                          <Badge className="bg-primary">Default</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Understanding Your Earnings</CardTitle>
-                  <CardDescription>
-                    How course sales are calculated and distributed
-                  </CardDescription>
-                </div>
-                <HelpCircle className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-md font-medium mb-2">
-                      Revenue Split Example
-                    </h3>
-                    <div className="w-full bg-muted rounded-full h-4 mb-2">
-                      <div className="flex h-full rounded-full overflow-hidden">
-                        <div
-                          className="bg-primary h-full"
-                          style={{ width: "70%" }}
-                        ></div>
-                        <div
-                          className="bg-yellow-500 h-full"
-                          style={{ width: "30%" }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-primary rounded-full mr-2"></div>
-                        <span>70% Instructor Revenue</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                        <span>30% Platform Fee</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                    <div className="p-4 bg-muted rounded-md">
-                      <h4 className="font-medium mb-1">Payout Schedule</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Payouts are processed on the 1st and 15th of each month
-                        for balances over $50.
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-muted rounded-md">
-                      <h4 className="font-medium mb-1">Processing Time</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Payments typically take 3-5 business days to process
-                        once requested.
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-muted rounded-md">
-                      <h4 className="font-medium mb-1">Transaction Fees</h4>
-                      <p className="text-sm text-muted-foreground">
-                        A small processing fee may apply depending on your
-                        withdrawal method.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="transactions" className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search transactions..."
-                  className="pl-8"
-                  value={transactionSearchTerm}
-                  onChange={(e) => setTransactionSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon">
-                  <Filter className="h-4 w-4" />
-                </Button>
-
-                <Button variant="outline" size="icon">
-                  <CalendarIcon className="h-4 w-4" />
-                </Button>
-
-                <Button variant="outline">
-                  <Download className="mr-2 h-4 w-4" /> Export
-                </Button>
-              </div>
-            </div>
-
-            <Tabs defaultValue="all" onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="all">All Transactions</TabsTrigger>
-                <TabsTrigger value="payments">Course Sales</TabsTrigger>
-                <TabsTrigger value="payouts">Withdrawals</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Transaction ID</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="font-medium">
-                        {transaction.transactionId}
-                      </TableCell>
-                      <TableCell>{transaction.date}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            transaction.type === "PAYMENT"
-                              ? "default"
-                              : "outline"
-                          }
-                        >
-                          {transaction.type === "PAYMENT"
-                            ? "Course Sale"
-                            : "Withdrawal"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell
-                        className={
-                          transaction.type === "PAYMENT"
-                            ? "text-green-600"
-                            : "text-red-600"
+                      <Select
+                        value={monthlyEarningsPeriod}
+                        onValueChange={(val) =>
+                          setMonthlyEarningsPeriod(val as TimePeriodValue)
                         }
                       >
-                        {transaction.type === "PAYMENT" ? "+" : "-"}$
-                        {transaction.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {transaction.type === "PAYMENT"
-                          ? `${transaction.courseName} (${transaction.studentName})`
-                          : `${transaction.paymentMethod.replace("_", " ")}`}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            transaction.status === "COMPLETED"
-                              ? "bg-green-500"
-                              : transaction.status === "FAILED"
-                              ? "bg-red-500"
-                              : "bg-yellow-500"
-                          }
-                        >
-                          {transaction.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                        <SelectTrigger className="w-full sm:w-[200px] h-10 mt-3 sm:mt-0 text-sm">
+                          <SelectValue placeholder="Select period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timePeriodOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </CardHeader>
+                    <CardContent className="h-[350px] md:h-[400px] pl-0 pr-2 sm:pr-4 py-6">
+                      {isLoadingMonthly ? (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Skeleton className="w-[95%] h-[90%]" />
+                        </div>
+                      ) : monthlyError ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-destructive">
+                          <Icons.alertTriangle className="w-10 h-10 mb-2" />
+                          Error loading chart.
+                        </div>
+                      ) : monthlyEarningsData?.earnings &&
+                        monthlyEarningsData.earnings.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={monthlyEarningsData.earnings}
+                            margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              strokeOpacity={0.2}
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="month"
+                              tickFormatter={(value) =>
+                                format(parseISO(value + '-01'), 'MMM yy')
+                              }
+                              tick={{ fontSize: 11, fillOpacity: 0.7 }}
+                              axisLine={{ strokeOpacity: 0.5 }}
+                              tickLine={{ strokeOpacity: 0.5 }}
+                            />
+                            <YAxis
+                              tickFormatter={(value) =>
+                                `${currencySymbol}${value / 1000}k`
+                              }
+                              tick={{ fontSize: 11, fillOpacity: 0.7 }}
+                              axisLine={{ strokeOpacity: 0.5 }}
+                              tickLine={{ strokeOpacity: 0.5 }}
+                              width={55}
+                            />
+                            <Tooltip
+                              content={
+                                <CustomTooltipMonthlyEarnings
+                                  currencySymbol={currencySymbol}
+                                />
+                              }
+                              cursor={{
+                                fill: 'hsl(var(--accent))',
+                                fillOpacity: 0.2,
+                              }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '12px' }} />
+                            <Bar
+                              dataKey="netEarnings"
+                              fill="hsl(var(--primary))"
+                              name="Net Earnings"
+                              radius={[4, 4, 0, 0]}
+                              barSize={25}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                          <Icons.level className="w-16 h-16 mb-3 opacity-50" />
+                          No earnings data for this period.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    className={
-                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                    }
-                  />
-                </PaginationItem>
-                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                  const pageNumber =
-                    currentPage <= 3
-                      ? i + 1
-                      : currentPage >= totalPages - 2
-                      ? totalPages - 4 + i
-                      : currentPage - 2 + i;
-
-                  if (pageNumber <= 0 || pageNumber > totalPages) return null;
-
-                  return (
-                    <PaginationItem key={pageNumber}>
-                      <PaginationLink
-                        isActive={currentPage === pageNumber}
-                        onClick={() => setCurrentPage(pageNumber)}
+                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4">
+                      <div>
+                        <CardTitle className="text-xl md:text-2xl font-semibold">
+                          Revenue by Course
+                        </CardTitle>
+                        <CardDescription className="text-sm mt-1">
+                          Top performing courses.
+                        </CardDescription>
+                      </div>
+                      <Select
+                        value={courseRevenuePeriod}
+                        onValueChange={(val) =>
+                          setCourseRevenuePeriod(val as TimePeriodValue)
+                        }
                       >
-                        {pageNumber}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                })}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </TabsContent>
+                        <SelectTrigger className="w-full sm:w-[200px] h-10 mt-3 sm:mt-0 text-sm">
+                          <SelectValue placeholder="Select period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timePeriodOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoadingCourseRevenue ? (
+                        <div className="space-y-4">
+                          {[...Array(3)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                          ))}
+                        </div>
+                      ) : courseRevenueError ? (
+                        <p className="text-sm text-destructive text-center py-4">
+                          Could not load course revenue.
+                        </p>
+                      ) : courseRevenueData?.courses &&
+                        courseRevenueData.courses.length > 0 ? (
+                        <div className="space-y-4">
+                          {courseRevenueData.courses.map((course, index) => (
+                            <div key={course.courseId} className="space-y-1.5">
+                              <div className="flex justify-between items-center text-sm">
+                                <Link
+                                  to={`/instructor/courses/${
+                                    course.courseSlug || course.courseId
+                                  }/manage/goals`}
+                                  className="font-medium text-foreground hover:text-primary truncate mr-2"
+                                  title={course.courseName}
+                                >
+                                  {index + 1}. {course.courseName}
+                                </Link>
+                                <div className="flex items-baseline">
+                                  <span className="font-semibold text-foreground">
+                                    {currencySymbol}
+                                    {course.netEarnings.toLocaleString(
+                                      undefined,
+                                      {
+                                        minimumFractionDigits:
+                                          currencySymbol === '₫' ? 0 : 2,
+                                        maximumFractionDigits:
+                                          currencySymbol === '₫' ? 0 : 2,
+                                      }
+                                    )}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground ml-1.5">
+                                    (
+                                    {course.percentageOfTotalEarnings.toFixed(
+                                      1
+                                    )}
+                                    %)
+                                  </span>
+                                </div>
+                              </div>
+                              <Progress
+                                value={course.percentageOfTotalEarnings}
+                                className={cn(
+                                  'h-2',
+                                  index % 3 === 0
+                                    ? 'bg-primary'
+                                    : index % 3 === 1
+                                    ? 'bg-sky-500'
+                                    : 'bg-amber-500'
+                                )}
+                              />
+                            </div>
+                          ))}
+                          {courseRevenueData.totalCourses > 5 && (
+                            <Button
+                              variant="link"
+                              asChild
+                              className="p-0 h-auto text-sm mt-3"
+                            >
+                              <Link to="?tab=transactions&filter=revenue_by_course&period=all_time">
+                                View All Course Revenue
+                              </Link>
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No course revenue data for this period.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-          <TabsContent value="payouts" className="space-y-6">
-            <Card className="bg-white dark:bg-gray-950">
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-xl">Payout History</CardTitle>
-                    <CardDescription>
-                      Record of all your received payouts
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Select defaultValue="all">
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Period" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Time</SelectItem>
-                        <SelectItem value="2025">2025</SelectItem>
-                        <SelectItem value="2024">2024</SelectItem>
-                        <SelectItem value="2023">2023</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4">
+                      <div>
+                        <CardTitle className="text-xl md:text-2xl font-semibold flex items-center">
+                          <Icons.creditCard className="mr-3 h-6 w-6 text-sky-500 dark:text-sky-400" />
+                          Payout Methods
+                        </CardTitle>
+                        <CardDescription className="text-sm mt-1">
+                          Manage how you receive your earnings.
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowManagePayoutMethodsDialog(true)}
+                        className="mt-3 sm:mt-0 h-10 text-sm"
+                      >
+                        <Icons.settings2 className="mr-2 h-4 w-4" /> Manage
+                        Methods
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Add and manage your payout methods like PayPal or Bank
+                        Transfer. Ensure your primary method is correctly set
+                        up.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
+                    <CardHeader>
+                      <CardTitle className="text-xl md:text-2xl font-semibold flex items-center">
+                        <Icons.help className="mr-3 h-6 w-6 text-blue-500" />
+                        Understanding Your Earnings
+                      </CardTitle>
+                      <CardDescription className="text-sm mt-1">
+                        Key information about how earnings and payouts work.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+                      <div>
+                        <h4 className="font-semibold mb-1.5 text-foreground">
+                          Revenue Share
+                        </h4>
+                        <p className="text-muted-foreground leading-relaxed">
+                          Our standard model is a{' '}
+                          <strong>
+                            {overviewData?.revenueSharePercentage || 70}%
+                          </strong>{' '}
+                          to you on most sales. Rates may vary for platform
+                          promotions or affiliate sales.
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-1.5 text-foreground">
+                          Payout Schedule
+                        </h4>
+                        <p className="text-muted-foreground leading-relaxed">
+                          Payouts are processed around the <strong>10th</strong>{' '}
+                          of each month for the previous month's earnings,
+                          provided your balance exceeds{' '}
+                          <strong>
+                            {currencySymbol}
+                            {(
+                              overviewData?.minWithdrawalAmount || 50
+                            ).toLocaleString()}
+                          </strong>
+                          .
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-1.5 text-foreground">
+                          Payment Methods
+                        </h4>
+                        <p className="text-muted-foreground leading-relaxed">
+                          We support payouts via PayPal and direct bank transfer
+                          (availability varies). Ensure your details are
+                          up-to-date in 'Manage Methods'.
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-1.5 text-foreground">
+                          Refunds & Deductions
+                        </h4>
+                        <p className="text-muted-foreground leading-relaxed">
+                          Refunds and platform fees are deducted before
+                          calculating your share. Applicable taxes are also
+                          handled as per your region's regulations.
+                        </p>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="link"
+                        asChild
+                        className="p-0 h-auto text-sm text-muted-foreground hover:text-primary"
+                      >
+                        <Link
+                          to="/instructor-terms#revenue_share"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Read Full Payout Policy{' '}
+                          <Icons.externalLink className="ml-1 h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Transaction ID</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockEarningsSummary.recentTransactions.map(
-                      (transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm font-medium">
-                                {new Date(
-                                  transaction.date
-                                ).toLocaleDateString()}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Monthly payout
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">
-                              TXN-{10000 + transaction.id}
-                            </code>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              {transaction.method === "PayPal" ? (
-                                <Icons.paypal className="h-4 w-4 mr-2 text-blue-500" />
-                              ) : (
-                                <CreditCard className="h-4 w-4 mr-2" />
-                              )}
-                              <span>{transaction.method}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="bg-green-500/80">
-                              <Check className="h-3 w-3 mr-1" />
-                              {transaction.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <p className="text-sm font-medium">
-                              ${transaction.amount.toFixed(2)}
-                            </p>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </TabsContent>
+
+              <TabsContent
+                value="transactions"
+                forceMount={true}
+                className={cn(
+                  activeTab !== 'transactions' && 'hidden',
+                  '!mt-0'
+                )}
+              >
+                <AllTransactionsTabContent currencySymbol={currencySymbol} />
+              </TabsContent>
+
+              <TabsContent
+                value="payouts"
+                forceMount={true}
+                className={cn(activeTab !== 'payouts' && 'hidden', '!mt-0')}
+              >
+                <PayoutHistoryTabContent currencySymbol={currencySymbol} />
+              </TabsContent>
+            </motion.div>
+          </AnimatePresence>
         </Tabs>
       </div>
-      {/* Payment Methods Dialog */}
-      <Dialog open={paymentMethodsOpen} onOpenChange={setPaymentMethodsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Payment Methods</DialogTitle>
-            <DialogDescription>
-              Manage the payment methods used to receive your course earnings.
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {paymentMethods.map((method) => (
-              <div
-                key={method.id}
-                className="flex items-center justify-between border p-4 rounded-md"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{method.type}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {method.type === "PayPal"
-                        ? method.email
-                        : `${method.accountName} (${method.accountNumber})`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  {!method.isDefault && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSetDefaultPaymentMethod(method.id)}
-                    >
-                      Set Default
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemovePaymentMethod(method.id)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ))}
-
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => {
-                setAddPaymentMethodOpen(true);
-                setPaymentMethodsOpen(false);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Payment Method
-            </Button>
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setPaymentMethodsOpen(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <AddPaymentMethodDialog
-        open={addPaymentMethodOpen}
-        onOpenChange={setAddPaymentMethodOpen}
-        onSuccess={(newMethod) => {
-          setPaymentMethods([...paymentMethods, newMethod]);
-          setAddPaymentMethodOpen(false);
-          setPaymentMethodsOpen(true);
-          toast({
-            title: "Payment method added",
-            description: "Your new payment method has been added successfully.",
-          });
+      <ManagePayoutMethodsDialog
+        isOpen={showManagePayoutMethodsDialog}
+        onOpenChange={setShowManagePayoutMethodsDialog}
+      />
+      <RequestWithdrawalDialog
+        isOpen={showRequestWithdrawalDialog}
+        onOpenChange={setShowRequestWithdrawalDialog}
+        currentBalance={currentBalance}
+        currencySymbol={currencySymbol}
+        onSuccess={() => {
+          refetchFinancialOverview();
+          // queryClient.invalidateQueries({
+          //   queryKey: financialsKeys.myWithdrawalRequests(),
+          // }); // Invalidate payout history
         }}
       />
     </InstructorLayout>
   );
 };
-
-// Add Payment Method Dialog Component
-const AddPaymentMethodDialog = ({ open, onOpenChange, onSuccess }) => {
-  const [methodType, setMethodType] = useState("PayPal");
-  const form = useForm({
-    defaultValues: {
-      email: "",
-      accountName: "",
-      accountNumber: "",
-      routingNumber: "",
-      bankName: "",
-    },
-  });
-
-  const handleSubmit = (data) => {
-    const newId = Math.floor(Math.random() * 1000) + 10;
-
-    if (methodType === "PayPal") {
-      onSuccess({
-        id: newId,
-        type: "PayPal",
-        email: data.email,
-        isDefault: false,
-      });
-    } else {
-      onSuccess({
-        id: newId,
-        type: "Bank Account",
-        accountName: data.accountName,
-        accountNumber: `****${data.accountNumber.slice(-4)}`,
-        bankName: data.bankName,
-        isDefault: false,
-      });
-    }
-
-    form.reset();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Payment Method</DialogTitle>
-          <DialogDescription>
-            Add a new payment method to receive your course earnings.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4 py-4"
-          >
-            <div className="space-y-2">
-              <FormLabel>Payment Method Type</FormLabel>
-              <Select value={methodType} onValueChange={setMethodType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select method type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PayPal">PayPal</SelectItem>
-                  <SelectItem value="Bank Account">Bank Account</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {methodType === "PayPal" ? (
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>PayPal Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Enter the email address associated with your PayPal
-                      account.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <>
-                <FormField
-                  control={form.control}
-                  name="accountName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Account Holder Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bankName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bank Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Bank of America" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="routingNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Routing Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="123456789" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="accountNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Account Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="1234567890" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
-
-            <DialogFooter className="mt-6">
-              <Button type="submit">Add Payment Method</Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-export default InstructorEarnings;
+export default InstructorEarningsPage;

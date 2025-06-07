@@ -5,6 +5,7 @@ import {
   UseQueryOptions,
   UseMutationOptions,
   useQueryClient,
+  UseQueryResult,
 } from '@tanstack/react-query';
 import {
   createOrUpdateReview,
@@ -15,6 +16,9 @@ import {
   ReviewListResponse,
   ReviewQueryParams,
   CreateUpdateReviewData,
+  InstructorReviewQueryParams,
+  InstructorReviewListResponse,
+  getCourseReviewsByInstructor,
 } from '@/services/review.service';
 import { courseKeys } from './course.queries'; // Để invalidate course rating
 
@@ -27,6 +31,11 @@ const reviewKeys = {
   detail: (id: number | undefined) => [...reviewKeys.details(), id] as const,
   myReview: (courseId?: number) =>
     [...reviewKeys.all, 'my', { courseId }] as const,
+  listByInstructor: (
+    instructorId: number | string | undefined,
+    params?: InstructorReviewQueryParams
+  ) =>
+    ['reviews', 'instructor', instructorId, 'courses', params || {}] as const,
 };
 
 // --- Queries ---
@@ -60,6 +69,45 @@ export const useMyReviewForCourse = (
     queryKey: queryKey,
     queryFn: () => getMyReviewForCourse(courseId!),
     enabled: !!courseId,
+    ...options,
+  });
+};
+
+/**
+ * Hook để lấy tất cả reviews cho các khóa học của một giảng viên.
+ */
+export const useCourseReviewsByInstructor = (
+  instructorId: number | string | undefined,
+  params?: InstructorReviewQueryParams,
+  options?: Omit<
+    UseQueryOptions<
+      InstructorReviewListResponse,
+      Error,
+      InstructorReviewListResponse,
+      (string | number | InstructorReviewQueryParams | undefined)[]
+    >,
+    'queryKey' | 'queryFn'
+  >
+): UseQueryResult<InstructorReviewListResponse, Error> => {
+  const queryKey = Array.from(
+    reviewKeys.listByInstructor(instructorId, params)
+  );
+  return useQuery<
+    InstructorReviewListResponse,
+    Error,
+    InstructorReviewListResponse,
+    (string | number | InstructorReviewQueryParams | undefined)[]
+  >({
+    queryKey: queryKey,
+    queryFn: () => {
+      if (!instructorId) {
+        return Promise.reject(new Error('Instructor ID is required'));
+      }
+      return getCourseReviewsByInstructor(instructorId, params);
+    },
+    enabled: !!instructorId, // Only fetch if instructorId is provided
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    // keepPreviousData: true, // Consider for pagination UX
     ...options,
   });
 };

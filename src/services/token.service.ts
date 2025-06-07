@@ -58,6 +58,7 @@ const setUser = (user: any | null): void => {
           role: user.role,
           accessToken: user.accessToken,
           status: user.status,
+          avatarUrl: user.avatarUrl,
         };
         localStorage.setItem('user', JSON.stringify(userToStore));
         console.log('User info saved to local storage.');

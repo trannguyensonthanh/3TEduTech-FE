@@ -15,11 +15,7 @@ import {
 } from '@/hooks/queries/course.queries'; // Import hook query/mutation
 import { useToast } from '@/hooks/use-toast';
 import FullScreenLoader from '@/components/common/FullScreenLoader';
-import {
-  AdminCourseView,
-  ReviewCourseData,
-  Lesson,
-} from '@/types/common.types'; // Import types
+import { ReviewCourseData, Lesson } from '@/types/common.types'; // Import types
 import { Button } from '@/components/ui/button';
 
 const CourseApprovalsPage: React.FC = () => {

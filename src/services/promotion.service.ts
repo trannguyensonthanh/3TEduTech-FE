@@ -1,6 +1,13 @@
 // src/services/promotion.service.ts
-import { ValidatePromoResponse } from '@/types/cart.types';
+
 import apiHelper from './apiHelper';
+
+export interface ValidatePromoResponse {
+  isValid: boolean; // API validate chỉ trả về cái này
+  discountAmount: number; // Số tiền giảm nếu hợp lệ
+  promotionId: number; // ID của promotion nếu hợp lệ
+  message: string; // Thông báo
+}
 
 export interface Promotion {
   promotionId: number;
