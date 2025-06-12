@@ -16,6 +16,8 @@ import LoginWithFacebook from '@/components/auth/LoginWithFacebook';
 import EmailCollectionModal from '@/components/auth/EmailCollectionModal';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+
 interface LoginFormProps {
   onSuccess: () => void;
 }
@@ -30,6 +32,11 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const loginSchema = z.object({
+    email: z.string().email(t('loginForm.errors.invalidEmail')),
+    password: z.string().min(6, t('loginForm.errors.passwordMin')),
+  });
 
   const {
     control,
@@ -47,8 +54,8 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const loginMutation = useLoginMutation({
     onSuccess: (data) => {
       toast({
-        title: 'Successfully logged in',
-        description: `Welcome back, ${data.user.fullName}!`,
+        title: t('loginForm.signInSuccess'),
+        description: t('loginForm.signInWelcome', { name: data.user.fullName }),
       });
       onSuccess();
       // Redirect to dashboard
@@ -57,9 +64,8 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     onError: (error: any) => {
       toast({
         variant: 'destructive',
-        title: 'Login failed',
-        description:
-          error.message || 'Invalid email or password. Please try again.',
+        title: t('loginForm.signInFailed'),
+        description: error.message || t('loginForm.signInFailedDesc'),
       });
     },
   });
@@ -69,19 +75,19 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
   };
   const [showPassword, setShowPassword] = useState(false);
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div className="space-y-1.5">
-        <Label htmlFor="login-email">Email Address</Label>
-        <div className="relative">
-          <Icons.mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
+      <div className='space-y-1.5'>
+        <Label htmlFor='login-email'>{t('loginForm.email')}</Label>
+        <div className='relative'>
+          <Icons.mail className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Controller
-            name="email"
+            name='email'
             control={control}
             render={({ field }) => (
               <Input
-                id="login-email"
-                type="email"
-                placeholder="you@example.com"
+                id='login-email'
+                type='email'
+                placeholder={t('loginForm.emailPlaceholder')}
                 {...field}
                 disabled={loginMutation.isPending}
                 className={cn(
@@ -94,31 +100,31 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
           />
         </div>
         {errors.email && (
-          <p className="text-xs text-destructive">{errors.email.message}</p>
+          <p className='text-xs text-destructive'>{errors.email.message}</p>
         )}
       </div>
 
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="login-password">Password</Label>
+      <div className='space-y-1.5'>
+        <div className='flex items-center justify-between'>
+          <Label htmlFor='login-password'>{t('loginForm.password')}</Label>
           <Link
-            to="/auth/forgot-password"
+            to='/auth/forgot-password'
             onClick={onSuccess}
-            className="text-xs font-medium text-primary hover:underline"
+            className='text-xs font-medium text-primary hover:underline'
           >
-            Forgot password?
+            {t('loginForm.forgot')}
           </Link>
         </div>
-        <div className="relative">
-          <Icons.lockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <div className='relative'>
+          <Icons.lockKeyhole className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Controller
-            name="password"
+            name='password'
             control={control}
             render={({ field }) => (
               <Input
-                id="login-password"
+                id='login-password'
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder={t('loginForm.passwordPlaceholder')}
                 {...field}
                 disabled={loginMutation.isPending}
                 className={cn(
@@ -130,65 +136,65 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
             )}
           />
           <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground'
             onClick={() => setShowPassword(!showPassword)}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={
+              showPassword
+                ? t('loginForm.hidePassword')
+                : t('loginForm.showPassword')
+            }
           >
             {showPassword ? (
-              <Icons.eyeOff className="h-4 w-4" />
+              <Icons.eyeOff className='h-4 w-4' />
             ) : (
-              <Icons.eye className="h-4 w-4" />
+              <Icons.eye className='h-4 w-4' />
             )}
           </Button>
         </div>
         {errors.password && (
-          <p className="text-xs text-destructive">{errors.password.message}</p>
+          <p className='text-xs text-destructive'>{errors.password.message}</p>
         )}
       </div>
 
       <Button
-        type="submit"
-        className="w-full h-11 text-base font-semibold"
+        type='submit'
+        className='w-full h-11 text-base font-semibold'
         disabled={loginMutation.isPending}
       >
         {loginMutation.isPending ? (
-          <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+          <Icons.spinner className='mr-2 h-5 w-5 animate-spin' />
         ) : (
-          <Icons.logIn className="mr-2 h-5 w-5" />
+          <Icons.logIn className='mr-2 h-5 w-5' />
         )}{' '}
-        Sign In
+        {t('loginForm.signIn')}
       </Button>
 
-      <div className="text-center text-sm text-muted-foreground pt-1">
-        Want to share your knowledge?{' '}
+      <div className='text-center text-sm text-muted-foreground pt-1'>
+        {t('loginForm.wantToShare')}{' '}
         <Link
-          to="/instructor/register" // Đường dẫn đến trang đăng ký giảng viên
-          onClick={onSuccess} // Đóng modal AuthModal trước khi điều hướng
-          className="font-medium text-primary hover:underline"
+          to='/instructor/register'
+          onClick={onSuccess}
+          className='font-medium text-primary hover:underline'
         >
-          Become an Instructor
+          {t('loginForm.becomeInstructor')}
         </Link>
       </div>
 
-      <div className="relative pt-2">
-        {' '}
-        {/* Tăng pt */}
+      <div className='relative pt-2'>
         <Separator />
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-          <span className="bg-background px-3 text-xs uppercase text-muted-foreground">
-            Or continue with
+        <div className='absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center'>
+          <span className='bg-background px-3 text-xs uppercase text-muted-foreground'>
+            {t('loginForm.orContinue')}
           </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <LoginWithGoogle />{' '}
-        {/* Component này cần được styling lại button bên trong nó */}
-        <LoginWithFacebook />{' '}
-        {/* Component này cần được styling lại button bên trong nó */}
+      <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+        <LoginWithGoogle />
+        <LoginWithFacebook />
       </div>
     </form>
   );

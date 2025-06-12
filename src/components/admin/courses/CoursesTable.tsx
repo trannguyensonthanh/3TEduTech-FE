@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/admin/courses/CoursesTable.tsx
 import React from 'react';
 import {
   Table,
@@ -13,139 +13,160 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Check, Eye, MoreHorizontal, Star, Trash, X } from 'lucide-react';
-
-interface Course {
-  id: number;
-  title: string;
-  slug: string;
-  instructor: string;
-  instructorId: number;
-  category: string;
-  price: number;
-  status: string;
-  rating: string;
-  students: number;
-  createdAt: string;
-  description: string;
-  thumbnailUrl: string;
-  promoVideoUrl: string;
-  curriculum: any[];
-}
+import { Badge } from '@/components/ui/badge';
+import { Icons } from '@/components/common/Icons';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CourseListItem } from '@/services/course.service';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface CoursesTableProps {
-  courses: Course[];
-  onViewDetails: (courseId: number) => void;
-  onStatusChange: (courseId: number, newStatus: string) => void;
-  onDelete: (courseId: number) => void;
+  courses?: CourseListItem[];
+  isLoading: boolean;
+  onViewDetails: (course: CourseListItem) => void;
+  onDelete: (course: CourseListItem) => void;
+  // Thêm các actions khác nếu cần
 }
 
-const CoursesTable: React.FC<CoursesTableProps> = ({
+const statusConfig = {
+  DRAFT: { label: 'Draft', className: 'bg-gray-100 text-gray-800' },
+  PENDING: { label: 'Pending', className: 'bg-yellow-100 text-yellow-800' },
+  PUBLISHED: { label: 'Published', className: 'bg-green-100 text-green-800' },
+  REJECTED: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
+};
+
+const AdminCoursesTable: React.FC<CoursesTableProps> = ({
   courses,
+  isLoading,
   onViewDetails,
-  onStatusChange,
   onDelete,
 }) => {
+  const { formatPrice } = useSettings();
+
+  const renderSkeleton = () =>
+    Array.from({ length: 10 }).map((_, i) => (
+      <TableRow key={`skel-${i}`}>
+        <TableCell>
+          <Skeleton className='h-5 w-8' />
+        </TableCell>
+        <TableCell>
+          <div className='flex items-center gap-2'>
+            <Skeleton className='h-10 w-10 rounded-md' />
+            <div className='space-y-1'>
+              <Skeleton className='h-4 w-40' />
+              <Skeleton className='h-3 w-24' />
+            </div>
+          </div>
+        </TableCell>
+        <TableCell>
+          <Skeleton className='h-5 w-28' />
+        </TableCell>
+        <TableCell>
+          <Skeleton className='h-6 w-20 rounded-full' />
+        </TableCell>
+        <TableCell>
+          <Skeleton className='h-5 w-16' />
+        </TableCell>
+        <TableCell>
+          <Skeleton className='h-5 w-12' />
+        </TableCell>
+        <TableCell className='text-right'>
+          <Skeleton className='h-8 w-8 rounded-md' />
+        </TableCell>
+      </TableRow>
+    ));
+
   return (
-    <div className="border rounded-md">
+    <div className='border rounded-lg'>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>ID</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Instructor</TableHead>
+            <TableHead>Course</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead>Price</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Rating</TableHead>
+            <TableHead>Price</TableHead>
             <TableHead>Students</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead className='text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {courses.map((course) => (
-            <TableRow key={course.id}>
-              <TableCell>{course.id}</TableCell>
-              <TableCell className="font-medium">{course.title}</TableCell>
-              <TableCell>{course.instructor}</TableCell>
-              <TableCell>{course.category}</TableCell>
-              <TableCell>${course.price.toFixed(2)}</TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <span
-                    className={`mr-2 h-2 w-2 rounded-full ${
-                      course.status === 'PUBLISHED'
-                        ? 'bg-green-500'
-                        : course.status === 'PENDING'
-                        ? 'bg-yellow-500'
-                        : course.status === 'REJECTED'
-                        ? 'bg-red-500'
-                        : 'bg-gray-500'
-                    }`}
-                  ></span>
-                  {course.status}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                  {course.rating}
-                </div>
-              </TableCell>
-              <TableCell>{course.students}</TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onViewDetails(course.id)}>
-                      <Eye className="mr-2 h-4 w-4" /> View Details
-                    </DropdownMenuItem>
-                    {course.status === 'PENDING' && (
-                      <>
-                        <DropdownMenuItem
-                          onClick={() => onStatusChange(course.id, 'PUBLISHED')}
-                        >
-                          <Check className="mr-2 h-4 w-4" /> Approve
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onStatusChange(course.id, 'REJECTED')}
-                        >
-                          <X className="mr-2 h-4 w-4" /> Reject
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {course.status === 'PUBLISHED' && (
-                      <DropdownMenuItem
-                        onClick={() => onStatusChange(course.id, 'DRAFT')}
+          {isLoading ? (
+            renderSkeleton()
+          ) : courses && courses.length > 0 ? (
+            courses.map((course) => (
+              <TableRow key={course.courseId}>
+                <TableCell className='font-mono text-xs'>
+                  {course.courseId}
+                </TableCell>
+                <TableCell>
+                  <div className='flex items-center gap-3'>
+                    <img
+                      src={course.thumbnailUrl || undefined}
+                      alt={course.courseName}
+                      className='h-10 w-10 object-cover rounded-md bg-muted'
+                    />
+                    <div>
+                      <p
+                        className='font-semibold line-clamp-1'
+                        title={course.courseName}
                       >
-                        <X className="mr-2 h-4 w-4" /> Unpublish
+                        {course.courseName}
+                      </p>
+                      <p className='text-xs text-muted-foreground'>
+                        by {course.instructorName}
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant='outline'>{course.categoryName}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={statusConfig[course.statusId]?.className}>
+                    {statusConfig[course.statusId]?.label || course.statusId}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {formatPrice(course.pricing.display.originalPrice)}
+                </TableCell>
+                <TableCell>{course.studentCount.toLocaleString()}</TableCell>
+                <TableCell className='text-right'>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant='ghost' size='icon'>
+                        <Icons.moreHorizontal className='h-4 w-4' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end'>
+                      <DropdownMenuItem onClick={() => onViewDetails(course)}>
+                        <Icons.eye className='mr-2 h-4 w-4' />
+                        View Details
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => onDelete(course.id)}
-                    >
-                      <Trash className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuItem
+                        className='text-destructive'
+                        onClick={() => onDelete(course)}
+                      >
+                        <Icons.trash className='mr-2 h-4 w-4' />
+                        Delete Course
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={7} className='h-32 text-center'>
+                No courses found.
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </div>
   );
 };
 
-export default CoursesTable;
+export default AdminCoursesTable;

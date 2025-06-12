@@ -1,100 +1,108 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/admin/courses/CourseFilters.tsx
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDown, Search } from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Icons } from '@/components/common/Icons';
+import { useCategories } from '@/hooks/queries/category.queries';
+import { useCourseStatuses } from '@/hooks/queries/course.queries';
+import { AdminCourseFilterState } from '@/hooks/useAdminCourseFilters';
 
 interface CourseFiltersProps {
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  selectedCategory: string | null;
-  setSelectedCategory: (category: string | null) => void;
-  selectedStatus: string | null;
-  setSelectedStatus: (status: string | null) => void;
+  filters: AdminCourseFilterState;
+  updateFilter: <K extends keyof AdminCourseFilterState>(
+    key: K,
+    value: AdminCourseFilterState[K]
+  ) => void;
+  clearFilters: () => void;
 }
 
-const CourseFilters: React.FC<CourseFiltersProps> = ({
-  searchTerm,
-  setSearchTerm,
-  selectedCategory,
-  setSelectedCategory,
-  selectedStatus,
-  setSelectedStatus,
+const AdminCourseFilters: React.FC<CourseFiltersProps> = ({
+  filters,
+  updateFilter,
+  clearFilters,
 }) => {
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useCategories({ limit: 0 });
+  const { data: statusesData, isLoading: isLoadingStatuses } =
+    useCourseStatuses();
+
+  const handleSelectChange = (
+    key: 'categoryId' | 'statusId',
+    value: string
+  ) => {
+    const finalValue =
+      value === 'ALL' ? null : key === 'categoryId' ? Number(value) : value;
+    updateFilter(key, finalValue as any);
+  };
+
+  const hasActiveFilters = filters.categoryId || filters.statusId;
+
   return (
-    <div className="flex flex-col md:flex-row gap-4">
-      <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className='p-4 bg-card border rounded-lg space-y-4'>
+      <div className='relative'>
+        <Icons.search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
         <Input
-          type="search"
-          placeholder="Search courses..."
-          className="pl-8"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder='Search by course title, ID, or instructor...'
+          className='pl-10 h-10'
+          value={filters.searchTerm}
+          onChange={(e) => updateFilter('searchTerm', e.target.value)}
         />
       </div>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            {selectedCategory || 'Filter by Category'}{' '}
-            <ChevronDown className="ml-2 h-4 w-4" />
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+        <Select
+          value={filters.categoryId?.toString() || 'ALL'}
+          onValueChange={(v) => handleSelectChange('categoryId', v)}
+          disabled={isLoadingCategories}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder='All Categories' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='ALL'>All Categories</SelectItem>
+            {categoriesData?.categories.map((cat) => (
+              <SelectItem key={cat.categoryId} value={String(cat.categoryId)}>
+                {cat.categoryName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.statusId || 'ALL'}
+          onValueChange={(v) => handleSelectChange('statusId', v)}
+          disabled={isLoadingStatuses}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder='All Statuses' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='ALL'>All Statuses</SelectItem>
+            {statusesData?.map((status) => (
+              <SelectItem key={status.statusId} value={status.statusId}>
+                {status.statusName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button
+            variant='ghost'
+            onClick={clearFilters}
+            className='lg:col-start-4'
+          >
+            <Icons.x className='mr-2 h-4 w-4' /> Clear Filters
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setSelectedCategory(null)}>
-            All Categories
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedCategory('Programming')}>
-            Programming
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedCategory('Design')}>
-            Design
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedCategory('Business')}>
-            Business
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedCategory('Marketing')}>
-            Marketing
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedCategory('Photography')}>
-            Photography
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            {selectedStatus || 'Filter by Status'}{' '}
-            <ChevronDown className="ml-2 h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setSelectedStatus(null)}>
-            All Statuses
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedStatus('DRAFT')}>
-            Draft
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedStatus('PENDING')}>
-            Pending
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedStatus('PUBLISHED')}>
-            Published
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedStatus('REJECTED')}>
-            Rejected
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        )}
+      </div>
     </div>
   );
 };
 
-export default CourseFilters;
+export default AdminCourseFilters;

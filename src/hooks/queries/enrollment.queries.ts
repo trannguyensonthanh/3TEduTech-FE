@@ -130,7 +130,7 @@ export const useMyCategorizedEnrollmentsWithCertificateInfo = (
       });
       return { completed, inProgress };
     },
-    staleTime: (1000 * 60 * 5) as number, // 5 phút
+    staleTime: 1000 * 60 * 5, // 5 phút
     ...options,
   });
 };

@@ -116,8 +116,8 @@ const InstructorProfilePage = () => {
   if (isLoadingInstructor) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-10 min-h-[70vh] flex items-center justify-center">
-          <Icons.spinner className="h-16 w-16 animate-spin text-primary" />
+        <div className='container mx-auto px-4 py-10 min-h-[70vh] flex items-center justify-center'>
+          <Icons.spinner className='h-16 w-16 animate-spin text-primary' />
         </div>
       </Layout>
     );
@@ -126,18 +126,18 @@ const InstructorProfilePage = () => {
   if (instructorError || !instructor) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-10">
-          <div className="text-center py-20 bg-destructive/10 p-8 rounded-lg">
-            <Icons.alertTriangle className="h-16 w-16 mx-auto mb-6 text-destructive" />
-            <h3 className="text-2xl font-semibold mb-3 text-destructive-foreground">
+        <div className='container mx-auto px-4 py-10'>
+          <div className='text-center py-20 bg-destructive/10 p-8 rounded-lg'>
+            <Icons.alertTriangle className='h-16 w-16 mx-auto mb-6 text-destructive' />
+            <h3 className='text-2xl font-semibold mb-3 text-destructive-foreground'>
               Instructor Not Found
             </h3>
-            <p className="text-muted-foreground mb-6">
+            <p className='text-muted-foreground mb-6'>
               The instructor you're looking for (ID/Slug: {idOrSlug}) doesn't
               exist or has been removed.
             </p>
-            <Button variant="outline" asChild>
-              <Link to="/instructors">Browse All Instructors</Link>
+            <Button variant='outline' asChild>
+              <Link to='/instructors'>Browse All Instructors</Link>
             </Button>
           </div>
         </div>
@@ -157,76 +157,76 @@ const InstructorProfilePage = () => {
 
   return (
     <Layout>
-      <motion.div variants={pageVariants} initial="hidden" animate="visible">
+      <motion.div variants={pageVariants} initial='hidden' animate='visible'>
         {/* Instructor Header Section */}
         <motion.div
           variants={itemVariants}
-          className="relative min-h-[300px] md:min-h-[400px] bg-slate-700 "
+          className='relative min-h-[300px] md:min-h-[400px] bg-slate-700 '
         >
           <img
             src={coverImage}
             alt={`${instructor.fullName} cover`}
-            className="absolute inset-0 w-full h-full object-cover opacity-30 dark:opacity-20"
+            className='absolute inset-0 w-full h-full object-cover opacity-30 dark:opacity-20'
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent"></div>
+          <div className='absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent'></div>
 
-          <div className="container mx-auto px-4 relative flex flex-col items-center justify-end h-full pb-8 md:pb-12 text-center">
-            <Avatar className=" !z-50 w-32 h-32 md:w-40 md:h-40 mb-5 border-4 border-background shadow-xl -mt-12 md:-mt-10">
+          <div className='container mx-auto px-4 relative flex flex-col items-center justify-end h-full pb-8 md:pb-12 text-center'>
+            <Avatar className=' !z-50 w-32 h-32 md:w-40 md:h-40 mb-5 border-4 border-background shadow-xl -mt-12 md:-mt-10'>
               <AvatarImage
                 src={instructor.avatarUrl || undefined}
                 alt={instructor.fullName}
               />
-              <AvatarFallback className="text-4xl md:text-5xl font-semibold bg-slate-200 dark:bg-slate-700">
+              <AvatarFallback className='text-4xl md:text-5xl font-semibold bg-slate-200 dark:bg-slate-700'>
                 {instructorInitials}
               </AvatarFallback>
             </Avatar>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-1.5 tracking-tight">
+            <h1 className='text-3xl md:text-4xl font-extrabold text-foreground mb-1.5 tracking-tight'>
               {instructor.fullName}
             </h1>
-            <p className="text-lg text-primary dark:text-primary/90 font-medium mb-2">
+            <p className='text-lg text-primary dark:text-primary/90 font-medium mb-2'>
               {instructor.professionalTitle || 'Expert Educator'}
             </p>
             {instructor.headline && (
-              <p className="text-md text-muted-foreground max-w-2xl mb-4">
+              <p className='text-md text-muted-foreground max-w-2xl mb-4'>
                 {instructor.headline}
               </p>
             )}
 
-            <div className="flex items-center justify-center space-x-5 text-sm text-muted-foreground mb-5">
+            <div className='flex items-center justify-center space-x-5 text-sm text-muted-foreground mb-5'>
               {instructor.averageRating != null &&
                 instructor.averageRating > 0 && (
-                  <div className="flex items-center">
-                    <Icons.star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1.5" />
-                    <span className="font-semibold text-foreground">
+                  <div className='flex items-center'>
+                    <Icons.star className='w-4 h-4 text-yellow-400 fill-yellow-400 mr-1.5' />
+                    <span className='font-semibold text-foreground'>
                       {instructor.averageRating.toFixed(1)}
                     </span>
                     Rating
                   </div>
                 )}
               {instructor.totalStudents != null && (
-                <div className="flex items-center">
-                  <Icons.users className="w-4 h-4 mr-1.5" />
-                  <span className="font-semibold text-foreground">
+                <div className='flex items-center'>
+                  <Icons.users className='w-4 h-4 mr-1.5' />
+                  <span className='font-semibold text-foreground'>
                     {instructor.totalStudents.toLocaleString()}
                   </span>
-                  <span className="mx-1">·</span>
+                  <span className='mx-1'>·</span>
                   Students
                 </div>
               )}
               {instructor.totalCourses != null && (
-                <div className="flex items-center">
-                  <Icons.courses className="w-4 h-4 mr-1.5" />
-                  <span className="font-semibold text-foreground">
+                <div className='flex items-center'>
+                  <Icons.courses className='w-4 h-4 mr-1.5' />
+                  <span className='font-semibold text-foreground'>
                     {instructor.totalCourses}
                   </span>
-                  <span className="mx-1">·</span>
+                  <span className='mx-1'>·</span>
                   Courses
                 </div>
               )}
             </div>
 
             {instructor.socialLinks && instructor.socialLinks.length > 0 && (
-              <div className="flex justify-center space-x-4">
+              <div className='flex justify-center space-x-4'>
                 {instructor.socialLinks.map((link) => {
                   const IconComponent =
                     Icons[link.platform.toLowerCase() as keyof typeof Icons] ||
@@ -235,12 +235,12 @@ const InstructorProfilePage = () => {
                     <a
                       key={link.platform}
                       href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target='_blank'
+                      rel='noopener noreferrer'
                       title={link.platform}
-                      className="text-muted-foreground hover:text-primary transition-colors"
+                      className='text-muted-foreground hover:text-primary transition-colors'
                     >
-                      <IconComponent className="w-5 h-5" />
+                      <IconComponent className='w-5 h-5' />
                     </a>
                   );
                 })}
@@ -250,37 +250,37 @@ const InstructorProfilePage = () => {
         </motion.div>
 
         {/* Tabs for About, Courses, Reviews */}
-        <div className="container mx-auto px-4 py-8 md:py-10">
-          <div className="max-w-5xl mx-auto">
+        <div className='container mx-auto px-4 py-8 md:py-10'>
+          <div className='max-w-5xl mx-auto'>
             {' '}
             {/* Tăng max-width cho content */}
             <Tabs
               value={activeTab}
               onValueChange={setActiveTab}
-              className="w-full "
+              className='w-full '
             >
-              <TabsList className="grid w-full grid-cols-3 md:w-[400px] mx-auto mb-8 shadow-sm bg-muted text-muted-foreground p-1 rounded-md !h-16">
+              <TabsList className='grid w-full grid-cols-3 md:w-[400px] mx-auto mb-8 shadow-sm bg-muted text-muted-foreground p-1 rounded-md !h-16'>
                 <TabsTrigger
-                  value="about"
-                  className="py-2.5 text-sm sm:text-base rounded-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground "
+                  value='about'
+                  className='py-2.5 text-sm sm:text-base rounded-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground '
                 >
                   About Me
                 </TabsTrigger>
                 <TabsTrigger
-                  value="courses"
-                  className="py-2.5 text-sm sm:text-base rounded-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  value='courses'
+                  className='py-2.5 text-sm sm:text-base rounded-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
                 >
                   My Courses ({instructor.totalCourses || 0})
                 </TabsTrigger>
                 <TabsTrigger
-                  value="reviews"
-                  className="py-2.5 text-sm sm:text-base rounded-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  value='reviews'
+                  className='py-2.5 text-sm sm:text-base rounded-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
                 >
                   Reviews ({reviewsData?.total || 0})
                 </TabsTrigger>
               </TabsList>
 
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode='wait'>
                 <motion.div
                   key={activeTab}
                   initial={{ opacity: 0, y: 10 }}
@@ -288,14 +288,14 @@ const InstructorProfilePage = () => {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <TabsContent value="about" forceMount={activeTab === 'about'}>
-                    <Card className="p-6 md:p-8 dark:bg-slate-800/30">
+                  <TabsContent value='about' forceMount={activeTab === 'about'}>
+                    <Card className='p-6 md:p-8 dark:bg-slate-800/30'>
                       {instructor.bio && (
-                        <h3 className="text-2xl font-semibold text-foreground mb-4">
+                        <h3 className='text-2xl font-semibold text-foreground mb-4'>
                           Biography
                         </h3>
                       )}
-                      <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed">
+                      <div className='prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed'>
                         {/* Nếu bio là HTML, dùng dangerouslySetInnerHTML. Nếu là plain text, dùng <p> */}
                         {instructor.bio ? (
                           <p>{instructor.bio}</p> // Giả sử bio là plain text
@@ -307,15 +307,15 @@ const InstructorProfilePage = () => {
 
                       {instructor.skills && instructor.skills.length > 0 && (
                         <>
-                          <h3 className="text-2xl font-semibold text-foreground mt-8 mb-4">
+                          <h3 className='text-2xl font-semibold text-foreground mt-8 mb-4'>
                             Skills & Expertise
                           </h3>
-                          <div className="flex flex-wrap gap-2">
+                          <div className='flex flex-wrap gap-2'>
                             {instructor.skills.map((skill) => (
                               <Badge
                                 key={skill.skillId}
-                                variant="secondary"
-                                className="text-sm px-3 py-1"
+                                variant='secondary'
+                                className='text-sm px-3 py-1'
                               >
                                 {skill.skillName}
                               </Badge>
@@ -328,18 +328,18 @@ const InstructorProfilePage = () => {
                   </TabsContent>
 
                   <TabsContent
-                    value="courses"
+                    value='courses'
                     forceMount={activeTab === 'courses'}
                   >
                     {isLoadingCourses && !instructorCourses ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
                         {[...Array(ITEMS_PER_PAGE_COURSES)].map((_, i) => (
-                          <Skeleton key={i} className="h-80 rounded-lg" />
+                          <Skeleton key={i} className='h-80 rounded-lg' />
                         ))}
                       </div>
                     ) : instructorCourses.length > 0 ? (
                       <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
                           {instructorCourses.map((course) => (
                             <CourseCard key={course.courseId} course={course} /> // Hoặc CourseCardv2
                           ))}
@@ -350,34 +350,34 @@ const InstructorProfilePage = () => {
                             totalPages={totalCoursesPages}
                             setCurrentPage={setCoursesPage}
                             isDisabled={isFetchingCourses}
-                            className="mt-8"
+                            className='mt-8'
                           />
                         )}
                       </>
                     ) : (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Icons.packageOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <div className='text-center py-12 text-muted-foreground'>
+                        <Icons.packageOpen className='h-16 w-16 mx-auto mb-4 opacity-50' />
                         This instructor has not published any courses yet.
                       </div>
                     )}
                   </TabsContent>
 
                   <TabsContent
-                    value="reviews"
+                    value='reviews'
                     forceMount={activeTab === 'reviews'}
                   >
                     {isLoadingReviews && !instructorReviews ? (
-                      <div className="space-y-6">
+                      <div className='space-y-6'>
                         {[...Array(ITEMS_PER_PAGE_REVIEWS)].map((_, i) => (
                           <Skeleton
                             key={i}
-                            className="h-32 rounded-lg w-full"
+                            className='h-32 rounded-lg w-full'
                           />
                         ))}
                       </div>
                     ) : instructorReviews.length > 0 ? (
                       <>
-                        <div className="space-y-6">
+                        <div className='space-y-6'>
                           {instructorReviews.map((review) => (
                             <ReviewCard key={review.reviewId} review={review} />
                           ))}
@@ -388,13 +388,13 @@ const InstructorProfilePage = () => {
                             totalPages={totalReviewsPages}
                             setCurrentPage={setReviewsPage}
                             isDisabled={isFetchingReviews}
-                            className="mt-8"
+                            className='mt-8'
                           />
                         )}
                       </>
                     ) : (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Icons.packageOpen className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <div className='text-center py-12 text-muted-foreground'>
+                        <Icons.packageOpen className='h-16 w-16 mx-auto mb-4 opacity-50' />
                         No reviews available for this instructor yet.
                       </div>
                     )}

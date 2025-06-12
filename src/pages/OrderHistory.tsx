@@ -188,40 +188,40 @@ const OrderHistoryPage: React.FC = () => {
   return (
     <Layout>
       {/* Header Section */}
-      <div className="bg-gradient-to-b from-slate-100 via-slate-50 to-background dark:from-slate-900 dark:via-slate-800/70 dark:to-background border-b dark:border-slate-700/50">
+      <div className='bg-gradient-to-b from-slate-100 via-slate-50 to-background dark:from-slate-900 dark:via-slate-800/70 dark:to-background border-b dark:border-slate-700/50'>
         <motion.div
           variants={headerVariants}
-          initial="hidden"
-          animate="visible"
-          className="container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-12 text-center"
+          initial='hidden'
+          animate='visible'
+          className='container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-12 text-center'
         >
-          <Icons.shoppingCart className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 text-primary dark:text-primary/90" />
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-4 tracking-tight">
+          <Icons.shoppingCart className='h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 text-primary dark:text-primary/90' />
+          <h1 className='text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-4 tracking-tight'>
             My Order History
           </h1>
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+          <p className='text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto'>
             Review your past purchases, track current orders, and manage your
             invoices all in one place.
           </p>
         </motion.div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-5xl mx-auto">
+      <div className='container mx-auto px-4 py-8 md:py-12'>
+        <div className='max-w-5xl mx-auto'>
           <Tabs
             value={activeTab}
             onValueChange={(value) =>
               setActiveTab(value as OrderStatus | 'all')
             }
-            className="w-full"
+            className='w-full'
           >
-            <ScrollArea className="w-full pb-2 mb-6 md:mb-8">
-              <TabsList className="inline-flex h-11 min-w-full sm:min-w-0 sm:w-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg shadow-sm">
+            <ScrollArea className='w-full pb-2 mb-6 md:mb-8'>
+              <TabsList className='inline-flex h-11 min-w-full sm:min-w-0 sm:w-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg shadow-sm'>
                 {TABS_CONFIG.map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="px-3.5 py-2 sm:px-5 sm:py-2.5 text-sm font-medium flex-1 sm:flex-none data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md h-auto leading-normal"
+                    className='px-3.5 py-2 sm:px-5 sm:py-2.5 text-sm font-medium flex-1 sm:flex-none data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md h-auto leading-normal'
                   >
                     {tab.label}
                     {/* TODO: Add count for each tab if API supports `countsByStatus` */}
@@ -229,10 +229,10 @@ const OrderHistoryPage: React.FC = () => {
                   </TabsTrigger>
                 ))}
               </TabsList>
-              <ScrollBar orientation="horizontal" />
+              <ScrollBar orientation='horizontal' />
             </ScrollArea>
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode='wait'>
               <motion.div
                 key={activeTab + currentPage} // Key thay đổi khi tab hoặc page thay đổi để trigger animation
                 initial={{ opacity: 0, y: 15 }}
@@ -241,53 +241,53 @@ const OrderHistoryPage: React.FC = () => {
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
               >
                 {isLoadingOrdersInitial && !orders ? (
-                  <div className="space-y-6 mt-4">
+                  <div className='space-y-6 mt-4'>
                     {[...Array(3)].map((_, index) => (
                       <Card
                         key={`order-skeleton-${index}`}
-                        className="overflow-hidden rounded-xl border dark:border-slate-700/60"
+                        className='overflow-hidden rounded-xl border dark:border-slate-700/60'
                       >
-                        <CardHeader className="p-5 md:p-6 bg-slate-50 dark:bg-slate-800/40 border-b dark:border-slate-700/60">
-                          <div className="flex justify-between items-start">
-                            <Skeleton className="h-6 w-3/5" />
-                            <Skeleton className="h-5 w-20" />
+                        <CardHeader className='p-5 md:p-6 bg-slate-50 dark:bg-slate-800/40 border-b dark:border-slate-700/60'>
+                          <div className='flex justify-between items-start'>
+                            <Skeleton className='h-6 w-3/5' />
+                            <Skeleton className='h-5 w-20' />
                           </div>
-                          <Skeleton className="h-4 w-2/5 mt-1.5" />
+                          <Skeleton className='h-4 w-2/5 mt-1.5' />
                         </CardHeader>
-                        <CardContent className="p-5 md:p-6 pt-4">
-                          <div className="flex justify-between items-center mb-3">
-                            <Skeleton className="h-5 w-1/2" />
-                            <Skeleton className="h-6 w-1/4" />
+                        <CardContent className='p-5 md:p-6 pt-4'>
+                          <div className='flex justify-between items-center mb-3'>
+                            <Skeleton className='h-5 w-1/2' />
+                            <Skeleton className='h-6 w-1/4' />
                           </div>
-                          <Skeleton className="h-16 w-full rounded-md" />{' '}
+                          <Skeleton className='h-16 w-full rounded-md' />{' '}
                           {/* For expanded items placeholder */}
                         </CardContent>
-                        <CardFooter className="p-5 md:p-6 border-t dark:border-slate-700/60 bg-slate-50/30 dark:bg-slate-800/20">
-                          <Skeleton className="h-9 w-28" />
-                          <Skeleton className="h-9 w-24 ml-auto" />
+                        <CardFooter className='p-5 md:p-6 border-t dark:border-slate-700/60 bg-slate-50/30 dark:bg-slate-800/20'>
+                          <Skeleton className='h-9 w-28' />
+                          <Skeleton className='h-9 w-24 ml-auto' />
                         </CardFooter>
                       </Card>
                     ))}
                   </div>
                 ) : ordersError ? (
-                  <Alert variant="destructive" className="mt-4">
-                    <Icons.alertTriangle className="h-5 w-5" />
+                  <Alert variant='destructive' className='mt-4'>
+                    <Icons.alertTriangle className='h-5 w-5' />
                     <AlertTitle>Error Loading Orders</AlertTitle>
                     <AlertDescription>
                       We couldn't fetch your order history.{' '}
                       {ordersError.message || 'Please try again later.'}
                       <Button
-                        variant="link"
-                        size="sm"
+                        variant='link'
+                        size='sm'
                         onClick={() => refetchOrders()}
-                        className="p-0 h-auto ml-1 text-destructive hover:underline"
+                        className='p-0 h-auto ml-1 text-destructive hover:underline'
                       >
                         Retry
                       </Button>
                     </AlertDescription>
                   </Alert>
                 ) : orders.length > 0 ? (
-                  <div className="space-y-6 mt-4">
+                  <div className='space-y-6 mt-4'>
                     {orders.map((order) => (
                       <OrderCard
                         key={order.orderId}
@@ -317,7 +317,7 @@ const OrderHistoryPage: React.FC = () => {
                   totalPages={totalPages}
                   setCurrentPage={setCurrentPage}
                   isDisabled={isFetchingOrders}
-                  className="mt-10"
+                  className='mt-10'
                 />
               )}
           </Tabs>
@@ -327,8 +327,8 @@ const OrderHistoryPage: React.FC = () => {
       {/* Invoice View Dialog - Lazy Loaded */}
       <Suspense
         fallback={
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-            <Icons.spinner className="h-10 w-10 animate-spin text-white" />
+          <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-[100]'>
+            <Icons.spinner className='h-10 w-10 animate-spin text-white' />
           </div>
         }
       >
@@ -362,21 +362,21 @@ const EmptyOrderState: React.FC<{ status?: OrderStatus | 'all' }> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card dark:bg-slate-800/30 rounded-xl p-8 md:p-12 text-center shadow-lg border-2 border-dashed border-border dark:border-slate-700/60 min-h-[400px] flex flex-col justify-center items-center"
+      className='bg-card dark:bg-slate-800/30 rounded-xl p-8 md:p-12 text-center shadow-lg border-2 border-dashed border-border dark:border-slate-700/60 min-h-[400px] flex flex-col justify-center items-center'
     >
-      <Icons.shoppingCart className="w-16 h-16 md:w-20 md:w-20 text-muted-foreground mx-auto mb-6 opacity-60" />
-      <h3 className="text-xl md:text-2xl font-semibold text-foreground mb-3">
+      <Icons.shoppingCart className='w-16 h-16 md:w-20 md:w-20 text-muted-foreground mx-auto mb-6 opacity-60' />
+      <h3 className='text-xl md:text-2xl font-semibold text-foreground mb-3'>
         {title}
       </h3>
-      <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+      <p className='text-muted-foreground mb-8 max-w-md mx-auto'>
         {description}
       </p>
       <Button
         onClick={() => navigate('/courses')}
-        size="lg"
-        className="h-11 px-6 text-base"
+        size='lg'
+        className='h-11 px-6 text-base'
       >
-        <Icons.search className="mr-2 h-5 w-5" /> Explore Courses
+        <Icons.search className='mr-2 h-5 w-5' /> Explore Courses
       </Button>
     </motion.div>
   );

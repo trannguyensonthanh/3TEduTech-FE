@@ -27,6 +27,15 @@ interface FetchOptions extends RequestInit {
   _retry?: boolean; // Cờ để đánh dấu đã thử lại sau refresh hay chưa
 }
 
+const CURRENCY_STORAGE_KEY = 'app-currency'; // Đảm bảo key này giống hệt trong SettingsContext
+
+const getLocalCurrency = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(CURRENCY_STORAGE_KEY) || 'VND';
+  }
+  return 'VND';
+};
+
 const handleResponse = async (res: Response) => {
   const result = await res.json().catch(() => ({})); // lỡ BE trả về plain text thì vẫn không crash
 
@@ -56,7 +65,7 @@ export const fetchWithAuth = async (
 ): Promise<any> => {
   console.log('Fetching:', path, options); // Log để kiểm tra request
   const currentToken = TokenService.getLocalAccessToken(); // Lấy access token từ localStorage
-
+  const currentCurrency = getLocalCurrency();
   // Chuẩn bị headers
   const headers = new Headers(options.headers || {}); // Tạo Headers object
   if (currentToken) {
@@ -69,7 +78,9 @@ export const fetchWithAuth = async (
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json');
   }
-
+  if (currentCurrency) {
+    headers.set('X-Currency', currentCurrency);
+  }
   // Cấu hình fetch options cuối cùng
   const fetchOptions: RequestInit = {
     ...options,

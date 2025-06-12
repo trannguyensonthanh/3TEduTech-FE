@@ -14,13 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 import { Eye, Clock, CheckCircle, XCircle, Hourglass } from 'lucide-react';
 import { format } from 'date-fns'; // Thư viện định dạng ngày giờ
 import { Card } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 import {
   ApprovalRequestListItem,
   ApprovalStatusType,
 } from '@/services/course.service';
-
-// Type cho một item trong danh sách pending (lấy từ PendingCoursesListResponse)
 
 interface ApprovalsTableProps {
   approvals: ApprovalRequestListItem[];
@@ -54,49 +53,56 @@ const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
   isLoading = false,
   itemsPerPage = 10,
 }) => {
+  const { t } = useTranslation();
   const renderSkeletonRows = (count: number) => {
     return Array.from({ length: count }).map((_, index) => (
       <TableRow key={`skeleton-row-${index}`}>
         {/* Điều chỉnh số lượng và chiều rộng skeleton cell cho khớp */}
-        <TableCell className="w-[300px]">
-          <Skeleton className="h-4 w-full" />
+        <TableCell className='w-[300px]'>
+          <Skeleton className='h-4 w-full' />
         </TableCell>
         <TableCell>
-          <Skeleton className="h-4 w-24" />
+          <Skeleton className='h-4 w-24' />
         </TableCell>
         <TableCell>
-          <Skeleton className="h-4 w-20" />
+          <Skeleton className='h-4 w-20' />
         </TableCell>
         <TableCell>
-          <Skeleton className="h-4 w-32" />
+          <Skeleton className='h-4 w-32' />
         </TableCell>
         <TableCell>
-          <Skeleton className="h-6 w-24" />
+          <Skeleton className='h-6 w-24' />
         </TableCell>
-        <TableCell className="text-right">
-          <Skeleton className="h-8 w-20 ml-auto" />
+        <TableCell className='text-right'>
+          <Skeleton className='h-8 w-20 ml-auto' />
         </TableCell>
       </TableRow>
     ));
   };
 
   return (
-    <Card className="border shadow-sm">
-      {' '}
-      {/* Thêm border và shadow nhẹ */}
+    <Card className='border shadow-sm'>
       <Table>
         <TableHeader>
           <TableRow>
             {/* Bỏ cột ID nếu không cần thiết */}
             {/* <TableHead className="w-[50px]">ID</TableHead> */}
-            <TableHead>Course Name</TableHead>
-            <TableHead>Instructor</TableHead>
+            <TableHead>
+              {t('approvals.table.courseName', 'Course Name')}
+            </TableHead>
+            <TableHead>
+              {t('approvals.table.instructor', 'Instructor')}
+            </TableHead>
             {/* <TableHead>Category</TableHead> */}
-            <TableHead>Submitted</TableHead>
+            <TableHead>{t('approvals.table.submitted', 'Submitted')}</TableHead>
             {/* <TableHead>Reviewed</TableHead> */} {/* Có thể thêm cột này */}
-            <TableHead>Request Type</TableHead>
-            <TableHead>Status</TableHead> {/* Thêm cột Status */}
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>
+              {t('approvals.table.requestType', 'Request Type')}
+            </TableHead>
+            <TableHead>{t('approvals.table.status', 'Status')}</TableHead>
+            <TableHead className='text-right'>
+              {t('approvals.table.actions', 'Actions')}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -111,7 +117,7 @@ const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
               return (
                 <TableRow key={approval.requestId}>
                   <TableCell
-                    className="font-medium max-w-[300px] truncate"
+                    className='font-medium max-w-[300px] truncate'
                     title={approval.courseName}
                   >
                     {approval.courseName}
@@ -121,8 +127,8 @@ const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                     <Badge variant="outline">{approval.categoryName}</Badge>
                   </TableCell> */}
                   <TableCell>
-                    <span className="flex items-center text-xs text-muted-foreground whitespace-nowrap">
-                      <Clock className="h-3 w-3 mr-1" />
+                    <span className='flex items-center text-xs text-muted-foreground whitespace-nowrap'>
+                      <Clock className='h-3 w-3 mr-1' />
                       {format(new Date(approval?.requestDate), 'PP')}{' '}
                       {/* Định dạng ngắn gọn hơn */}
                     </span>
@@ -135,29 +141,37 @@ const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
                           ? 'default'
                           : 'secondary'
                       }
-                      className="capitalize"
+                      className='capitalize'
                     >
-                      {approval.requestType.replace('_', ' ').toLowerCase()}
+                      {t(
+                        `approvals.requestType.${approval.requestType.toLowerCase()}`,
+                        approval.requestType.replace('_', ' ').toLowerCase()
+                      )}
                     </Badge>
                   </TableCell>
                   {/* Cột Status mới */}
                   <TableCell>
-                    <Badge variant={statusVariant} className="capitalize">
-                      {StatusIcon && <StatusIcon className="h-3 w-3 mr-1" />}
-                      {approval.status.toLowerCase()}
+                    <Badge variant={statusVariant} className='capitalize'>
+                      {StatusIcon && <StatusIcon className='h-3 w-3 mr-1' />}
+                      {t(
+                        `approvals.status.${approval.status.toLowerCase()}`,
+                        approval.status.toLowerCase()
+                      )}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className='text-right'>
                     {/* Nút Review chỉ hiển thị/enable khi status là PENDING */}
                     <Button
                       variant={isPending ? 'default' : 'outline'} // Nổi bật nút review cho pending
-                      size="sm"
+                      size='sm'
                       onClick={() =>
                         onReview(approval.courseSlug, approval.requestId)
                       }
                     >
-                      <Eye className="mr-1.5 h-4 w-4" />
-                      {isPending ? 'Review' : 'View Detail'}
+                      <Eye className='mr-1.5 h-4 w-4' />
+                      {isPending
+                        ? t('approvals.actions.review', 'Review')
+                        : t('approvals.actions.viewDetail', 'View Detail')}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -167,11 +181,12 @@ const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
             <TableRow>
               <TableCell
                 colSpan={7}
-                className="h-24 text-center text-muted-foreground"
+                className='h-24 text-center text-muted-foreground'
               >
-                {' '}
-                {/* Tăng colSpan */}
-                No approval requests found for this status.
+                {t(
+                  'approvals.noResultsStatus',
+                  'No approval requests found for this status.'
+                )}
               </TableCell>
             </TableRow>
           )}

@@ -1,23 +1,44 @@
-import React from 'react';
+// src/components/admin/payment-methods/PaymentMethodDialog.tsx
+
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  paymentMethodSchema,
+  TPaymentMethodSchema,
+} from '@/lib/validators/paymentMethodValidator';
+import { PaymentMethod } from '@/services/paymentMethod.service';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { PaymentMethod } from './PaymentMethodsTable';
+import { Textarea } from '@/components/ui/textarea';
+import { Icons } from '@/components/common/Icons';
+
+// Import your i18n hook
+import { useTranslation } from 'react-i18next';
 
 interface PaymentMethodDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   paymentMethod: PaymentMethod | null;
-  onSubmit: (data: { id: string; name: string }) => void;
+  onSubmit: (data: TPaymentMethodSchema) => void;
   isEditing: boolean;
+  isPending: boolean;
 }
 
 const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
@@ -26,99 +47,119 @@ const PaymentMethodDialog: React.FC<PaymentMethodDialogProps> = ({
   paymentMethod,
   onSubmit,
   isEditing,
+  isPending,
 }) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
+  const { t } = useTranslation();
+
+  const form = useForm<TPaymentMethodSchema>({
+    resolver: zodResolver(paymentMethodSchema),
     defaultValues: {
-      id: paymentMethod?.id || '',
-      name: paymentMethod?.name || '',
+      methodId: '',
+      methodName: '',
+      description: '',
     },
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
-      reset({
-        id: paymentMethod?.id || '',
-        name: paymentMethod?.name || '',
+      form.reset({
+        methodId: paymentMethod?.methodId || '',
+        methodName: paymentMethod?.methodName || '',
+        description: paymentMethod?.description || '',
       });
     }
-  }, [open, paymentMethod, reset]);
-
-  const onFormSubmit = (data: { id: string; name: string }) => {
-    onSubmit({
-      id: data.id,
-      name: data.name,
-    });
-    onOpenChange(false);
-  };
+  }, [open, paymentMethod, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle className="text-center text-xl text-primary">
-            {isEditing ? 'Edit Payment Method' : 'Add New Payment Method'}
+          <DialogTitle>
+            {isEditing
+              ? t('paymentMethodDialog.titleEdit')
+              : t('paymentMethodDialog.titleAdd')}
           </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? paymentMethod?.methodName
+                ? t('paymentMethodDialog.update', {
+                    name: paymentMethod.methodName,
+                  })
+                : t('paymentMethodDialog.titleEdit')
+              : t('paymentMethodDialog.titleAdd')}
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="id" className="text-sm font-medium">
-              Method ID
-            </Label>
-            <Input
-              id="id"
-              {...register('id', {
-                required: 'Method ID is required',
-                maxLength: {
-                  value: 20,
-                  message: 'Method ID cannot exceed 20 characters',
-                },
-              })}
-              className="w-full uppercase"
-              disabled={isEditing}
-              placeholder="MOMO, VNPAY, BANK, CRYPTO"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+            <FormField
+              control={form.control}
+              name='methodId'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('paymentMethodDialog.methodId')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('paymentMethodDialog.placeholderId')}
+                      {...field}
+                      disabled={isEditing}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.id && (
-              <p className="text-sm text-destructive">{errors.id.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Method Name
-            </Label>
-            <Input
-              id="name"
-              {...register('name', { required: 'Method name is required' })}
-              className="w-full"
-              placeholder="MoMo E-Wallet, VNPay, Bank Transfer"
+            <FormField
+              control={form.control}
+              name='methodName'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('paymentMethodDialog.methodName')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t('paymentMethodDialog.placeholderName')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
-          </div>
-
-          <DialogFooter className="pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90"
-            >
-              {isEditing ? 'Update Method' : 'Add Method'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <FormField
+              control={form.control}
+              name='description'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder='A short description of the payment method.'
+                      {...field}
+                      className='resize-y'
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className='pt-4'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => onOpenChange(false)}
+              >
+                {t('paymentMethodDialog.cancel')}
+              </Button>
+              <Button type='submit' disabled={isPending}>
+                {isPending && (
+                  <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+                )}
+                {isEditing
+                  ? t('paymentMethodDialog.update')
+                  : t('paymentMethodDialog.add')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

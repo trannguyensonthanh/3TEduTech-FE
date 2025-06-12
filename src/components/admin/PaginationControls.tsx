@@ -10,6 +10,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'; // Đảm bảo bạn đã export PaginationEllipsis từ index của pagination
 import { Button } from '@/components/ui/button'; // Có thể dùng Button cho Prev/Next nếu muốn custom style hơn
+import { useTranslation } from 'react-i18next';
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -39,6 +40,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   isDisabled = false,
   className,
 }) => {
+  const { t } = useTranslation();
+
   const paginationRange = React.useMemo(() => {
     const totalPageNumbers = siblingCount + 5; // siblingCount + firstPage + lastPage + currentPage + 2*DOTS
 
@@ -118,7 +121,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
                 ? 'pointer-events-none opacity-50'
                 : 'cursor-pointer'
             }
-            aria-label="Go to previous page"
+            aria-label={t('paginationControls.prev')}
+            title={t('paginationControls.prev')}
           />
         </PaginationItem>
 
@@ -138,13 +142,16 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
                 isActive={currentPage === pageNumber}
                 onClick={() => setCurrentPage(Number(pageNumber))} // Đảm bảo là number
                 aria-current={currentPage === pageNumber ? 'page' : undefined}
-                aria-label={`Go to page ${pageNumber}`}
+                aria-label={t('paginationControls.gotoPage', {
+                  page: pageNumber,
+                })}
                 className={
                   isDisabled
                     ? 'pointer-events-none opacity-50'
                     : 'cursor-pointer'
                 }
-                aria-disabled={isDisabled} // Thêm aria-disabled cho link
+                aria-disabled={isDisabled}
+                title={t('paginationControls.gotoPage', { page: pageNumber })}
               >
                 {pageNumber}
               </PaginationLink>
@@ -162,7 +169,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
                 ? 'pointer-events-none opacity-50'
                 : 'cursor-pointer'
             }
-            aria-label="Go to next page"
+            aria-label={t('paginationControls.next')}
+            title={t('paginationControls.next')}
           />
         </PaginationItem>
       </PaginationContent>

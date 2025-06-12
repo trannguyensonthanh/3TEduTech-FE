@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { UserProfile } from '@/services/user.service';
+import { useTranslation } from 'react-i18next';
 
 interface SocialLink {
   platform: string;
@@ -76,6 +77,7 @@ const UserEditDialog = ({
   onSave,
 }: UserEditDialogProps) => {
   const [formRole, setFormRole] = useState<UserRole>('NU');
+  const { t } = useTranslation();
 
   const form = useForm({
     defaultValues: {
@@ -107,26 +109,26 @@ const UserEditDialog = ({
   useEffect(() => {
     if (user) {
       form.reset({
-        FullName: user.FullName, // Đổi từ `user.name` sang `user.FullName`
-        Email: user.Email,
-        RoleID: user.RoleID, // Đổi từ `user.role` sang `user.RoleID`
-        Status: user.Status,
-        Gender: user.Gender || '', // Đổi từ `user.gender` sang `user.Gender`
-        BirthDate: user.BirthDate || '', // Đổi từ `user.birthDate` sang `user.BirthDate`
-        PhoneNumber: user.PhoneNumber || '', // Đổi từ `user.phoneNumber` sang `user.PhoneNumber`
-        Location: user.Location || '', // Đổi từ `user.location` sang `user.Location`
+        FullName: user.fullName, // Đổi từ `user.name` sang `user.FullName`
+        Email: user.email,
+        RoleID: user.roleId, // Đổi từ `user.role` sang `user.RoleID`
+        Status: user.status,
+        Gender: user.gender || '', // Đổi từ `user.gender` sang `user.Gender`
+        BirthDate: user.birthDate || '', // Đổi từ `user.birthDate` sang `user.BirthDate`
+        PhoneNumber: user.phoneNumber || '', // Đổi từ `user.phoneNumber` sang `user.PhoneNumber`
+        Location: user.location || '', // Đổi từ `user.location` sang `user.Location`
         // Instructor fields
-        ProfessionalTitle: user.ProfessionalTitle || '', // Đổi từ `user.professionalTitle` sang `user.ProfessionalTitle`
-        Bio: user.Bio || '',
-        AboutMe: user.AboutMe || '', // Đổi từ `user.aboutMe` sang `user.AboutMe`
-        BankAccountNumber: user.BankAccountNumber || '',
-        BankName: user.BankName || '',
-        BankAccountHolderName: user.BankAccountHolderName || '',
-        Skills: user.Skills, // Đổi từ `user.skills` sang `user.Skills`
-        SocialLinks: user.SocialLinks || [],
+        ProfessionalTitle: user.professionalTitle || '', // Đổi từ `user.professionalTitle` sang `user.ProfessionalTitle`
+        Bio: user.bio || '',
+        AboutMe: user.aboutMe || '', // Đổi từ `user.aboutMe` sang `user.AboutMe`
+        BankAccountNumber: user.bankAccountNumber || '',
+        BankName: user.bankName || '',
+        BankAccountHolderName: user.bankAccountHolderName || '',
+        Skills: user.skills, // Đổi từ `user.skills` sang `user.Skills`
+        SocialLinks: user.socialLinks || [],
       });
 
-      setFormRole(user.RoleID as UserRole); // Đổi từ `user.role` sang `user.RoleID`
+      setFormRole(user.roleId as UserRole); // Đổi từ `user.role` sang `user.RoleID`
     }
   }, [user, form]);
   const handleAddSocialLink = () => {
@@ -135,9 +137,9 @@ const UserEditDialog = ({
   const handleSubmit = (data: any) => {
     onSave({
       ...data,
-      id: user?.AccountID,
-      createdAt: user?.CreatedAt,
-      courses: user?.Courses || 0,
+      id: user?.accountId,
+      createdAt: user?.createdAt,
+      courses: user?.courses || 0,
     });
     onOpenChange(false);
   };
@@ -150,42 +152,47 @@ const UserEditDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>Edit User</DialogTitle>
+          <DialogTitle>{t('userEditDialog.editTitle')}</DialogTitle>
           <DialogDescription>
-            Update user information for {user?.FullName}
+            {t('userEditDialog.editDesc', { name: user?.fullName })}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4 py-4"
+            className='space-y-4 py-4'
           >
-            <Tabs defaultValue="basic" className="w-full">
+            <Tabs defaultValue='basic' className='w-full'>
               <TabsList
                 className={`grid w-full ${
                   formRole === 'GV' ? 'grid-cols-2' : 'grid-cols-1'
                 }`}
               >
-                <TabsTrigger value="basic">Basic Information</TabsTrigger>
+                <TabsTrigger value='basic'>
+                  {t('addUserDialog.tabs.basic')}
+                </TabsTrigger>
                 {formRole === 'GV' && (
-                  <TabsTrigger value="instructor">
-                    Instructor Details
+                  <TabsTrigger value='instructor'>
+                    {t('addUserDialog.tabs.instructor')}
                   </TabsTrigger>
                 )}
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4 pt-4">
+              <TabsContent value='basic' className='space-y-4 pt-4'>
                 <FormField
                   control={form.control}
-                  name="FullName"
+                  name='FullName'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel>{t('addUserDialog.fullName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input
+                          placeholder={t('addUserDialog.placeholder.fullName')}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -194,25 +201,28 @@ const UserEditDialog = ({
 
                 <FormField
                   control={form.control}
-                  name="Email"
+                  name='Email'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('addUserDialog.email')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="user@example.com" {...field} />
+                        <Input
+                          placeholder={t('addUserDialog.placeholder.email')}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="RoleID"
+                    name='RoleID'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Role</FormLabel>
+                        <FormLabel>{t('addUserDialog.role')}</FormLabel>
                         <Select
                           onValueChange={(value) =>
                             handleRoleChange(value as UserRole)
@@ -222,22 +232,30 @@ const UserEditDialog = ({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select role" />
+                              <SelectValue
+                                placeholder={t(
+                                  'addUserDialog.placeholder.role'
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="STUDENT">Student</SelectItem>
-                            <SelectItem value="INSTRUCTOR">
-                              Instructor
+                            <SelectItem value='STUDENT'>
+                              {t('addUserDialog.roles.student')}
                             </SelectItem>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                            <SelectItem value="SUPER_ADMIN">
-                              Super Admin
+                            <SelectItem value='INSTRUCTOR'>
+                              {t('addUserDialog.roles.instructor')}
+                            </SelectItem>
+                            <SelectItem value='ADMIN'>
+                              {t('addUserDialog.roles.admin')}
+                            </SelectItem>
+                            <SelectItem value='SUPER_ADMIN'>
+                              {t('addUserDialog.roles.superAdmin')}
                             </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          This determines what permissions the user will have.
+                          {t('addUserDialog.roleDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -246,10 +264,10 @@ const UserEditDialog = ({
 
                   <FormField
                     control={form.control}
-                    name="Status"
+                    name='Status'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>{t('userEditDialog.status')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -257,15 +275,25 @@ const UserEditDialog = ({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
+                              <SelectValue
+                                placeholder={t(
+                                  'userEditDialog.statusPlaceholder'
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="ACTIVE">Active</SelectItem>
-                            <SelectItem value="INACTIVE">Inactive</SelectItem>
-                            <SelectItem value="BANNED">Banned</SelectItem>
-                            <SelectItem value="PENDING_VERIFICATION">
-                              Pending Verification
+                            <SelectItem value='ACTIVE'>
+                              {t('userEditDialog.statusActive')}
+                            </SelectItem>
+                            <SelectItem value='INACTIVE'>
+                              {t('userEditDialog.statusInactive')}
+                            </SelectItem>
+                            <SelectItem value='BANNED'>
+                              {t('userEditDialog.statusBanned')}
+                            </SelectItem>
+                            <SelectItem value='PENDING_VERIFICATION'>
+                              {t('userEditDialog.statusPending')}
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -275,25 +303,33 @@ const UserEditDialog = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="Gender"
+                    name='Gender'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Gender</FormLabel>
+                        <FormLabel>{t('addUserDialog.gender')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
+                              <SelectValue
+                                placeholder={t(
+                                  'addUserDialog.placeholder.gender'
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="MALE">Male</SelectItem>
-                            <SelectItem value="FEMALE">Female</SelectItem>
+                            <SelectItem value='MALE'>
+                              {t('addUserDialog.genders.male')}
+                            </SelectItem>
+                            <SelectItem value='FEMALE'>
+                              {t('addUserDialog.genders.female')}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -303,12 +339,12 @@ const UserEditDialog = ({
 
                   <FormField
                     control={form.control}
-                    name="BirthDate"
+                    name='BirthDate'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Birth Date</FormLabel>
+                        <FormLabel>{t('addUserDialog.birthDate')}</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type='date' {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -316,15 +352,20 @@ const UserEditDialog = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="PhoneNumber"
+                    name='PhoneNumber'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>{t('addUserDialog.phoneNumber')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="+1234567890" {...field} />
+                          <Input
+                            placeholder={t(
+                              'addUserDialog.placeholder.phoneNumber'
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -333,12 +374,17 @@ const UserEditDialog = ({
 
                   <FormField
                     control={form.control}
-                    name="Location"
+                    name='Location'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location</FormLabel>
+                        <FormLabel>{t('addUserDialog.location')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="City, Country" {...field} />
+                          <Input
+                            placeholder={t(
+                              'addUserDialog.placeholder.location'
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -348,16 +394,20 @@ const UserEditDialog = ({
               </TabsContent>
 
               {formRole === 'GV' && (
-                <TabsContent value="instructor" className="space-y-4 pt-4">
+                <TabsContent value='instructor' className='space-y-4 pt-4'>
                   <FormField
                     control={form.control}
-                    name="ProfessionalTitle"
+                    name='ProfessionalTitle'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Professional Title</FormLabel>
+                        <FormLabel>
+                          {t('addUserDialog.professionalTitle')}
+                        </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Web Developer, Data Scientist, etc."
+                            placeholder={t(
+                              'addUserDialog.placeholder.professionalTitle'
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -368,19 +418,18 @@ const UserEditDialog = ({
 
                   <FormField
                     control={form.control}
-                    name="Bio"
+                    name='Bio'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Short Bio</FormLabel>
+                        <FormLabel>{t('addUserDialog.bio')}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Short professional description"
+                            placeholder={t('addUserDialog.placeholder.bio')}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          A brief professional description (shown in instructor
-                          cards)
+                          {t('addUserDialog.bioDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -389,20 +438,19 @@ const UserEditDialog = ({
 
                   <FormField
                     control={form.control}
-                    name="AboutMe"
+                    name='AboutMe'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>About Me</FormLabel>
+                        <FormLabel>{t('addUserDialog.aboutMe')}</FormLabel>
                         <FormControl>
                           <textarea
-                            className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="Detailed professional background and experience"
+                            className='flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50'
+                            placeholder={t('addUserDialog.placeholder.aboutMe')}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Detailed description shown on the instructor profile
-                          page
+                          {t('addUserDialog.aboutMeDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -411,40 +459,42 @@ const UserEditDialog = ({
 
                   <FormField
                     control={form.control}
-                    name="Skills"
+                    name='Skills'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Skills</FormLabel>
+                        <FormLabel>{t('addUserDialog.skills')}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="JavaScript, React, Node.js, etc. (comma separated)"
+                            placeholder={t('addUserDialog.placeholder.skills')}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Enter skills separated by commas
+                          {t('addUserDialog.skillsDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Social Links</h3>
-                    <div className="space-y-4 ">
+                  <div className='space-y-2'>
+                    <h3 className='text-sm font-medium'>
+                      {t('addUserDialog.socialLinks')}
+                    </h3>
+                    <div className='space-y-4 '>
                       {fields.map((field, index) => (
                         <div
                           key={field.id}
-                          className="grid grid-cols-12 gap-4 items-center"
+                          className='grid grid-cols-12 gap-4 items-center'
                         >
                           <FormField
                             control={control}
                             name={`SocialLinks.${index}.platform`}
                             render={({ field }) => (
-                              <FormItem className="col-span-2">
+                              <FormItem className='col-span-2'>
                                 <FormLabel>Platform</FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="e.g., LinkedIn, GitHub"
+                                    placeholder='e.g., LinkedIn, GitHub'
                                     {...field}
                                   />
                                 </FormControl>
@@ -457,11 +507,11 @@ const UserEditDialog = ({
                             control={control}
                             name={`SocialLinks.${index}.url`}
                             render={({ field }) => (
-                              <FormItem className="col-span-8">
+                              <FormItem className='col-span-8'>
                                 <FormLabel>URL</FormLabel>
                                 <FormControl>
                                   <Input
-                                    placeholder="e.g., https://linkedin.com/in/username"
+                                    placeholder='e.g., https://linkedin.com/in/username'
                                     {...field}
                                   />
                                 </FormControl>
@@ -471,9 +521,9 @@ const UserEditDialog = ({
                           />
 
                           <Button
-                            type="button"
-                            variant="destructive"
-                            className="col-span-2 mt-8"
+                            type='button'
+                            variant='destructive'
+                            className='col-span-2 mt-8'
                             onClick={() => remove(index)}
                           >
                             Remove
@@ -482,9 +532,9 @@ const UserEditDialog = ({
                       ))}
                     </div>
                     <Button
-                      type="button"
+                      type='button'
                       onClick={handleAddSocialLink}
-                      className=" mt-4"
+                      className=' mt-4'
                     >
                       Add Social Link
                     </Button>
@@ -546,8 +596,8 @@ const UserEditDialog = ({
               )}
             </Tabs>
 
-            <DialogFooter className="pt-4">
-              <Button type="submit">Save Changes</Button>
+            <DialogFooter className='pt-4'>
+              <Button type='submit'>Save Changes</Button>
             </DialogFooter>
           </form>
         </Form>

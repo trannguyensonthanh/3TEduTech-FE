@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import CurriculumSectionAdminView from './CurriculumSectionAdminView'; // Component con để hiển thị section
 import { AdminCourseView, Lesson, CourseStatusId } from '@/types/common.types'; // Import types
 import { Label } from '@/components/ui/label';
+import { useTranslation } from 'react-i18next';
 
 interface CourseDetailViewProps {
   courseDetails: AdminCourseView; // Sử dụng type AdminCourseView đầy đủ
@@ -52,6 +53,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
 }) => {
   // State quản lý section nào đang mở trong component này
   const [expandedSections, setExpandedSections] = useState<number[]>([]);
+  const { t } = useTranslation();
 
   const toggleSectionExpand = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -64,78 +66,90 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
   const courseUrl = `/courses/${courseDetails.slug}`; // Tạo URL preview
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* --- Header Buttons --- */}
-      <div className="flex justify-between items-center">
-        <Button variant="outline" onClick={onBack} disabled={isProcessing}>
-          ← Back to Pending List
+      <div className='flex justify-between items-center'>
+        <Button variant='outline' onClick={onBack} disabled={isProcessing}>
+          ← {t('courseDetail.backToPending', 'Back to Pending List')}
         </Button>
-        <div className="space-x-2">
+        <div className='space-x-2'>
           <Button
-            variant="destructive"
+            variant='destructive'
             onClick={onReject}
             disabled={isProcessing}
           >
             {isProcessing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             ) : (
-              <X className="mr-2 h-4 w-4" />
+              <X className='mr-2 h-4 w-4' />
             )}
-            Reject
+            {t('courseDetail.reject', 'Reject')}
           </Button>
-          <Button variant="default" onClick={onApprove} disabled={isProcessing}>
+          <Button variant='default' onClick={onApprove} disabled={isProcessing}>
             {isProcessing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
             ) : (
-              <Check className="mr-2 h-4 w-4" />
+              <Check className='mr-2 h-4 w-4' />
             )}
-            Approve
+            {t('courseDetail.approve', 'Approve')}
           </Button>
         </div>
       </div>
 
       {/* --- Main Content Grid --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 items-start'>
         {/* --- Left Column: Course Info & Curriculum --- */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className='lg:col-span-2 space-y-6'>
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center gap-4">
-                <CardTitle className="text-2xl">
+              <div className='flex justify-between items-center gap-4'>
+                <CardTitle className='text-2xl'>
                   {courseDetails.courseName}
                 </CardTitle>
                 {/* Sử dụng Link an toàn hơn nếu có router */}
-                <a href={courseUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm">
-                    <ExternalLink className="mr-2 h-4 w-4" /> Preview Course
-                    Page
+                <a href={courseUrl} target='_blank' rel='noopener noreferrer'>
+                  <Button variant='outline' size='sm'>
+                    <ExternalLink className='mr-2 h-4 w-4' />{' '}
+                    {t('courseDetail.previewCourse', 'Preview Course Page')}
                   </Button>
                 </a>
               </div>
               <CardDescription>
-                By {courseDetails.instructorName}{' '}
-                <span className="mx-1">|</span> Submitted:{' '}
+                {t('courseDetail.by', {
+                  instructor: courseDetails.instructor.fullName,
+                  defaultValue: 'By {{instructor}}',
+                })}{' '}
+                <span className='mx-1'>|</span>{' '}
+                {t('courseDetail.submitted', 'Submitted')}:{' '}
                 {new Date(
                   courseDetails.submittedAt || Date.now()
                 ).toLocaleDateString()}
-                <Badge variant="secondary" className="ml-2">
-                  {courseDetails.statusId}
+                <Badge variant='secondary' className='ml-2'>
+                  {t(
+                    `approvals.status.${courseDetails.statusId.toLowerCase()}`,
+                    courseDetails.statusId
+                  )}
                 </Badge>
                 {courseDetails.approvalRequestId && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    (Request ID: {courseDetails.approvalRequestId})
+                  <span className='ml-2 text-xs text-muted-foreground'>
+                    (
+                    {t('courseDetail.requestId', {
+                      id: courseDetails.approvalRequestId,
+                      defaultValue: 'Request ID: {{id}}',
+                    })}
+                    )
                   </span>
                 )}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className='space-y-4'>
               {/* Thumbnail */}
               {courseDetails.thumbnailUrl && (
-                <div className="rounded-lg overflow-hidden aspect-video bg-muted">
+                <div className='rounded-lg overflow-hidden aspect-video bg-muted'>
                   <img
                     src={courseDetails.thumbnailUrl}
                     alt={courseDetails.courseName}
-                    className="w-full h-full object-cover"
+                    className='w-full h-full object-cover'
                   />
                 </div>
               )}
@@ -143,9 +157,11 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
               {/* Short Description */}
               {courseDetails.shortDescription && (
                 <div>
-                  <h4 className="font-semibold mb-1">Short Description</h4>
+                  <h4 className='font-semibold mb-1'>
+                    {t('courseDetail.shortDescription', 'Short Description')}
+                  </h4>
                   <div
-                    className="prose prose-sm dark:prose-invert max-w-none"
+                    className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
                       __html: courseDetails.shortDescription,
                     }}
@@ -154,50 +170,49 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
               )}
 
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm border-t pt-4">
+              <div className='grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm border-t pt-4'>
                 <div>
-                  <span className="font-medium text-muted-foreground block">
-                    Category:
+                  <span className='font-medium text-muted-foreground block'>
+                    {t('courseDetail.category', 'Category')}:
                   </span>{' '}
-                  {courseDetails.categoryName}
+                  {courseDetails.category.categoryName}
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground block">
-                    Level:
+                  <span className='font-medium text-muted-foreground block'>
+                    {t('courseDetail.level', 'Level')}:
                   </span>{' '}
-                  {courseDetails.levelName}
+                  {courseDetails.level.levelName}
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground block">
-                    Language:
+                  <span className='font-medium text-muted-foreground block'>
+                    {t('courseDetail.language', 'Language')}:
                   </span>{' '}
                   {courseDetails.language}
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground block">
-                    Price:
+                  <span className='font-medium text-muted-foreground block'>
+                    {t('courseDetail.price', 'Price')}:
                   </span>{' '}
                   ${courseDetails.originalPrice.toFixed(2)}
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground block">
-                    Discount:
+                  <span className='font-medium text-muted-foreground block'>
+                    {t('courseDetail.discount', 'Discount')}:
                   </span>{' '}
                   {courseDetails.discountedPrice
                     ? `$${courseDetails.discountedPrice.toFixed(2)}`
-                    : 'None'}
+                    : t('courseDetail.none', 'None')}
                 </div>
-                {/* Tính toán tổng số bài học/thời lượng nếu có */}
-                {/* <div><span className="font-medium text-muted-foreground block">Lessons:</span> {totalLessons}</div> */}
-                {/* <div><span className="font-medium text-muted-foreground block">Duration:</span> {totalDuration}</div> */}
               </div>
 
               {/* Full Description */}
               {courseDetails.fullDescription && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">Full Description</h4>
+                <div className='border-t pt-4'>
+                  <h4 className='font-semibold mb-2'>
+                    {t('courseDetail.fullDescription', 'Full Description')}
+                  </h4>
                   <div
-                    className="prose prose-sm dark:prose-invert max-w-none"
+                    className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
                       __html: courseDetails.fullDescription,
                     }}
@@ -207,10 +222,12 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
 
               {/* Requirements */}
               {courseDetails.requirements && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">Requirements</h4>
+                <div className='border-t pt-4'>
+                  <h4 className='font-semibold mb-2'>
+                    {t('courseDetail.requirements', 'Requirements')}
+                  </h4>
                   <div
-                    className="prose prose-sm dark:prose-invert max-w-none"
+                    className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
                       __html: courseDetails.requirements,
                     }}
@@ -220,10 +237,12 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
 
               {/* Learning Outcomes */}
               {courseDetails.learningOutcomes && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">What You'll Learn</h4>
+                <div className='border-t pt-4'>
+                  <h4 className='font-semibold mb-2'>
+                    {t('courseDetail.learningOutcomes', "What You'll Learn")}
+                  </h4>
                   <div
-                    className="prose prose-sm dark:prose-invert max-w-none"
+                    className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
                       __html: courseDetails.learningOutcomes,
                     }}
@@ -233,20 +252,22 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
 
               {/* Instructor Notes */}
               {courseDetails.instructorNotes && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-2">Instructor Notes</h4>
-                  <p className="text-sm p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md">
+                <div className='border-t pt-4'>
+                  <h4 className='font-semibold mb-2'>
+                    {t('courseDetail.instructorNotes', 'Instructor Notes')}
+                  </h4>
+                  <p className='text-sm p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-md'>
                     {courseDetails.instructorNotes}
                   </p>
                 </div>
               )}
 
               {/* Curriculum */}
-              <div className="border-t pt-4">
-                <h4 className="text-lg font-semibold mb-3">
-                  Curriculum Review
+              <div className='border-t pt-4'>
+                <h4 className='text-lg font-semibold mb-3'>
+                  {t('courseDetail.curriculumReview', 'Curriculum Review')}
                 </h4>
-                <div className="border rounded-md divide-y">
+                <div className='border rounded-md divide-y'>
                   {courseDetails.sections &&
                   courseDetails.sections.length > 0 ? (
                     courseDetails.sections
@@ -267,8 +288,11 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                         />
                       ))
                   ) : (
-                    <p className="p-4 text-center text-muted-foreground">
-                      No curriculum submitted.
+                    <p className='p-4 text-center text-muted-foreground'>
+                      {t(
+                        'courseDetail.noCurriculum',
+                        'No curriculum submitted.'
+                      )}
                     </p>
                   )}
                 </div>
@@ -278,61 +302,77 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
         </div>
 
         {/* --- Right Column: Review Decision --- */}
-        <div className="lg:col-span-1 sticky top-4">
+        <div className='lg:col-span-1 sticky top-4'>
           {' '}
           {/* Sticky để ô review luôn hiển thị */}
           <Card>
             <CardHeader>
-              <CardTitle>Review Decision</CardTitle>
+              <CardTitle>
+                {t('courseDetail.reviewDecision', 'Review Decision')}
+              </CardTitle>
               <CardDescription>
-                Provide feedback and approve or reject the submission.
+                {t(
+                  'courseDetail.reviewDesc',
+                  'Provide feedback and approve or reject the submission.'
+                )}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className='space-y-4'>
               <div>
-                <Label htmlFor="adminNotes" className="font-medium">
-                  Admin Notes / Feedback
+                <Label htmlFor='adminNotes' className='font-medium'>
+                  {t('courseDetail.adminNotes', 'Admin Notes / Feedback')}
                 </Label>
                 <Textarea
-                  id="adminNotes"
-                  placeholder="Enter feedback for the instructor (required if rejecting)..."
-                  className="min-h-[180px] mt-1"
+                  id='adminNotes'
+                  placeholder={t(
+                    'courseDetail.adminNotesPlaceholder',
+                    'Enter feedback for the instructor (required if rejecting)...'
+                  )}
+                  className='min-h-[180px] mt-1'
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  These notes will be sent to the instructor.
+                <p className='text-xs text-muted-foreground mt-1'>
+                  {t(
+                    'courseDetail.adminNotesHint',
+                    'These notes will be sent to the instructor.'
+                  )}
                 </p>
               </div>
-              <div className="pt-4 space-y-2 border-t">
+              <div className='pt-4 space-y-2 border-t'>
                 <Button
-                  variant="default"
-                  className="w-full"
+                  variant='default'
+                  className='w-full'
                   onClick={onApprove}
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   ) : (
-                    <Check className="mr-2 h-4 w-4" />
+                    <Check className='mr-2 h-4 w-4' />
                   )}{' '}
-                  Approve Course
+                  {t('courseDetail.approveCourse', 'Approve Course')}
                 </Button>
                 <Button
-                  variant="destructive"
-                  className="w-full"
+                  variant='destructive'
+                  className='w-full'
                   onClick={onReject}
                   disabled={isProcessing || !adminNotes.trim()}
                   title={
-                    !adminNotes.trim() ? 'Notes are required to reject' : ''
+                    !adminNotes.trim()
+                      ? t(
+                          'courseDetail.notesRequired',
+                          'Notes are required to reject'
+                        )
+                      : ''
                   }
                 >
                   {isProcessing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   ) : (
-                    <X className="mr-2 h-4 w-4" />
+                    <X className='mr-2 h-4 w-4' />
                   )}{' '}
-                  Reject Course
+                  {t('courseDetail.rejectCourse', 'Reject Course')}
                 </Button>
               </div>
             </CardContent>

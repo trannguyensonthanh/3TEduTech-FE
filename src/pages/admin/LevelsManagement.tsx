@@ -25,34 +25,6 @@ import {
 import { Level } from '@/services/level.service';
 import PaginationControls from '@/components/admin/PaginationControls';
 
-// Mock data for levels
-// const mockLevels: Level[] = [
-//   {
-//     id: 1,
-//     name: 'Beginner',
-//     createdAt: '2023-05-15T08:00:00Z',
-//     updatedAt: '2023-05-15T08:00:00Z',
-//   },
-//   {
-//     id: 2,
-//     name: 'Intermediate',
-//     createdAt: '2023-05-15T09:30:00Z',
-//     updatedAt: '2023-05-15T09:30:00Z',
-//   },
-//   {
-//     id: 3,
-//     name: 'Advanced',
-//     createdAt: '2023-05-15T10:45:00Z',
-//     updatedAt: '2023-05-15T10:45:00Z',
-//   },
-//   {
-//     id: 4,
-//     name: 'Expert',
-//     createdAt: '2023-05-15T11:20:00Z',
-//     updatedAt: '2023-05-15T11:20:00Z',
-//   },
-// ];
-
 const LevelsManagement = () => {
   const { toast } = useToast();
 
@@ -166,9 +138,9 @@ const LevelsManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
+      <div className='space-y-6'>
+        <div className='flex justify-between items-center'>
+          <h1 className='text-2xl font-bold tracking-tight'>
             Levels Management
           </h1>
           <Button
@@ -176,19 +148,19 @@ const LevelsManagement = () => {
               setSelectedLevel(null);
               setIsAddDialogOpen(true);
             }}
-            className="flex items-center gap-1"
+            className='flex items-center gap-1'
           >
-            <Plus className="h-4 w-4" /> Add Level
+            <Plus className='h-4 w-4' /> Add Level
           </Button>
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className='pb-3'>
             <CardTitle>Course Levels</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="py-10 text-center text-muted-foreground">
+              <div className='py-10 text-center text-muted-foreground'>
                 Loading levels...
               </div>
             ) : (

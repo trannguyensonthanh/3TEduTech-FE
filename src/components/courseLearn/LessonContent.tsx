@@ -1,7 +1,8 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
-import { Lesson, QuizLesson, TextLesson, VideoLesson } from "@/types/course";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { CheckCircle } from 'lucide-react';
+import { Lesson } from '@/services/lesson.service';
+import { useTranslation } from 'react-i18next';
 
 interface LessonContentProps {
   lesson: Lesson;
@@ -25,73 +26,78 @@ const LessonContent: React.FC<LessonContentProps> = ({
   isQuizOptionCorrect,
   calculateQuizScore,
 }) => {
-  if (lesson.type === "VIDEO") {
-    const videoLesson = lesson as VideoLesson;
+  const { t } = useTranslation();
+
+  if (lesson.lessonType === 'VIDEO') {
     return (
-      <div className="bg-black rounded-lg overflow-hidden aspect-video">
+      <div className='bg-black rounded-lg overflow-hidden aspect-video'>
         <iframe
-          className="w-full h-full"
-          src={videoLesson.videoUrl}
-          title={videoLesson.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          className='w-full h-full'
+          src={lesson.externalVideoInput}
+          title={lesson.lessonName}
+          allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
           allowFullScreen
         ></iframe>
       </div>
     );
   }
 
-  if (lesson.type === "TEXT") {
-    const textLesson = lesson as TextLesson;
+  if (lesson.lessonType === 'TEXT') {
     return (
-      <div className="prose max-w-none">
+      <div className='prose max-w-none'>
         <div
           dangerouslySetInnerHTML={{
-            __html: textLesson.content,
+            __html: lesson.textContent || '',
           }}
         ></div>
       </div>
     );
   }
 
-  if (lesson.type === "QUIZ") {
-    const quizLesson = lesson as QuizLesson;
+  if (lesson.lessonType === 'QUIZ' && lesson.questions) {
     return (
-      <div className="space-y-6">
-        {quizLesson.questions.map((question, qIndex) => (
-          <div key={question.id} className="border rounded-lg p-4 space-y-3">
-            <h3 className="text-lg font-medium">
-              {qIndex + 1}. {question.text}
+      <div className='space-y-6'>
+        {lesson.questions.map((question, qIndex) => (
+          <div
+            key={question.questionId}
+            className='border rounded-lg p-4 space-y-3'
+          >
+            <h3 className='text-lg font-medium'>
+              {qIndex + 1}. {question.questionText}
             </h3>
-            <div className="space-y-2">
+            <div className='space-y-2'>
               {question.options.map((option) => {
-                const isSelected = selectedAnswers[question.id] === option.id;
-                const isCorrect = isQuizOptionCorrect(question.id, option.id);
-
+                const isSelected =
+                  selectedAnswers[question.questionId] === option.optionId;
+                const isCorrect = isQuizOptionCorrect(
+                  question.questionId,
+                  option.optionId
+                );
                 let optionClass =
-                  "border rounded-md p-3 cursor-pointer transition-colors";
-
+                  'border rounded-md p-3 cursor-pointer transition-colors';
                 if (quizSubmitted) {
-                  if (option.isCorrect) {
-                    optionClass += " bg-green-50 border-green-200";
-                  } else if (isSelected && !option.isCorrect) {
-                    optionClass += " bg-red-50 border-red-200";
+                  if (option.isCorrectAnswer) {
+                    optionClass += ' bg-green-50 border-green-200';
+                  } else if (isSelected && !option.isCorrectAnswer) {
+                    optionClass += ' bg-red-50 border-red-200';
                   }
                 } else if (isSelected) {
-                  optionClass += " border-primary bg-primary/5";
+                  optionClass += ' border-primary bg-primary/5';
                 } else {
-                  optionClass += " hover:border-muted-foreground";
+                  optionClass += ' hover:border-muted-foreground';
                 }
-
                 return (
                   <div
-                    key={option.id}
+                    key={option.optionId}
                     className={optionClass}
-                    onClick={() => onQuizOptionSelect(question.id, option.id)}
+                    onClick={() =>
+                      onQuizOptionSelect(question.questionId, option.optionId)
+                    }
                   >
-                    <div className="flex items-start">
-                      <div className="flex-1">{option.text}</div>
-                      {quizSubmitted && option.isCorrect && (
-                        <CheckCircle className="h-5 w-5 text-green-500 ml-2" />
+                    <div className='flex items-start'>
+                      <div className='flex-1'>{option.optionText}</div>
+                      {quizSubmitted && option.isCorrectAnswer && (
+                        <CheckCircle className='h-5 w-5 text-green-500 ml-2' />
                       )}
                     </div>
                   </div>
@@ -99,24 +105,31 @@ const LessonContent: React.FC<LessonContentProps> = ({
               })}
             </div>
             {quizSubmitted && question.explanation && (
-              <div className="bg-muted p-3 rounded-md text-sm mt-3">
-                <p className="font-medium mb-1">Explanation:</p>
+              <div className='bg-muted p-3 rounded-md text-sm mt-3'>
+                <p className='font-medium mb-1'>
+                  {t('lessonContent.explanation')}
+                </p>
                 <p>{question.explanation}</p>
               </div>
             )}
           </div>
         ))}
-
         {quizSubmitted ? (
-          <div className="bg-muted p-4 rounded-lg">
-            <h3 className="text-lg font-medium mb-2">Quiz Results</h3>
-            <p>Your score: {calculateQuizScore()}%</p>
-            <Button className="mt-4" onClick={() => window.location.reload()}>
-              Try Again
+          <div className='bg-muted p-4 rounded-lg'>
+            <h3 className='text-lg font-medium mb-2'>
+              {t('lessonContent.quizResults')}
+            </h3>
+            <p>
+              {t('lessonContent.yourScore', { score: calculateQuizScore() })}
+            </p>
+            <Button className='mt-4' onClick={() => window.location.reload()}>
+              {t('lessonContent.tryAgain')}
             </Button>
           </div>
         ) : (
-          <Button onClick={onQuizSubmit}>Submit Answers</Button>
+          <Button onClick={onQuizSubmit}>
+            {t('lessonContent.submitAnswers')}
+          </Button>
         )}
       </div>
     );

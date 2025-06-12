@@ -1,4 +1,6 @@
-import React, { useRef } from 'react';
+// src/components/instructor/courseCreate/MediaTab.tsx
+import React, { useState, useRef, useEffect } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -7,220 +9,175 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Image, Trash, Edit, Upload, Video, Info } from 'lucide-react';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  FormField,
+  FormItem,
+  FormControl,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import { Icons } from '@/components/common/Icons';
+import { toast } from 'sonner';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { getYoutubeEmbedUrl, extractYoutubeId } from '@/utils/video.util';
 
 interface MediaTabProps {
-  thumbnail: File | null;
-  thumbnailPreview: string | null;
-  promoVideo: File | null;
-  promoVideoPreview: string | null;
-  setThumbnail: (file: File | null) => void;
-  setThumbnailPreview: (preview: string | null) => void;
-  setPromoVideo: (file: File | null) => void;
-  setPromoVideoPreview: (preview: string | null) => void;
-  handleThumbnailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  // handleVideoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  promoVideoUrl: string;
-  setPromoVideoUrl: (url: string) => void;
+  onThumbnailChange: (file: File | null) => void;
+  initialThumbnail: string | null;
+  initialIntroVideo: string | null;
 }
 
 const MediaTab: React.FC<MediaTabProps> = ({
-  thumbnail,
-  thumbnailPreview,
-  promoVideo,
-  promoVideoPreview,
-  setThumbnail,
-  setThumbnailPreview,
-  setPromoVideo,
-  setPromoVideoPreview,
-  handleThumbnailChange,
-  // handleVideoChange,
-  promoVideoUrl,
-  setPromoVideoUrl,
+  onThumbnailChange,
+  initialThumbnail,
+  initialIntroVideo,
 }) => {
-  const thumbnailRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
+  const { control, watch } = useFormContext();
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
+    initialThumbnail
+  );
+  const thumbnailFileRef = useRef<HTMLInputElement>(null);
+
+  const introVideoUrl = watch('introVideoUrl');
+  const embedUrl = introVideoUrl
+    ? getYoutubeEmbedUrl(extractYoutubeId(introVideoUrl) || '')
+    : null;
+
+  // Cập nhật lại preview nếu dữ liệu gốc từ API thay đổi (ví dụ sau khi lưu và refetch)
+  useEffect(() => {
+    setThumbnailPreview(initialThumbnail);
+  }, [initialThumbnail]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        // 2MB validation
+        toast.error('Thumbnail image must be less than 2MB.');
+        return;
+      }
+      // Truyền file lên component cha để quản lý
+      onThumbnailChange(file);
+      // Tạo preview từ blob URL
+      setThumbnailPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleCancelThumbnailChange = () => {
+    onThumbnailChange(null); // Báo cho cha là không có file mới
+    setThumbnailPreview(initialThumbnail); // Trả về preview ảnh gốc
+    if (thumbnailFileRef.current) {
+      thumbnailFileRef.current.value = ''; // Reset file input
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Thumbnail Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Course Thumbnail</CardTitle>
-            <CardDescription>
-              Upload a high-quality image that represents your course (16:9
-              ratio recommended)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <input
-              type="file"
-              ref={thumbnailRef}
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleThumbnailChange}
-            />
-
-            {thumbnailPreview ? (
-              <div className="relative">
-                <img
-                  src={thumbnailPreview}
-                  alt="Course thumbnail"
-                  className="w-full h-auto rounded-md object-cover aspect-video"
-                />
-                <div className="absolute top-2 right-2 flex space-x-2">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-background/80"
-                    onClick={() => thumbnailRef.current?.click()}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-background/80"
-                    onClick={() => {
-                      setThumbnail(null);
-                      setThumbnailPreview(null);
-                    }}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => thumbnailRef.current?.click()}
-              >
-                <Image className="h-10 w-10 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground text-center mb-3">
-                  Drag and drop your thumbnail here, or click to browse
-                </p>
-                <Button variant="outline" size="sm">
-                  <Upload className="mr-2 h-4 w-4" /> Upload Image
-                </Button>
-              </div>
-            )}
-
-            <p className="text-xs text-muted-foreground mt-2">
-              Recommended size: 1280x720 pixels, Max file size: 10MB
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Promotional Video Upload */}
-        {/* <Card>
-          <CardHeader>
-            <CardTitle>Promotional Video</CardTitle>
-            <CardDescription>
-              Upload a short video introducing your course (optional)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <input
-              type="file"
-              ref={videoRef}
-              accept="video/*"
-              style={{ display: "none" }}
-              onChange={handleVideoChange}
-            />
-
-            {promoVideoPreview ? (
-              <div className="relative">
-                <video
-                  src={promoVideoPreview}
-                  controls
-                  className="w-full h-auto rounded-md aspect-video bg-black"
-                />
-                <div className="absolute top-2 right-2 flex space-x-2">
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-background/80"
-                    onClick={() => videoRef.current?.click()}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-background/80"
-                    onClick={() => {
-                      setPromoVideo(null);
-                      setPromoVideoPreview(null);
-                    }}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => videoRef.current?.click()}
-              >
-                <Video className="h-10 w-10 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground text-center mb-3">
-                  Drag and drop your video here, or click to browse
-                </p>
-                <Button variant="outline" size="sm">
-                  <Upload className="mr-2 h-4 w-4" /> Upload Video
-                </Button>
-              </div>
-            )}
-
-            <p className="text-xs text-muted-foreground mt-2">
-              Recommended length: 2-5 minutes, Max file size: 500MB
-            </p>
-          </CardContent>
-        </Card> */}
-        <div className="space-y-4">
-          <Label htmlFor="promo-video-url">Promo Video URL</Label>
-          <Input
-            id="promo-video-url"
-            placeholder="Enter promo video URL (e.g., https://www.youtube.com/watch?v=...)"
-            value={promoVideoUrl}
-            onChange={(e) => setPromoVideoUrl(e.target.value)}
+    <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+      {/* Thumbnail Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Course Thumbnail</CardTitle>
+          <CardDescription>
+            A high-quality image (16:9 ratio) that represents your course.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          <input
+            type='file'
+            ref={thumbnailFileRef}
+            onChange={handleFileSelect}
+            accept='image/png, image/jpeg'
+            className='hidden'
           />
-          {promoVideoUrl && (
-            <div className="aspect-video bg-gray-900 rounded-md overflow-hidden">
-              <iframe
-                src={promoVideoUrl.replace('watch?v=', 'embed/')}
-                title="Promo Video Preview"
-                className="w-full h-full"
-                allowFullScreen
-              ></iframe>
-            </div>
-          )}
-        </div>
-      </div>
+          <AspectRatio
+            ratio={16 / 9}
+            className='bg-muted rounded-md border overflow-hidden'
+          >
+            {thumbnailPreview ? (
+              <img
+                src={thumbnailPreview}
+                alt='Thumbnail preview'
+                className='w-full h-full object-cover'
+              />
+            ) : (
+              <div className='flex flex-col items-center justify-center h-full text-muted-foreground'>
+                <Icons.image className='h-12 w-12' />
+                <p className='mt-2 text-sm'>No Thumbnail</p>
+              </div>
+            )}
+          </AspectRatio>
+          <div className='flex flex-wrap gap-2'>
+            <Button
+              variant='outline'
+              onClick={() => thumbnailFileRef.current?.click()}
+            >
+              <Icons.upload className='mr-2 h-4 w-4' />
+              {thumbnailPreview ? 'Change Image' : 'Upload Image'}
+            </Button>
+            {thumbnailPreview && thumbnailPreview.startsWith('blob:') && (
+              <Button
+                variant='ghost'
+                className='text-destructive hover:text-destructive'
+                onClick={handleCancelThumbnailChange}
+              >
+                <Icons.x className='mr-2 h-4 w-4' />
+                Cancel Change
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Media Tips */}
-      <div className="bg-muted/50 rounded-md p-4 flex items-start space-x-3">
-        <Info className="h-5 w-5 text-muted-foreground mt-0.5" />
-        <div>
-          <h3 className="font-medium mb-1">Media Tips</h3>
-          <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-            <li>
-              High-quality thumbnails can increase enrollment by up to 70%
-            </li>
-            <li>
-              Promotional videos help students understand what your course
-              offers
-            </li>
-            <li>
-              Use professional-looking visuals that clearly represent your
-              course content
-            </li>
-          </ul>
-        </div>
-      </div>
+      {/* Promotional Video Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Promotional Video</CardTitle>
+          <CardDescription>
+            Add a YouTube video link to give students a sneak peek.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          <FormField
+            control={control}
+            name='introVideoUrl'
+            render={({ field }) => (
+              <FormItem>
+                <Label htmlFor='intro-video-url'>YouTube Video URL</Label>
+                <FormControl>
+                  <Input
+                    id='intro-video-url'
+                    placeholder='https://www.youtube.com/watch?v=...'
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {embedUrl ? (
+            <AspectRatio
+              ratio={16 / 9}
+              className='bg-muted rounded-md overflow-hidden'
+            >
+              <iframe
+                src={embedUrl}
+                title='Promotional Video Preview'
+                className='w-full h-full'
+                allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                allowFullScreen
+              />
+            </AspectRatio>
+          ) : (
+            introVideoUrl && (
+              <div className='text-sm p-3 bg-destructive/10 text-destructive rounded-md'>
+                Invalid or unsupported YouTube URL.
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

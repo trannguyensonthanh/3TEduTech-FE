@@ -93,25 +93,25 @@ const stepsConfig = [
   {
     id: 1,
     name: 'Account Setup',
-    icon: <Icons.userCircle className="h-5 w-5" />,
+    icon: <Icons.userCircle className='h-5 w-5' />,
     fields: ['fullName', 'email', 'password', 'confirmPassword'] as const,
   },
   {
     id: 2,
     name: 'Professional Profile',
-    icon: <Icons.fileText className="h-5 w-5" />,
+    icon: <Icons.fileText className='h-5 w-5' />,
     fields: ['professionalTitle', 'bio', 'skills'] as const,
   },
   {
     id: 3,
     name: 'Online Presence',
-    icon: <Icons.link2 className="h-5 w-5" />,
+    icon: <Icons.link2 className='h-5 w-5' />,
     fields: ['socialLinks'] as const,
   }, // Thay đổi step 3 thành Social Links
   {
     id: 4,
     name: 'Agreement & Submit',
-    icon: <Icons.shieldCheck className="h-5 w-5" />,
+    icon: <Icons.shieldCheck className='h-5 w-5' />,
     fields: ['agreedToTerms'] as const,
   }, // Thay đổi step 4
 ];
@@ -157,7 +157,7 @@ const InstructorRegisterPage = () => {
   });
 
   const { data: skillsData, isLoading: isSkillsLoading } = useSkills({
-    limit: 0,
+    limit: 100,
   }); // Lấy tất cả skills
 
   const validateCurrentStep = async (): Promise<boolean> => {
@@ -279,29 +279,29 @@ const InstructorRegisterPage = () => {
   const [direction, setDirection] = useState(0); // Cho hướng animation
   return (
     <Layout>
-      <div className="bg-slate-50 dark:bg-slate-900/30 border-b dark:border-slate-700/60">
-        <div className="container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-10 text-center">
-          <Icons.userPlus className="h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 text-primary dark:text-primary/90" />
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-3 tracking-tight">
+      <div className='bg-slate-50 dark:bg-slate-900/30 border-b dark:border-slate-700/60'>
+        <div className='container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-10 text-center'>
+          <Icons.userPlus className='h-16 w-16 md:h-20 md:w-20 mx-auto mb-4 text-primary dark:text-primary/90' />
+          <h1 className='text-3xl md:text-4xl lg:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-3 tracking-tight'>
             Become an Instructor
           </h1>
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+          <p className='text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto'>
             Share your expertise, inspire learners, and earn revenue by creating
             courses on 3TEduTech.
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-3xl mx-auto">
+      <div className='container mx-auto px-4 py-8 md:py-12'>
+        <div className='max-w-3xl mx-auto'>
           {/* Stepper UI */}
-          <div className="mb-10 md:mb-12 px-2">
-            <div className="flex items-center justify-center sm:justify-start">
+          <div className='mb-10 md:mb-12 px-2'>
+            <div className='flex items-center justify-center sm:justify-start'>
               {' '}
               {/* justify-start trên sm */}
               {stepsConfig.map((stepInfo, index) => (
                 <React.Fragment key={stepInfo.id}>
-                  <div className="flex flex-col items-center text-center">
+                  <div className='flex flex-col items-center text-center'>
                     <motion.div
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{
@@ -319,12 +319,12 @@ const InstructorRegisterPage = () => {
                         currentStep === stepInfo.id
                           ? 'bg-primary border-primary text-primary-foreground shadow-lg scale-110'
                           : currentStep > stepInfo.id
-                          ? 'bg-green-500 border-green-500 text-white'
-                          : 'bg-background dark:bg-slate-700 border-border dark:border-slate-600 text-muted-foreground'
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'bg-background dark:bg-slate-700 border-border dark:border-slate-600 text-muted-foreground'
                       )}
                     >
                       {currentStep > stepInfo.id ? (
-                        <Icons.check className="h-5 w-5 sm:h-6 sm:w-6" />
+                        <Icons.check className='h-5 w-5 sm:h-6 sm:w-6' />
                       ) : (
                         stepInfo.id
                       )}
@@ -366,18 +366,18 @@ const InstructorRegisterPage = () => {
           </div>
 
           {/* Form Content */}
-          <Card className="shadow-xl dark:bg-slate-800/40 border dark:border-slate-700/60">
-            <form onSubmit={handleSubmit(onSubmit)} className="overflow-hidden">
+          <Card className='shadow-xl dark:bg-slate-800/40 border dark:border-slate-700/60'>
+            <form onSubmit={handleSubmit(onSubmit)} className='overflow-hidden'>
               {' '}
               {/* overflow-hidden cho animation */}
-              <AnimatePresence mode="wait" custom={direction}>
+              <AnimatePresence mode='wait' custom={direction}>
                 <motion.div
                   key={currentStep}
                   custom={direction}
                   variants={stepVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
+                  initial='hidden'
+                  animate='visible'
+                  exit='exit'
                 >
                   {/* Các CardHeader, CardContent, CardFooter sẽ nằm trong từng step */}
                   {currentStep === 1 && (
@@ -417,25 +417,25 @@ const InstructorRegisterPage = () => {
                 </motion.div>
               </AnimatePresence>
               {/* Navigation Buttons */}
-              <CardFooter className="mt-2 p-6 border-t dark:border-slate-700/60 flex justify-between">
+              <CardFooter className='mt-2 p-6 border-t dark:border-slate-700/60 flex justify-between'>
                 {currentStep > 1 ? (
                   <Button
-                    type="button"
-                    variant="outline"
+                    type='button'
+                    variant='outline'
                     onClick={() => {
                       setDirection(-1);
                       prevStep();
                     }}
-                    className="h-11 px-6 text-base"
+                    className='h-11 px-6 text-base'
                   >
-                    <Icons.arrowLeft className="mr-2 h-4 w-4" /> Back
+                    <Icons.arrowLeft className='mr-2 h-4 w-4' /> Back
                   </Button>
                 ) : (
-                  <Link to="/">
+                  <Link to='/'>
                     <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-11 px-6 text-base text-muted-foreground hover:text-foreground"
+                      type='button'
+                      variant='ghost'
+                      className='h-11 px-6 text-base text-muted-foreground hover:text-foreground'
                     >
                       Cancel Application
                     </Button>
@@ -444,25 +444,25 @@ const InstructorRegisterPage = () => {
 
                 {currentStep < stepsConfig.length ? (
                   <Button
-                    type="button"
+                    type='button'
                     onClick={() => {
                       setDirection(1);
                       nextStep();
                     }}
-                    className="h-11 px-6 text-base"
+                    className='h-11 px-6 text-base'
                   >
-                    Continue <Icons.arrowRight className="ml-2 h-4 w-4" />
+                    Continue <Icons.arrowRight className='ml-2 h-4 w-4' />
                   </Button>
                 ) : (
                   <Button
-                    type="submit"
+                    type='submit'
                     disabled={registerInstructorMutation.isPending}
-                    className="h-11 px-6 text-base"
+                    className='h-11 px-6 text-base'
                   >
                     {registerInstructorMutation.isPending ? (
-                      <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+                      <Icons.spinner className='mr-2 h-5 w-5 animate-spin' />
                     ) : (
-                      <Icons.send className="mr-2 h-5 w-5" />
+                      <Icons.send className='mr-2 h-5 w-5' />
                     )}
                     Submit Application
                   </Button>
@@ -488,25 +488,25 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
 
   return (
     <>
-      <CardHeader className="pb-4">
-        <div className="flex items-center mb-1">
+      <CardHeader className='pb-4'>
+        <div className='flex items-center mb-1'>
           {stepsConfig[0].icon}
-          <CardTitle className="text-2xl ml-2">{stepsConfig[0].name}</CardTitle>
+          <CardTitle className='text-2xl ml-2'>{stepsConfig[0].name}</CardTitle>
         </div>
         <CardDescription>
           Provide your basic account details to get started.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 pt-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="fullName">
-              Full Name <span className="text-destructive">*</span>
+      <CardContent className='space-y-5 pt-2'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5'>
+          <div className='space-y-1.5'>
+            <Label htmlFor='fullName'>
+              Full Name <span className='text-destructive'>*</span>
             </Label>
             <Input
-              id="fullName"
+              id='fullName'
               {...register('fullName')}
-              placeholder="e.g., Jane Doe"
+              placeholder='e.g., Jane Doe'
               className={cn(
                 'h-11',
                 errors.fullName &&
@@ -514,20 +514,20 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
               )}
             />
             {errors.fullName && (
-              <p className="text-xs text-destructive mt-1">
+              <p className='text-xs text-destructive mt-1'>
                 {errors.fullName.message}
               </p>
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">
-              Email Address <span className="text-destructive">*</span>
+          <div className='space-y-1.5'>
+            <Label htmlFor='email'>
+              Email Address <span className='text-destructive'>*</span>
             </Label>
             <Input
-              id="email"
-              type="email"
+              id='email'
+              type='email'
               {...register('email')}
-              placeholder="you@example.com"
+              placeholder='you@example.com'
               className={cn(
                 'h-11',
                 errors.email &&
@@ -535,21 +535,21 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
               )}
             />
             {errors.email && (
-              <p className="text-xs text-destructive mt-1">
+              <p className='text-xs text-destructive mt-1'>
                 {errors.email.message}
               </p>
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="password">
-              Password <span className="text-destructive">*</span>
+          <div className='space-y-1.5'>
+            <Label htmlFor='password'>
+              Password <span className='text-destructive'>*</span>
             </Label>
-            <div className="relative">
+            <div className='relative'>
               <Input
-                id="password"
+                id='password'
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
-                placeholder="Min. 8 characters"
+                placeholder='Min. 8 characters'
                 className={cn(
                   'h-11 pr-10',
                   errors.password &&
@@ -557,10 +557,10 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
                 )}
               />
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground'
                 onClick={() => setShowPassword(!showPassword)}
               >
                 <Icons.eyeOff
@@ -572,21 +572,21 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
               </Button>
             </div>
             {errors.password && (
-              <p className="text-xs text-destructive mt-1">
+              <p className='text-xs text-destructive mt-1'>
                 {errors.password.message}
               </p>
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="confirmPassword">
-              Confirm Password <span className="text-destructive">*</span>
+          <div className='space-y-1.5'>
+            <Label htmlFor='confirmPassword'>
+              Confirm Password <span className='text-destructive'>*</span>
             </Label>
-            <div className="relative">
+            <div className='relative'>
               <Input
-                id="confirmPassword"
+                id='confirmPassword'
                 type={showConfirmPassword ? 'text' : 'password'}
                 {...register('confirmPassword')}
-                placeholder="Re-enter password"
+                placeholder='Re-enter password'
                 className={cn(
                   'h-11 pr-10',
                   errors.confirmPassword &&
@@ -594,10 +594,10 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
                 )}
               />
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground'
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 <Icons.eyeOff
@@ -609,7 +609,7 @@ const Step1Content: React.FC<{ control: any; errors: any; register: any }> = ({
               </Button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-xs text-destructive mt-1">
+              <p className='text-xs text-destructive mt-1'>
                 {errors.confirmPassword.message}
               </p>
             )}
@@ -639,75 +639,75 @@ const Step2Content: React.FC<{
 }) => {
   return (
     <>
-      <CardHeader className="pb-4">
-        <div className="flex items-center mb-1">
+      <CardHeader className='pb-4'>
+        <div className='flex items-center mb-1'>
           {stepsConfig[1].icon}
-          <CardTitle className="text-2xl ml-2">{stepsConfig[1].name}</CardTitle>
+          <CardTitle className='text-2xl ml-2'>{stepsConfig[1].name}</CardTitle>
         </div>
         <CardDescription>
           Share your professional background and areas of expertise.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 pt-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="professionalTitle">
-            Professional Title <span className="text-destructive">*</span>
+      <CardContent className='space-y-5 pt-2'>
+        <div className='space-y-1.5'>
+          <Label htmlFor='professionalTitle'>
+            Professional Title <span className='text-destructive'>*</span>
           </Label>
           <Input
-            id="professionalTitle"
+            id='professionalTitle'
             {...register('professionalTitle')}
-            placeholder="e.g., Senior Software Engineer, Lead Designer"
+            placeholder='e.g., Senior Software Engineer, Lead Designer'
             className={cn(
               'h-11',
               errors.professionalTitle && 'border-destructive'
             )}
           />
           {errors.professionalTitle && (
-            <p className="text-xs text-destructive mt-1">
+            <p className='text-xs text-destructive mt-1'>
               {errors.professionalTitle.message}
             </p>
           )}
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bio">Biography / About You</Label>
+        <div className='space-y-1.5'>
+          <Label htmlFor='bio'>Biography / About You</Label>
           <Textarea
-            id="bio"
+            id='bio'
             {...register('bio')}
-            placeholder="Tell us about your experience, teaching philosophy, and what makes you passionate..."
+            placeholder='Tell us about your experience, teaching philosophy, and what makes you passionate...'
             rows={6}
             className={cn(errors.bio && 'border-destructive')}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className='text-xs text-muted-foreground'>
             This will be displayed on your instructor profile. (Max 4000
             characters)
           </p>
           {errors.bio && (
-            <p className="text-xs text-destructive mt-1">
+            <p className='text-xs text-destructive mt-1'>
               {errors.bio.message}
             </p>
           )}
         </div>
-        <div className="space-y-1.5">
+        <div className='space-y-1.5'>
           <Label>Your Skills (Select up to 5-7 relevant skills)</Label>
           {isSkillsLoading ? (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className='flex flex-wrap gap-2 mt-2'>
               {[...Array(6)].map((_, i) => (
-                <Skeleton key={i} className="h-9 w-24 rounded-full" />
+                <Skeleton key={i} className='h-9 w-24 rounded-full' />
               ))}
             </div>
           ) : skillsData && skillsData.length > 0 ? (
-            <ScrollArea className="h-40 border rounded-md p-3 dark:border-slate-700">
-              <div className="flex flex-wrap gap-2.5">
+            <ScrollArea className='h-40 border rounded-md p-3 dark:border-slate-700'>
+              <div className='flex flex-wrap gap-2.5'>
                 {skillsData.map((skill) => (
                   <Button
                     key={skill.skillId}
-                    type="button"
+                    type='button'
                     variant={
                       selectedSkills.includes(skill.skillName)
                         ? 'default'
                         : 'outline'
                     }
-                    size="sm"
+                    size='sm'
                     className={cn(
                       'rounded-full px-4 py-1.5 text-sm transition-all',
                       selectedSkills.includes(skill.skillName) &&
@@ -721,12 +721,12 @@ const Step2Content: React.FC<{
               </div>
             </ScrollArea>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className='text-sm text-muted-foreground'>
               No skills available to select.
             </p>
           )}
           {errors.skills && (
-            <p className="text-xs text-destructive mt-1">
+            <p className='text-xs text-destructive mt-1'>
               {errors.skills.message}
             </p>
           )}
@@ -748,18 +748,18 @@ const Step3Content: React.FC<{
   // `socialPlatforms` array đã được định nghĩa ở trên cùng (trong InstructorRegisterPage)
   return (
     <>
-      <CardHeader className="pb-4">
-        <div className="flex items-center mb-1">
+      <CardHeader className='pb-4'>
+        <div className='flex items-center mb-1'>
           {stepsConfig[2].icon}{' '}
           {/* Giả sử stepsConfig được truy cập từ scope cha hoặc import */}
-          <CardTitle className="text-2xl ml-2">{stepsConfig[2].name}</CardTitle>
+          <CardTitle className='text-2xl ml-2'>{stepsConfig[2].name}</CardTitle>
         </div>
         <CardDescription>
           Share your social media profiles to help students connect with you
           (optional).
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 pt-2">
+      <CardContent className='space-y-5 pt-2'>
         {fields.map(
           (
             fieldItem,
@@ -767,10 +767,10 @@ const Step3Content: React.FC<{
           ) => (
             <div
               key={fieldItem.id} // useFieldArray cung cấp 'id'
-              className="flex flex-col sm:flex-row items-start sm:items-end gap-3 p-4 border dark:border-slate-700 rounded-lg bg-background dark:bg-slate-800/30"
+              className='flex flex-col sm:flex-row items-start sm:items-end gap-3 p-4 border dark:border-slate-700 rounded-lg bg-background dark:bg-slate-800/30'
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-grow w-full sm:w-auto">
-                <div className="space-y-1.5">
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 flex-grow w-full sm:w-auto'>
+                <div className='space-y-1.5'>
                   <Label htmlFor={`socialLinks.${index}.platform`}>
                     Platform
                   </Label>
@@ -786,9 +786,9 @@ const Step3Content: React.FC<{
                       >
                         <SelectTrigger
                           id={`socialLinks.${index}.platform`}
-                          className="h-11"
+                          className='h-11'
                         >
-                          <SelectValue placeholder="Select Platform" />
+                          <SelectValue placeholder='Select Platform' />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
@@ -808,12 +808,12 @@ const Step3Content: React.FC<{
                     )}
                   />
                   {errors.socialLinks?.[index]?.platform && (
-                    <p className="text-xs text-destructive mt-1">
+                    <p className='text-xs text-destructive mt-1'>
                       {errors.socialLinks[index]?.platform?.message}
                     </p>
                   )}
                 </div>
-                <div className="space-y-1.5">
+                <div className='space-y-1.5'>
                   <Label htmlFor={`socialLinks.${index}.url`}>
                     Profile URL
                   </Label>
@@ -821,36 +821,36 @@ const Step3Content: React.FC<{
                     id={`socialLinks.${index}.url`}
                     // SỬ DỤNG REGISTER ĐÃ ĐƯỢC TRUYỀN VÀO
                     {...register(`socialLinks.${index}.url` as const)}
-                    placeholder="https://..."
-                    className="h-11"
+                    placeholder='https://...'
+                    className='h-11'
                   />
                   {errors.socialLinks?.[index]?.url && (
-                    <p className="text-xs text-destructive mt-1">
+                    <p className='text-xs text-destructive mt-1'>
                       {errors.socialLinks[index]?.url?.message}
                     </p>
                   )}
                 </div>
               </div>
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
+                type='button'
+                variant='ghost'
+                size='icon'
                 onClick={() => remove(index)}
-                className="text-muted-foreground hover:text-destructive h-11 w-11 sm:ml-auto mt-2 sm:mt-0 flex-shrink-0"
-                aria-label="Remove social link"
+                className='text-muted-foreground hover:text-destructive h-11 w-11 sm:ml-auto mt-2 sm:mt-0 flex-shrink-0'
+                aria-label='Remove social link'
               >
-                <Icons.trash className="h-5 w-5" />
+                <Icons.trash className='h-5 w-5' />
               </Button>
             </div>
           )
         )}
         <Button
-          type="button"
-          variant="outline"
+          type='button'
+          variant='outline'
           onClick={() => append({ platform: '', url: '' })}
-          className="mt-3 h-10 text-sm border-dashed hover:border-solid hover:bg-accent"
+          className='mt-3 h-10 text-sm border-dashed hover:border-solid hover:bg-accent'
         >
-          <Icons.plusCircle className="mr-2 h-4 w-4" /> Add Another Link
+          <Icons.plusCircle className='mr-2 h-4 w-4' /> Add Another Link
         </Button>
       </CardContent>
     </>
@@ -864,28 +864,28 @@ const Step4Content: React.FC<{ control: any; errors: any }> = ({
 }) => {
   return (
     <>
-      <CardHeader className="pb-4">
-        <div className="flex items-center mb-1">
+      <CardHeader className='pb-4'>
+        <div className='flex items-center mb-1'>
           {stepsConfig[3].icon}
-          <CardTitle className="text-2xl ml-2">{stepsConfig[3].name}</CardTitle>
+          <CardTitle className='text-2xl ml-2'>{stepsConfig[3].name}</CardTitle>
         </div>
         <CardDescription>
           Please review and agree to our terms to complete your application.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 pt-2">
-        <div className="bg-slate-50 dark:bg-slate-700/30 p-6 rounded-lg border dark:border-slate-600/50">
-          <h3 className="font-semibold text-lg text-foreground mb-3">
+      <CardContent className='space-y-5 pt-2'>
+        <div className='bg-slate-50 dark:bg-slate-700/30 p-6 rounded-lg border dark:border-slate-600/50'>
+          <h3 className='font-semibold text-lg text-foreground mb-3'>
             Instructor Agreement Summary
           </h3>
-          <ScrollArea className="h-48 custom-scrollbar pr-3">
-            <div className="text-sm text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed">
+          <ScrollArea className='h-48 custom-scrollbar pr-3'>
+            <div className='text-sm text-slate-700 dark:text-slate-300 space-y-2 leading-relaxed'>
               <p>
                 By applying to become an instructor on 3TEduTech, you
                 acknowledge and agree to our full Instructor Terms of Service
                 and Privacy Policy. Key responsibilities and terms include:
               </p>
-              <ul className="list-disc pl-5 space-y-1.5">
+              <ul className='list-disc pl-5 space-y-1.5'>
                 <li>
                   You confirm that you own or have the necessary licenses,
                   rights, consents, and permissions to authorize 3TEduTech to
@@ -915,20 +915,20 @@ const Step4Content: React.FC<{ control: any; errors: any }> = ({
                   that violate our policies.
                 </li>
               </ul>
-              <p className="mt-3">
+              <p className='mt-3'>
                 Please read the full{' '}
                 <Link
-                  to="/terms-instructor"
-                  target="_blank"
-                  className="text-primary hover:underline font-medium"
+                  to='/terms-instructor'
+                  target='_blank'
+                  className='text-primary hover:underline font-medium'
                 >
                   Instructor Terms
                 </Link>{' '}
                 and{' '}
                 <Link
-                  to="/privacy"
-                  target="_blank"
-                  className="text-primary hover:underline font-medium"
+                  to='/privacy'
+                  target='_blank'
+                  className='text-primary hover:underline font-medium'
                 >
                   Privacy Policy
                 </Link>{' '}
@@ -937,32 +937,32 @@ const Step4Content: React.FC<{ control: any; errors: any }> = ({
             </div>
           </ScrollArea>
         </div>
-        <div className="flex items-start space-x-3 pt-3">
+        <div className='flex items-start space-x-3 pt-3'>
           <Controller
-            name="agreedToTerms"
+            name='agreedToTerms'
             control={control}
             render={({ field }) => (
               <Checkbox
-                id="agreedToTerms-cb" // ID phải là duy nhất
+                id='agreedToTerms-cb' // ID phải là duy nhất
                 checked={field.value}
                 onCheckedChange={field.onChange}
-                className="mt-0.5"
-                aria-labelledby="agreedToTerms-label"
+                className='mt-0.5'
+                aria-labelledby='agreedToTerms-label'
               />
             )}
           />
-          <div className="grid gap-1.5 leading-none">
+          <div className='grid gap-1.5 leading-none'>
             <Label
-              htmlFor="agreedToTerms-cb"
-              id="agreedToTerms-label"
-              className="text-sm font-medium text-foreground cursor-pointer"
+              htmlFor='agreedToTerms-cb'
+              id='agreedToTerms-label'
+              className='text-sm font-medium text-foreground cursor-pointer'
             >
               I have read, understood, and agree to the 3TEduTech Instructor
               Terms and Privacy Policy.{' '}
-              <span className="text-destructive">*</span>
+              <span className='text-destructive'>*</span>
             </Label>
             {errors.agreedToTerms && (
-              <p className="text-xs text-destructive">
+              <p className='text-xs text-destructive'>
                 {errors.agreedToTerms.message}
               </p>
             )}

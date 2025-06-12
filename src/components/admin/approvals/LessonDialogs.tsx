@@ -19,6 +19,7 @@ import {
   getYoutubeEmbedUrl,
   getVimeoEmbedUrl,
 } from '../../../utils/video.util'; // Import utils
+import { useTranslation } from 'react-i18next';
 
 // --- Video Preview Dialog ---
 interface VideoPreviewDialogProps {
@@ -32,6 +33,7 @@ export const VideoPreviewDialog: React.FC<VideoPreviewDialogProps> = ({
   onOpenChange,
   lesson,
 }) => {
+  const { t } = useTranslation();
   // Fetch signed URL nếu là Cloudinary và có ID
   const lessonIdForQuery =
     lesson?.videoSourceType === 'CLOUDINARY' && lesson?.externalVideoId
@@ -62,33 +64,35 @@ export const VideoPreviewDialog: React.FC<VideoPreviewDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0">
-        {' '}
-        {/* Bỏ padding mặc định để video tràn viền */}
-        <DialogHeader className="p-6 pb-2">
-          {' '}
-          {/* Thêm padding lại cho header */}
-          <DialogTitle>{lesson?.lessonName || 'Video Preview'}</DialogTitle>
+      <DialogContent className='max-w-4xl p-0'>
+        <DialogHeader className='p-6 pb-2'>
+          <DialogTitle>
+            {lesson?.lessonName ||
+              t('lessonDialogs.videoPreview', 'Video Preview')}
+          </DialogTitle>
           {lesson?.description && (
-            <DialogDescription className="text-sm">
+            <DialogDescription className='text-sm'>
               {lesson.description}
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="aspect-video bg-black overflow-hidden">
-          {' '}
-          {/* Không cần rounded nếu dialog đã có */}
+        <div className='aspect-video bg-black overflow-hidden'>
           {isLoading && lessonIdForQuery && (
-            <div className="w-full h-full flex items-center justify-center">
-              <Loader2 className="h-12 w-12 animate-spin text-gray-500" />
+            <div className='w-full h-full flex items-center justify-center'>
+              <Loader2 className='h-12 w-12 animate-spin text-gray-500' />
             </div>
           )}
           {isError && lessonIdForQuery && (
-            <div className="w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 p-4">
-              <AlertCircle className="h-8 w-8 mb-2" />
-              <span>Error loading video</span>
-              <span className="text-xs mt-1">
-                ({error?.message || 'Unknown error'})
+            <div className='w-full h-full flex flex-col items-center justify-center text-destructive-foreground bg-destructive/80 p-4'>
+              <AlertCircle className='h-8 w-8 mb-2' />
+              <span>
+                {t('lessonDialogs.errorLoadingVideo', 'Error loading video')}
+              </span>
+              <span className='text-xs mt-1'>
+                (
+                {error?.message ||
+                  t('lessonDialogs.unknownError', 'Unknown error')}
+                )
               </span>
             </div>
           )}
@@ -97,7 +101,7 @@ export const VideoPreviewDialog: React.FC<VideoPreviewDialogProps> = ({
               key={videoSrc}
               src={videoSrc}
               controls
-              className="w-full h-full object-contain"
+              className='w-full h-full object-contain'
             />
           )}
           {videoSrc &&
@@ -106,24 +110,27 @@ export const VideoPreviewDialog: React.FC<VideoPreviewDialogProps> = ({
               <iframe
                 key={videoSrc}
                 src={videoSrc}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                className='w-full h-full'
+                allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
                 allowFullScreen
                 title={lesson.lessonName}
               ></iframe>
             )}
-          {/* Trường hợp không có video source hợp lệ */}
           {!isLoading &&
             !isError &&
             !videoSrc &&
             lesson?.lessonType === 'VIDEO' && (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground p-4">
-                <Video className="h-8 w-8 mb-2" />
-                <span>Video source not available</span>
+              <div className='w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground p-4'>
+                <Video className='h-8 w-8 mb-2' />
+                <span>
+                  {t(
+                    'lessonDialogs.noVideoSource',
+                    'Video source not available'
+                  )}
+                </span>
               </div>
             )}
         </div>
-        {/* <DialogFooter className="p-6 pt-4"> <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button> </DialogFooter> */}
       </DialogContent>
     </Dialog>
   );
@@ -141,26 +148,30 @@ export const TextContentDialog: React.FC<TextContentDialogProps> = ({
   onOpenChange,
   lesson,
 }) => {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className='max-w-4xl'>
         <DialogHeader>
-          <DialogTitle>{lesson?.lessonName || 'Text Content'}</DialogTitle>
+          <DialogTitle>
+            {lesson?.lessonName ||
+              t('lessonDialogs.textContent', 'Text Content')}
+          </DialogTitle>
           {lesson?.description && (
-            <DialogDescription className="text-sm">
+            <DialogDescription className='text-sm'>
               {lesson.description}
             </DialogDescription>
           )}
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] mt-4 border rounded-md">
+        <ScrollArea className='max-h-[70vh] mt-4 border rounded-md'>
           {lesson?.textContent ? (
             <div
-              className="prose prose-sm sm:prose-base dark:prose-invert max-w-none p-4" // Thêm padding
+              className='prose prose-sm sm:prose-base dark:prose-invert max-w-none p-4'
               dangerouslySetInnerHTML={{ __html: lesson.textContent }}
             />
           ) : (
-            <p className="text-muted-foreground text-center py-12">
-              No content available.
+            <p className='text-muted-foreground text-center py-12'>
+              {t('lessonDialogs.noContent', 'No content available.')}
             </p>
           )}
         </ScrollArea>
@@ -181,6 +192,7 @@ export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
   onOpenChange,
   lesson,
 }) => {
+  const { t } = useTranslation();
   // Sắp xếp câu hỏi và lựa chọn một lần
   const sortedQuestions = React.useMemo(() => {
     return (
@@ -197,34 +209,37 @@ export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className='max-w-3xl'>
         <DialogHeader>
-          <DialogTitle>{lesson?.lessonName || 'Quiz Preview'}</DialogTitle>
+          <DialogTitle>
+            {lesson?.lessonName ||
+              t('lessonDialogs.quizPreview', 'Quiz Preview')}
+          </DialogTitle>
           {lesson?.description && (
-            <DialogDescription className="text-sm">
+            <DialogDescription className='text-sm'>
               {lesson.description}
             </DialogDescription>
           )}
         </DialogHeader>
-        <ScrollArea className="max-h-[70vh] mt-4 pr-2">
-          <div className="space-y-6">
+        <ScrollArea className='max-h-[70vh] mt-4 pr-2'>
+          <div className='space-y-6'>
             {sortedQuestions.length > 0 ? (
               sortedQuestions.map((question, index) => (
                 <div
                   key={question.questionId}
-                  className="border rounded-lg p-4 space-y-3 bg-background shadow-sm"
+                  className='border rounded-lg p-4 space-y-3 bg-background shadow-sm'
                 >
                   {/* Question */}
-                  <div className="flex items-start gap-3">
-                    <Badge variant="secondary" className="mt-0.5">
+                  <div className='flex items-start gap-3'>
+                    <Badge variant='secondary' className='mt-0.5'>
                       {index + 1}
                     </Badge>
-                    <p className="font-medium flex-1">
+                    <p className='font-medium flex-1'>
                       {question.questionText}
                     </p>
                   </div>
                   {/* Options */}
-                  <div className="space-y-2 pl-8">
+                  <div className='space-y-2 pl-8'>
                     {question.options.map((option) => (
                       <div
                         key={option.optionId}
@@ -235,9 +250,9 @@ export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
                         }`}
                       >
                         {option.isCorrectAnswer ? (
-                          <Check className="h-4 w-4 text-green-600 shrink-0" />
+                          <Check className='h-4 w-4 text-green-600 shrink-0' />
                         ) : (
-                          <div className="w-4 h-4 shrink-0"></div> // Giữ khoảng trống cho thẳng hàng
+                          <div className='w-4 h-4 shrink-0'></div>
                         )}
                         <span
                           className={
@@ -253,11 +268,11 @@ export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
                   </div>
                   {/* Explanation */}
                   {question.explanation && (
-                    <div className="pl-8 pt-3 border-t mt-3">
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">
-                        Explanation:
+                    <div className='pl-8 pt-3 border-t mt-3'>
+                      <p className='text-xs font-semibold text-muted-foreground mb-1'>
+                        {t('lessonDialogs.explanation', 'Explanation:')}
                       </p>
-                      <p className="text-sm italic text-muted-foreground">
+                      <p className='text-sm italic text-muted-foreground'>
                         {question.explanation}
                       </p>
                     </div>
@@ -265,8 +280,8 @@ export const QuizContentDialog: React.FC<QuizContentDialogProps> = ({
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-center py-12">
-                No questions in this quiz.
+              <p className='text-muted-foreground text-center py-12'>
+                {t('lessonDialogs.noQuestions', 'No questions in this quiz.')}
               </p>
             )}
           </div>

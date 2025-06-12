@@ -1,74 +1,59 @@
 // src/services/paymentMethod.service.ts
+import { IsoDateTimeString } from '@/types/common.types';
 import apiHelper from './apiHelper';
 
-// --- Kiểu dữ liệu ---
-// Định nghĩa interface cho đối tượng PaymentMethod trả về từ API
 export interface PaymentMethod {
   methodId: string;
   methodName: string;
-  // Thêm các trường khác nếu API trả về (ví dụ: isEnabled)
+  iconUrl?: string | null;
+  description?: string | null;
+  createdAt?: IsoDateTimeString;
+  updatedAt?: IsoDateTimeString;
 }
 
-// Định nghĩa interface cho dữ liệu tạo mới (Admin)
+export interface PaymentMethodListResponse {
+  paymentMethods: PaymentMethod[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+}
+
+export interface PaymentMethodQueryParams {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+}
+
 export interface CreatePaymentMethodData {
   methodId: string;
   methodName: string;
+  iconUrl?: string;
+  description?: string;
 }
 
-// Định nghĩa interface cho dữ liệu cập nhật (Admin)
 export interface UpdatePaymentMethodData {
-  methodName: string; // Chỉ cho phép cập nhật tên?
-}
-
-// Định nghĩa kiểu dữ liệu cho response trả về từ API lấy danh sách
-interface PaymentMethodListResponse {
-  paymentMethods: PaymentMethod[];
-  // Có thể có thông tin phân trang nếu API hỗ trợ
+  methodName?: string;
+  iconUrl?: string;
+  description?: string;
 }
 
 // --- Hàm gọi API ---
+/** Lấy danh sách phương thức thanh toán */
+export const getPaymentMethods = async (
+  params?: PaymentMethodQueryParams
+): Promise<PaymentMethodListResponse> => {
+  return apiHelper.get('/payment-methods', undefined, params);
+};
 
-/**
- * Lấy danh sách tất cả các phương thức thanh toán khả dụng.
- * (Dùng cho cả Admin và Instructor/User khi cần hiển thị lựa chọn)
- * @returns {Promise<PaymentMethodListResponse>}
- */
-export const getAvailablePaymentMethods =
-  async (): Promise<PaymentMethodListResponse> => {
-    // Giả sử API GET /payment-methods trả về dạng { paymentMethods: [...] }
-    return apiHelper.get('/payment-methods');
-  };
-
-// --- Admin APIs ---
-
-/**
- * Admin: Tạo phương thức thanh toán mới.
- * @param {CreatePaymentMethodData} data - Dữ liệu phương thức mới.
- * @returns {Promise<PaymentMethod>} - Phương thức vừa tạo.
- */
+/** Tạo phương thức thanh toán mới */
 export const createPaymentMethod = async (
   data: CreatePaymentMethodData
 ): Promise<PaymentMethod> => {
   return apiHelper.post('/payment-methods', data);
 };
 
-/**
- * Admin: Lấy chi tiết một phương thức thanh toán.
- * @param {string} methodId - ID của phương thức.
- * @returns {Promise<PaymentMethod>} - Chi tiết phương thức.
- */
-export const getPaymentMethodById = async (
-  methodId: string
-): Promise<PaymentMethod> => {
-  return apiHelper.get(`/payment-methods/${methodId}`);
-};
-
-/**
- * Admin: Cập nhật tên phương thức thanh toán.
- * @param {string} methodId - ID của phương thức cần cập nhật.
- * @param {UpdatePaymentMethodData} data - Dữ liệu cập nhật.
- * @returns {Promise<PaymentMethod>} - Phương thức đã cập nhật.
- */
+/** Cập nhật phương thức thanh toán */
 export const updatePaymentMethod = async (
   methodId: string,
   data: UpdatePaymentMethodData
@@ -76,11 +61,7 @@ export const updatePaymentMethod = async (
   return apiHelper.patch(`/payment-methods/${methodId}`, data);
 };
 
-/**
- * Admin: Xóa phương thức thanh toán.
- * @param {string} methodId - ID của phương thức cần xóa.
- * @returns {Promise<void>}
- */
+/** Xóa phương thức thanh toán */
 export const deletePaymentMethod = async (methodId: string): Promise<void> => {
   await apiHelper.delete(`/payment-methods/${methodId}`);
 };

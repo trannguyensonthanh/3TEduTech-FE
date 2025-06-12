@@ -94,9 +94,9 @@ const StatCard: React.FC<{
   smallerText = false,
 }) => {
   return (
-    <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70 hover:shadow-xl transition-shadow duration-300 h-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+    <Card className='shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70 hover:shadow-xl transition-shadow duration-300 h-full'>
+      <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+        <CardTitle className='text-sm font-medium text-muted-foreground'>
           {title}
         </CardTitle>
         <div className={cn('h-5 w-5 sm:h-6 sm:w-6', colorClass)}>{icon}</div>
@@ -108,7 +108,7 @@ const StatCard: React.FC<{
             <Skeleton
               className={cn('h-7 w-3/4 mb-1.5', smallerText && 'h-6')}
             />{' '}
-            <Skeleton className="h-4 w-1/2" />{' '}
+            <Skeleton className='h-4 w-1/2' />{' '}
           </>
         ) : (
           <>
@@ -128,7 +128,7 @@ const StatCard: React.FC<{
                   })}`
                 : value || 'N/A'}
             </div>
-            <p className="text-xs text-muted-foreground pt-1">{description}</p>
+            <p className='text-xs text-muted-foreground pt-1'>{description}</p>
           </>
         )}
       </CardContent>
@@ -145,15 +145,15 @@ const CustomTooltipMonthlyEarnings = ({
 }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-popover p-3 rounded-lg shadow-lg border border-border text-popover-foreground">
-        <p className="label font-semibold">
+      <div className='bg-popover p-3 rounded-lg shadow-lg border border-border text-popover-foreground'>
+        <p className='label font-semibold'>
           {label ? format(parseISO(label + '-01'), 'MMM yyyy') : ''}
         </p>
         {payload.map((entry: any) => (
           <p
             key={entry.name}
             style={{ color: entry.color }}
-            className="text-sm"
+            className='text-sm'
           >
             {`${entry.name}: ${currencySymbol}${entry.value.toLocaleString(
               undefined,
@@ -171,7 +171,6 @@ const InstructorEarningsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   const queryParams = useMemo(
     () => new URLSearchParams(location.search),
@@ -196,8 +195,8 @@ const InstructorEarningsPage = () => {
       overviewData?.currencyId === 'VND'
         ? '₫'
         : overviewData?.currencyId
-        ? `${overviewData.currencyId} `
-        : '$',
+          ? `${overviewData.currencyId} `
+          : '$',
     [overviewData?.currencyId]
   );
   const currentBalance = overviewData?.currentBalance || 0;
@@ -243,65 +242,68 @@ const InstructorEarningsPage = () => {
       setActiveTab(tabFromUrl);
     }
   }, [queryParams, activeTab]);
-
+  console.log(
+    'overviewData?.minWithdrawalAmount',
+    overviewData?.minWithdrawalAmount
+  );
   return (
     <InstructorLayout
-      pageTitle="Earnings & Finances"
+      pageTitle='Earnings & Finances'
       breadcrumbs={[
         { label: 'Dashboard', href: '/instructor/dashboard' },
         { label: 'Earnings' },
       ]}
     >
-      <div className="space-y-6 md:space-y-8">
+      <div className='space-y-6 md:space-y-8'>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'
         >
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h1 className='text-3xl md:text-4xl font-bold tracking-tight text-foreground'>
               Earnings Dashboard
             </h1>
-            <p className="text-muted-foreground mt-1 text-base">
+            <p className='text-muted-foreground mt-1 text-base'>
               Track your revenue, manage payouts, and understand your financial
               performance.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className='flex flex-col sm:flex-row gap-3 w-full sm:w-auto'>
             <Button
-              size="lg"
-              className="h-11 px-5 text-base w-full sm:w-auto bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-shadow"
+              size='lg'
+              className='h-11 px-5 text-base w-full sm:w-auto bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-shadow'
               onClick={() => setShowRequestWithdrawalDialog(true)}
               disabled={
                 isLoadingOverview ||
                 currentBalance < (overviewData?.minWithdrawalAmount || 10)
               }
             >
-              <Icons.wallet className="w-5 h-5 mr-2" /> Request Withdrawal
+              <Icons.wallet className='w-5 h-5 mr-2' /> Request Withdrawal
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-11 px-5 text-base w-full sm:w-auto"
+            {/* <Button
+              size='lg'
+              variant='outline'
+              className='h-11 px-5 text-base w-full sm:w-auto'
             >
-              <Icons.download className="w-5 h-5 mr-2" /> Download Report
-            </Button>
+              <Icons.download className='w-5 h-5 mr-2' /> Download Report
+            </Button> */}
           </div>
         </motion.div>
 
         <motion.div
           variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
-          initial="hidden"
-          animate="visible"
-          className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+          initial='hidden'
+          animate='visible'
+          className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'
         >
           {[
             {
               custom: 0,
               title: 'Current Balance',
               value: overviewData?.currentBalance,
-              icon: <Icons.wallet className="opacity-80" />,
+              icon: <Icons.wallet className='opacity-80' />,
               description: 'Available for your next payout',
               colorClass: 'text-green-500 dark:text-green-400',
             },
@@ -309,14 +311,14 @@ const InstructorEarningsPage = () => {
               custom: 1,
               title: 'Lifetime Earnings',
               value: overviewData?.totalLifetimeEarnings,
-              icon: <Icons.dollarSign className="opacity-80" />,
+              icon: <Icons.dollarSign className='opacity-80' />,
               description: 'Total revenue generated',
             },
             {
               custom: 2,
               title: 'Pending Payouts',
               value: overviewData?.pendingPayoutsAmount,
-              icon: <Icons.clock className="opacity-80" />,
+              icon: <Icons.clock className='opacity-80' />,
               description: 'Withdrawals being processed',
               colorClass: 'text-orange-500 dark:text-orange-400',
             },
@@ -324,7 +326,7 @@ const InstructorEarningsPage = () => {
               custom: 3,
               title: 'Total Students',
               value: overviewData?.totalStudentsLifetime?.toLocaleString(),
-              icon: <Icons.users className="opacity-80" />,
+              icon: <Icons.users className='opacity-80' />,
               description: 'Across all your courses',
               colorClass: 'text-purple-500 dark:text-purple-400',
             },
@@ -344,10 +346,10 @@ const InstructorEarningsPage = () => {
         </motion.div>
 
         {overviewError && (
-          <Card className="bg-destructive/10 border-destructive/30">
+          <Card className='bg-destructive/10 border-destructive/30'>
             {' '}
-            <CardContent className="p-4 text-center text-sm text-destructive-foreground">
-              <Icons.alertTriangle className="inline-block h-5 w-5 mr-2" />{' '}
+            <CardContent className='p-4 text-center text-sm text-destructive-foreground'>
+              <Icons.alertTriangle className='inline-block h-5 w-5 mr-2' />{' '}
               Failed to load financial overview:{' '}
               {(overviewError as Error).message}
             </CardContent>
@@ -357,54 +359,54 @@ const InstructorEarningsPage = () => {
         <Tabs
           value={activeTab}
           onValueChange={handleTabChange}
-          className="w-full pt-2"
+          className='w-full pt-2'
         >
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:w-auto md:inline-flex h-12 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shadow-sm">
+          <TabsList className='grid w-full grid-cols-2 sm:grid-cols-3 md:w-auto md:inline-flex h-12 p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shadow-sm'>
             <TabsTrigger
-              value="overview"
-              className="px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md"
+              value='overview'
+              className='px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md'
             >
-              <Icons.level className="mr-2 h-5 w-5" />
+              <Icons.level className='mr-2 h-5 w-5' />
               Overview
             </TabsTrigger>
             <TabsTrigger
-              value="transactions"
-              className="px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md"
+              value='transactions'
+              className='px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md'
             >
-              <Icons.listChecks className="mr-2 h-5 w-5" />
+              <Icons.listChecks className='mr-2 h-5 w-5' />
               Transactions
             </TabsTrigger>
             <TabsTrigger
-              value="payouts"
-              className="px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md"
+              value='payouts'
+              className='px-4 sm:px-6 py-2.5 text-sm sm:text-base data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md'
             >
-              <Icons.creditCard className="mr-2 h-5 w-5" />
+              <Icons.creditCard className='mr-2 h-5 w-5' />
               Payouts
             </TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode='wait'>
             <motion.div
               key={activeTab}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.25, ease: 'easeInOut' }}
-              className="mt-6"
+              className='mt-6'
             >
               <TabsContent
-                value="overview"
+                value='overview'
                 forceMount={true}
                 className={cn(activeTab !== 'overview' && 'hidden', '!mt-0')}
               >
-                <div className="space-y-6 md:space-y-8">
-                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
-                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4">
+                <div className='space-y-6 md:space-y-8'>
+                  <Card className='shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70'>
+                    <CardHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4'>
                       <div>
-                        <CardTitle className="text-xl md:text-2xl font-semibold">
+                        <CardTitle className='text-xl md:text-2xl font-semibold'>
                           Monthly Earnings
                         </CardTitle>
-                        <CardDescription className="text-sm mt-1">
+                        <CardDescription className='text-sm mt-1'>
                           Net earnings trend.
                         </CardDescription>
                       </div>
@@ -414,8 +416,8 @@ const InstructorEarningsPage = () => {
                           setMonthlyEarningsPeriod(val as TimePeriodValue)
                         }
                       >
-                        <SelectTrigger className="w-full sm:w-[200px] h-10 mt-3 sm:mt-0 text-sm">
-                          <SelectValue placeholder="Select period" />
+                        <SelectTrigger className='w-full sm:w-[200px] h-10 mt-3 sm:mt-0 text-sm'>
+                          <SelectValue placeholder='Select period' />
                         </SelectTrigger>
                         <SelectContent>
                           {timePeriodOptions.map((opt) => (
@@ -426,30 +428,30 @@ const InstructorEarningsPage = () => {
                         </SelectContent>
                       </Select>
                     </CardHeader>
-                    <CardContent className="h-[350px] md:h-[400px] pl-0 pr-2 sm:pr-4 py-6">
+                    <CardContent className='h-[350px] md:h-[400px] pl-0 pr-2 sm:pr-4 py-6'>
                       {isLoadingMonthly ? (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Skeleton className="w-[95%] h-[90%]" />
+                        <div className='w-full h-full flex items-center justify-center'>
+                          <Skeleton className='w-[95%] h-[90%]' />
                         </div>
                       ) : monthlyError ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-destructive">
-                          <Icons.alertTriangle className="w-10 h-10 mb-2" />
+                        <div className='w-full h-full flex flex-col items-center justify-center text-destructive'>
+                          <Icons.alertTriangle className='w-10 h-10 mb-2' />
                           Error loading chart.
                         </div>
                       ) : monthlyEarningsData?.earnings &&
                         monthlyEarningsData.earnings.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width='100%' height='100%'>
                           <BarChart
                             data={monthlyEarningsData.earnings}
                             margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                           >
                             <CartesianGrid
-                              strokeDasharray="3 3"
+                              strokeDasharray='3 3'
                               strokeOpacity={0.2}
                               vertical={false}
                             />
                             <XAxis
-                              dataKey="month"
+                              dataKey='month'
                               tickFormatter={(value) =>
                                 format(parseISO(value + '-01'), 'MMM yy')
                               }
@@ -479,30 +481,30 @@ const InstructorEarningsPage = () => {
                             />
                             <Legend wrapperStyle={{ fontSize: '12px' }} />
                             <Bar
-                              dataKey="netEarnings"
-                              fill="hsl(var(--primary))"
-                              name="Net Earnings"
+                              dataKey='netEarnings'
+                              fill='hsl(var(--primary))'
+                              name='Net Earnings'
                               radius={[4, 4, 0, 0]}
                               barSize={25}
                             />
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                          <Icons.level className="w-16 h-16 mb-3 opacity-50" />
+                        <div className='w-full h-full flex flex-col items-center justify-center text-muted-foreground'>
+                          <Icons.level className='w-16 h-16 mb-3 opacity-50' />
                           No earnings data for this period.
                         </div>
                       )}
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
-                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4">
+                  <Card className='shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70'>
+                    <CardHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4'>
                       <div>
-                        <CardTitle className="text-xl md:text-2xl font-semibold">
+                        <CardTitle className='text-xl md:text-2xl font-semibold'>
                           Revenue by Course
                         </CardTitle>
-                        <CardDescription className="text-sm mt-1">
+                        <CardDescription className='text-sm mt-1'>
                           Top performing courses.
                         </CardDescription>
                       </div>
@@ -512,8 +514,8 @@ const InstructorEarningsPage = () => {
                           setCourseRevenuePeriod(val as TimePeriodValue)
                         }
                       >
-                        <SelectTrigger className="w-full sm:w-[200px] h-10 mt-3 sm:mt-0 text-sm">
-                          <SelectValue placeholder="Select period" />
+                        <SelectTrigger className='w-full sm:w-[200px] h-10 mt-3 sm:mt-0 text-sm'>
+                          <SelectValue placeholder='Select period' />
                         </SelectTrigger>
                         <SelectContent>
                           {timePeriodOptions.map((opt) => (
@@ -526,32 +528,32 @@ const InstructorEarningsPage = () => {
                     </CardHeader>
                     <CardContent>
                       {isLoadingCourseRevenue ? (
-                        <div className="space-y-4">
+                        <div className='space-y-4'>
                           {[...Array(3)].map((_, i) => (
-                            <Skeleton key={i} className="h-12 w-full" />
+                            <Skeleton key={i} className='h-12 w-full' />
                           ))}
                         </div>
                       ) : courseRevenueError ? (
-                        <p className="text-sm text-destructive text-center py-4">
+                        <p className='text-sm text-destructive text-center py-4'>
                           Could not load course revenue.
                         </p>
                       ) : courseRevenueData?.courses &&
                         courseRevenueData.courses.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className='space-y-4'>
                           {courseRevenueData.courses.map((course, index) => (
-                            <div key={course.courseId} className="space-y-1.5">
-                              <div className="flex justify-between items-center text-sm">
+                            <div key={course.courseId} className='space-y-1.5'>
+                              <div className='flex justify-between items-center text-sm'>
                                 <Link
                                   to={`/instructor/courses/${
                                     course.courseSlug || course.courseId
                                   }/manage/goals`}
-                                  className="font-medium text-foreground hover:text-primary truncate mr-2"
+                                  className='font-medium text-foreground hover:text-primary truncate mr-2'
                                   title={course.courseName}
                                 >
                                   {index + 1}. {course.courseName}
                                 </Link>
-                                <div className="flex items-baseline">
-                                  <span className="font-semibold text-foreground">
+                                <div className='flex items-baseline'>
+                                  <span className='font-semibold text-foreground'>
                                     {currencySymbol}
                                     {course.netEarnings.toLocaleString(
                                       undefined,
@@ -563,7 +565,7 @@ const InstructorEarningsPage = () => {
                                       }
                                     )}
                                   </span>
-                                  <span className="text-xs text-muted-foreground ml-1.5">
+                                  <span className='text-xs text-muted-foreground ml-1.5'>
                                     (
                                     {course.percentageOfTotalEarnings.toFixed(
                                       1
@@ -579,54 +581,54 @@ const InstructorEarningsPage = () => {
                                   index % 3 === 0
                                     ? 'bg-primary'
                                     : index % 3 === 1
-                                    ? 'bg-sky-500'
-                                    : 'bg-amber-500'
+                                      ? 'bg-sky-500'
+                                      : 'bg-amber-500'
                                 )}
                               />
                             </div>
                           ))}
                           {courseRevenueData.totalCourses > 5 && (
                             <Button
-                              variant="link"
+                              variant='link'
                               asChild
-                              className="p-0 h-auto text-sm mt-3"
+                              className='p-0 h-auto text-sm mt-3'
                             >
-                              <Link to="?tab=transactions&filter=revenue_by_course&period=all_time">
+                              <Link to='?tab=transactions&filter=revenue_by_course&period=all_time'>
                                 View All Course Revenue
                               </Link>
                             </Button>
                           )}
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">
+                        <p className='text-sm text-muted-foreground text-center py-4'>
                           No course revenue data for this period.
                         </p>
                       )}
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
-                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4">
+                  <Card className='shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70'>
+                    <CardHeader className='flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4'>
                       <div>
-                        <CardTitle className="text-xl md:text-2xl font-semibold flex items-center">
-                          <Icons.creditCard className="mr-3 h-6 w-6 text-sky-500 dark:text-sky-400" />
+                        <CardTitle className='text-xl md:text-2xl font-semibold flex items-center'>
+                          <Icons.creditCard className='mr-3 h-6 w-6 text-sky-500 dark:text-sky-400' />
                           Payout Methods
                         </CardTitle>
-                        <CardDescription className="text-sm mt-1">
+                        <CardDescription className='text-sm mt-1'>
                           Manage how you receive your earnings.
                         </CardDescription>
                       </div>
                       <Button
-                        variant="outline"
+                        variant='outline'
                         onClick={() => setShowManagePayoutMethodsDialog(true)}
-                        className="mt-3 sm:mt-0 h-10 text-sm"
+                        className='mt-3 sm:mt-0 h-10 text-sm'
                       >
-                        <Icons.settings2 className="mr-2 h-4 w-4" /> Manage
+                        <Icons.settings2 className='mr-2 h-4 w-4' /> Manage
                         Methods
                       </Button>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground">
+                      <p className='text-sm text-muted-foreground'>
                         Add and manage your payout methods like PayPal or Bank
                         Transfer. Ensure your primary method is correctly set
                         up.
@@ -634,22 +636,22 @@ const InstructorEarningsPage = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70">
+                  <Card className='shadow-lg dark:bg-slate-800/60 border dark:border-slate-700/70'>
                     <CardHeader>
-                      <CardTitle className="text-xl md:text-2xl font-semibold flex items-center">
-                        <Icons.help className="mr-3 h-6 w-6 text-blue-500" />
+                      <CardTitle className='text-xl md:text-2xl font-semibold flex items-center'>
+                        <Icons.help className='mr-3 h-6 w-6 text-blue-500' />
                         Understanding Your Earnings
                       </CardTitle>
-                      <CardDescription className="text-sm mt-1">
+                      <CardDescription className='text-sm mt-1'>
                         Key information about how earnings and payouts work.
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+                    <CardContent className='grid md:grid-cols-2 gap-x-8 gap-y-6 text-sm'>
                       <div>
-                        <h4 className="font-semibold mb-1.5 text-foreground">
+                        <h4 className='font-semibold mb-1.5 text-foreground'>
                           Revenue Share
                         </h4>
-                        <p className="text-muted-foreground leading-relaxed">
+                        <p className='text-muted-foreground leading-relaxed'>
                           Our standard model is a{' '}
                           <strong>
                             {overviewData?.revenueSharePercentage || 70}%
@@ -659,10 +661,10 @@ const InstructorEarningsPage = () => {
                         </p>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1.5 text-foreground">
+                        <h4 className='font-semibold mb-1.5 text-foreground'>
                           Payout Schedule
                         </h4>
-                        <p className="text-muted-foreground leading-relaxed">
+                        <p className='text-muted-foreground leading-relaxed'>
                           Payouts are processed around the <strong>10th</strong>{' '}
                           of each month for the previous month's earnings,
                           provided your balance exceeds{' '}
@@ -676,20 +678,20 @@ const InstructorEarningsPage = () => {
                         </p>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1.5 text-foreground">
+                        <h4 className='font-semibold mb-1.5 text-foreground'>
                           Payment Methods
                         </h4>
-                        <p className="text-muted-foreground leading-relaxed">
+                        <p className='text-muted-foreground leading-relaxed'>
                           We support payouts via PayPal and direct bank transfer
                           (availability varies). Ensure your details are
                           up-to-date in 'Manage Methods'.
                         </p>
                       </div>
                       <div>
-                        <h4 className="font-semibold mb-1.5 text-foreground">
+                        <h4 className='font-semibold mb-1.5 text-foreground'>
                           Refunds & Deductions
                         </h4>
-                        <p className="text-muted-foreground leading-relaxed">
+                        <p className='text-muted-foreground leading-relaxed'>
                           Refunds and platform fees are deducted before
                           calculating your share. Applicable taxes are also
                           handled as per your region's regulations.
@@ -698,17 +700,17 @@ const InstructorEarningsPage = () => {
                     </CardContent>
                     <CardFooter>
                       <Button
-                        variant="link"
+                        variant='link'
                         asChild
-                        className="p-0 h-auto text-sm text-muted-foreground hover:text-primary"
+                        className='p-0 h-auto text-sm text-muted-foreground hover:text-primary'
                       >
                         <Link
-                          to="/instructor-terms#revenue_share"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          to='/instructor-terms#revenue_share'
+                          target='_blank'
+                          rel='noopener noreferrer'
                         >
                           Read Full Payout Policy{' '}
-                          <Icons.externalLink className="ml-1 h-3.5 w-3.5" />
+                          <Icons.externalLink className='ml-1 h-3.5 w-3.5' />
                         </Link>
                       </Button>
                     </CardFooter>
@@ -717,7 +719,7 @@ const InstructorEarningsPage = () => {
               </TabsContent>
 
               <TabsContent
-                value="transactions"
+                value='transactions'
                 forceMount={true}
                 className={cn(
                   activeTab !== 'transactions' && 'hidden',
@@ -728,7 +730,7 @@ const InstructorEarningsPage = () => {
               </TabsContent>
 
               <TabsContent
-                value="payouts"
+                value='payouts'
                 forceMount={true}
                 className={cn(activeTab !== 'payouts' && 'hidden', '!mt-0')}
               >
@@ -750,9 +752,6 @@ const InstructorEarningsPage = () => {
         currencySymbol={currencySymbol}
         onSuccess={() => {
           refetchFinancialOverview();
-          // queryClient.invalidateQueries({
-          //   queryKey: financialsKeys.myWithdrawalRequests(),
-          // }); // Invalidate payout history
         }}
       />
     </InstructorLayout>

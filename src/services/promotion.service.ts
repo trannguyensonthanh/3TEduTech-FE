@@ -70,6 +70,12 @@ export interface UpdatePromotionData {
   status?: string;
 }
 
+// --- Interface mới cho payload của validation ---
+export interface ValidatePromoPayload {
+  promotionCode: string;
+  currency: string; // Thêm trường currency
+}
+
 // --- Admin APIs ---
 
 /** Admin: Lấy danh sách promotions */
@@ -108,11 +114,16 @@ export const deactivatePromotion = async (
   return apiHelper.patch(`/promotions/${promotionId}/deactivate`);
 };
 
+/** Admin: Xóa promotion */
+export const deletePromotion = async (promotionId: number): Promise<void> => {
+  await apiHelper.delete(`/promotions/${promotionId}`);
+};
+
 // --- User APIs ---
 
 /** User: Kiểm tra mã giảm giá */
 export const validatePromotionCode = async (
-  promotionCode: string
+  payload: ValidatePromoPayload
 ): Promise<ValidatePromoResponse> => {
-  return apiHelper.post('/promotions/validate-code', { promotionCode });
+  return apiHelper.post('/promotions/validate-code', payload);
 };

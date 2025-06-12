@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/admin/courses/CourseDetailsDialog.tsx
 import React from 'react';
 import {
   Dialog,
@@ -6,339 +8,131 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  BookOpen,
-  Clock,
-  ExternalLink,
-  Eye,
-  File,
-  FileText,
-  Layers,
-  Star,
-  Video,
-} from 'lucide-react';
-
-interface Course {
-  id: number;
-  title: string;
-  slug: string;
-  instructor: string;
-  instructorId: number;
-  category: string;
-  price: number;
-  status: string;
-  rating: string;
-  students: number;
-  createdAt: string;
-  description: string;
-  thumbnailUrl: string;
-  promoVideoUrl: string;
-  curriculum: Array<{
-    id: number;
-    title: string;
-    lessons: Array<{
-      id: number;
-      title: string;
-      duration: string;
-      type: string;
-      isPreview: boolean;
-      videoUrl?: string;
-      content?: string;
-      questions?: Array<any>;
-    }>;
-  }>;
-}
+import { Badge } from '@/components/ui/badge';
+import { Icons } from '@/components/common/Icons';
+import { Separator } from '@/components/ui/separator';
+import { Course } from '@/services/course.service';
+import { useCourseDetailBySlug } from '@/hooks/queries/course.queries';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface CourseDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  course: Course | null;
-  onViewLesson: (lessonId: number, courseId: number) => void;
+  courseSlug: string | null;
+  onViewLesson: (lesson: any, sectionTitle: string) => void;
 }
 
 const CourseDetailsDialog: React.FC<CourseDetailsDialogProps> = ({
   open,
   onOpenChange,
-  course,
+  courseSlug,
   onViewLesson,
 }) => {
-  if (!course) return null;
+  const {
+    data: course,
+    isLoading,
+    isError,
+  } = useCourseDetailBySlug(courseSlug, { enabled: !!courseSlug && open });
+  const { formatPrice } = useSettings();
+
+  const renderContent = () => {
+    if (isLoading)
+      return (
+        <div className='p-8 text-center'>
+          <Icons.spinner className='h-8 w-8 animate-spin mx-auto' />
+        </div>
+      );
+    if (isError || !course)
+      return (
+        <div className='p-8 text-center text-destructive'>
+          Failed to load course details.
+        </div>
+      );
+
+    return (
+      <div className='space-y-4'>
+        {/* Course Info */}
+        <div className='flex flex-col sm:flex-row gap-6'>
+          <img
+            src={course.thumbnailUrl || undefined}
+            alt={course.courseName}
+            className='w-full sm:w-1/3 aspect-video object-cover rounded-lg bg-muted'
+          />
+          <div className='space-y-2'>
+            <h2 className='text-2xl font-bold'>{course.courseName}</h2>
+            <p className='text-sm text-muted-foreground'>
+              by {course.instructorName}
+            </p>
+            <div className='flex flex-wrap gap-2 pt-2'>
+              <Badge variant='outline'>{course.categoryName}</Badge>
+              <Badge variant='secondary'>{course.levelName}</Badge>
+              <Badge variant='success'>
+                {formatPrice(course.pricing.base.originalPrice)}
+              </Badge>
+            </div>
+          </div>
+        </div>
+        <Separator />
+        {/* Curriculum */}
+        <div>
+          <h3 className='text-lg font-semibold mb-2'>Curriculum</h3>
+          {course.sections && course.sections.length > 0 ? (
+            course.sections.map((section) => (
+              <div key={section.sectionId} className='mb-3 border-l-2 pl-4'>
+                <h4 className='font-semibold'>{section.sectionName}</h4>
+                <div className='mt-1 space-y-1'>
+                  {section.lessons.map((lesson) => (
+                    <div
+                      key={lesson.lessonId}
+                      className='flex items-center justify-between text-sm'
+                    >
+                      <span className='flex items-center gap-2'>
+                        <Icons.playCircle className='h-4 w-4 text-muted-foreground' />
+                        {lesson.lessonName}
+                      </span>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() =>
+                          onViewLesson(lesson, section.sectionName)
+                        }
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className='text-sm text-muted-foreground'>
+              No curriculum available.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className='max-w-3xl max-h-[90vh]'>
         <DialogHeader>
           <DialogTitle>Course Details</DialogTitle>
-          <DialogDescription>
-            Detailed information about the course.
-          </DialogDescription>
         </DialogHeader>
-
-        <ScrollArea className="max-h-[70vh] pr-4">
-          <div className="space-y-6">
-            <div className="rounded-lg overflow-hidden">
-              <img
-                src={course.thumbnailUrl}
-                alt={course.title}
-                className="w-full h-auto object-cover"
-              />
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold">{course.title}</h2>
-              <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
-                <div>By {course.instructor}</div>
-                <div>Created on {course.createdAt}</div>
-                <div
-                  className={`flex items-center ${
-                    course.status === 'PUBLISHED'
-                      ? 'text-green-500'
-                      : course.status === 'PENDING'
-                      ? 'text-yellow-500'
-                      : course.status === 'REJECTED'
-                      ? 'text-red-500'
-                      : 'text-gray-500'
-                  }`}
-                >
-                  <span
-                    className={`mr-1 h-2 w-2 rounded-full ${
-                      course.status === 'PUBLISHED'
-                        ? 'bg-green-500'
-                        : course.status === 'PENDING'
-                        ? 'bg-yellow-500'
-                        : course.status === 'REJECTED'
-                        ? 'bg-red-500'
-                        : 'bg-gray-500'
-                    }`}
-                  ></span>
-                  {course.status}
-                </div>
-              </div>
-            </div>
-
-            <Tabs defaultValue="info">
-              <TabsList>
-                <TabsTrigger value="info">Course Info</TabsTrigger>
-                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="stats">Statistics</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="info" className="space-y-4 pt-4">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Description</h3>
-                  <p className="text-muted-foreground">{course.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Category</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p>{course.category}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Price</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p>${course.price.toFixed(2)}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Rating</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                        <span>{course.rating}/5</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">
-                        Enrolled Students
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p>{course.students.toLocaleString()}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="curriculum" className="space-y-4 pt-4">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">
-                    Course Curriculum
-                  </h3>
-                  <div className="space-y-4">
-                    {course.curriculum.map((section) => (
-                      <Card key={section.id}>
-                        <CardHeader className="pb-2">
-                          <div className="flex items-center space-x-2">
-                            <Layers className="h-5 w-5 text-muted-foreground" />
-                            <CardTitle className="text-base">
-                              {section.title}
-                            </CardTitle>
-                          </div>
-                          <CardDescription>
-                            {section.lessons.length} lessons &bull;{' '}
-                            {section.lessons.reduce((total, lesson) => {
-                              if (lesson.duration.includes(':')) {
-                                const [mins, secs] = lesson.duration
-                                  .split(':')
-                                  .map(Number);
-                                return total + mins * 60 + secs;
-                              }
-                              return total;
-                            }, 0) / 60}{' '}
-                            min
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pb-1">
-                          <div className="space-y-2">
-                            {section.lessons.map((lesson) => (
-                              <div
-                                key={lesson.id}
-                                className="border rounded-md p-3 flex justify-between items-center"
-                              >
-                                <div className="flex items-center space-x-3">
-                                  {lesson.type === 'VIDEO' && (
-                                    <Video className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                  {lesson.type === 'TEXT' && (
-                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                  {lesson.type === 'QUIZ' && (
-                                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                  {!lesson.type && (
-                                    <File className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                  <div>
-                                    <p className="font-medium">
-                                      {lesson.title}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {lesson.duration} •{' '}
-                                      {lesson.type || 'LESSON'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  {lesson.isPreview && (
-                                    <div className="text-xs px-2 py-1 bg-secondary rounded-full">
-                                      Preview
-                                    </div>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      onViewLesson(lesson.id, course.id)
-                                    }
-                                  >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    View
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="stats" className="space-y-4 pt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Statistics</CardTitle>
-                    <CardDescription>
-                      Performance metrics for this course
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Total Enrollments:
-                        </span>
-                        <span className="font-medium">
-                          {course.students.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Average Rating:
-                        </span>
-                        <span className="font-medium">{course.rating}/5</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Total Revenue:
-                        </span>
-                        <span className="font-medium">
-                          $
-                          {(
-                            course.students *
-                            course.price *
-                            0.7
-                          ).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Completion Rate:
-                        </span>
-                        <span className="font-medium">
-                          {Math.floor(Math.random() * 30) + 50}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Average Time to Complete:
-                        </span>
-                        <span className="font-medium">
-                          {Math.floor(Math.random() * 20) + 10} days
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+        <ScrollArea className='max-h-[70vh] p-1 -mx-1'>
+          <div className='px-4 py-2'>{renderContent()}</div>
         </ScrollArea>
-
-        <DialogFooter className="space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => window.open(`/courses/${course.slug}`, '_blank')}
-          >
-            <ExternalLink className="mr-2 h-4 w-4" /> Preview Course
-          </Button>
-          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type='button' variant='outline'>
+              Close
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

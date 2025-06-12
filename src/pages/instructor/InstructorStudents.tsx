@@ -109,11 +109,11 @@ const InstructorStudentsPage: React.FC = () => {
   }));
 
   const { userData: user } = useAuth();
-  const instructorId = user?.id; // Ví dụ
+  const instructorId = Number(user?.id); // Ví dụ
 
   const { data: instructorCoursesData, isLoading: isLoadingInstructorCourses } =
     useCourses(
-      { instructorId: instructorId, limit: 0 },
+      { instructorId: instructorId, limit: 100 },
       { enabled: !!instructorId }
     );
 
@@ -197,53 +197,53 @@ const InstructorStudentsPage: React.FC = () => {
 
   return (
     <InstructorLayout
-      pageTitle="My Students"
+      pageTitle='My Students'
       breadcrumbs={[
         { label: 'Dashboard', href: '/instructor' },
         { label: 'Students' },
       ]}
     >
-      <div className="space-y-6 md:space-y-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className='space-y-6 md:space-y-8'>
+        <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <h1 className='text-3xl md:text-4xl font-bold tracking-tight text-foreground'>
               Student Management
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className='text-muted-foreground mt-1'>
               Track and manage students enrolled in your courses.
             </p>
           </div>
-          <Button size="lg" className="h-11 px-5 text-base w-full sm:w-auto">
-            <Icons.barChart className="w-5 h-5 mr-2" />
+          <Button size='lg' className='h-11 px-5 text-base w-full sm:w-auto'>
+            <Icons.barChart className='w-5 h-5 mr-2' />
             Export Student Report
           </Button>
         </div>
 
         {/* Filters and Search Bar */}
-        <Card className="dark:bg-slate-800/30 shadow">
-          <CardContent className="p-4 md:p-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-              <div className="relative lg:col-span-2">
+        <Card className='dark:bg-slate-800/30 shadow'>
+          <CardContent className='p-4 md:p-5'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end'>
+              <div className='relative lg:col-span-2'>
                 <Label
-                  htmlFor="student-search"
-                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor='student-search'
+                  className='text-xs font-medium text-muted-foreground'
                 >
                   Search Students
                 </Label>
-                <Icons.search className="absolute left-3 bottom-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Icons.search className='absolute left-3 bottom-3 h-4 w-4 text-muted-foreground pointer-events-none' />
                 <Input
-                  id="student-search"
-                  type="search"
-                  placeholder="Search by name or email..."
-                  className="pl-10 h-11 text-sm mt-1"
+                  id='student-search'
+                  type='search'
+                  placeholder='Search by name or email...'
+                  className='pl-10 h-11 text-sm mt-1'
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <div>
                 <Label
-                  htmlFor="course-filter"
-                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor='course-filter'
+                  className='text-xs font-medium text-muted-foreground'
                 >
                   Filter by Course
                 </Label>
@@ -254,8 +254,8 @@ const InstructorStudentsPage: React.FC = () => {
                   }
                   disabled={isLoadingInstructorCourses}
                 >
-                  <SelectTrigger className="h-11 text-sm mt-1">
-                    <SelectValue placeholder="All My Courses" />
+                  <SelectTrigger className='h-11 text-sm mt-1'>
+                    <SelectValue placeholder='All My Courses' />
                   </SelectTrigger>
                   <SelectContent>
                     {instructorCoursesData?.courses.map((course) => (
@@ -271,8 +271,8 @@ const InstructorStudentsPage: React.FC = () => {
               </div>
               <div>
                 <Label
-                  htmlFor="status-filter"
-                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor='status-filter'
+                  className='text-xs font-medium text-muted-foreground'
                 >
                   Filter by Status
                 </Label>
@@ -285,8 +285,8 @@ const InstructorStudentsPage: React.FC = () => {
                     )
                   }
                 >
-                  <SelectTrigger className="h-11 text-sm mt-1">
-                    <SelectValue placeholder="All Statuses" />
+                  <SelectTrigger className='h-11 text-sm mt-1'>
+                    <SelectValue placeholder='All Statuses' />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((opt) => (
@@ -298,11 +298,11 @@ const InstructorStudentsPage: React.FC = () => {
                 </Select>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end">
-              <div className="flex-grow">
+            <div className='flex flex-col sm:flex-row gap-4 mt-4 items-end'>
+              <div className='flex-grow'>
                 <Label
-                  htmlFor="sort-students"
-                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor='sort-students'
+                  className='text-xs font-medium text-muted-foreground'
                 >
                   Sort By
                 </Label>
@@ -310,8 +310,8 @@ const InstructorStudentsPage: React.FC = () => {
                   value={sortBy}
                   onValueChange={(val) => setSortBy(val as StudentSortByValue)}
                 >
-                  <SelectTrigger className="h-11 text-sm mt-1 w-full sm:w-[250px]">
-                    <SelectValue placeholder="Sort students by..." />
+                  <SelectTrigger className='h-11 text-sm mt-1 w-full sm:w-[250px]'>
+                    <SelectValue placeholder='Sort students by...' />
                   </SelectTrigger>
                   <SelectContent>
                     {INSTRUCTOR_STUDENTS_SORT_OPTIONS.map((opt) => (
@@ -323,27 +323,27 @@ const InstructorStudentsPage: React.FC = () => {
                 </Select>
               </div>
               <Button
-                variant="ghost"
+                variant='ghost'
                 onClick={handleResetFilters}
-                className="h-11 text-muted-foreground hover:text-primary"
+                className='h-11 text-muted-foreground hover:text-primary'
               >
-                <Icons.listRestart className="mr-2 h-4 w-4" /> Reset Filters
+                <Icons.listRestart className='mr-2 h-4 w-4' /> Reset Filters
               </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* Students Table or Status Messages */}
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode='wait'>
           <motion.div
             key={
               isLoadingStudentsInitial
                 ? 'loading'
                 : isError
-                ? 'error'
-                : students.length > 0
-                ? 'data'
-                : 'empty'
+                  ? 'error'
+                  : students.length > 0
+                    ? 'data'
+                    : 'empty'
             }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -351,7 +351,7 @@ const InstructorStudentsPage: React.FC = () => {
             transition={{ duration: 0.2 }}
           >
             {isLoadingStudentsInitial ? (
-              <div className="rounded-lg border dark:border-slate-700">
+              <div className='rounded-lg border dark:border-slate-700'>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -365,7 +365,7 @@ const InstructorStudentsPage: React.FC = () => {
                         'Actions',
                       ].map((h) => (
                         <TableHead key={h}>
-                          <Skeleton className="h-5 w-20" />
+                          <Skeleton className='h-5 w-20' />
                         </TableHead>
                       ))}
                     </TableRow>
@@ -374,28 +374,28 @@ const InstructorStudentsPage: React.FC = () => {
                     {[...Array(ITEMS_PER_PAGE)].map((_, i) => (
                       <TableRow key={`skel-${i}`}>
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Skeleton className="h-10 w-10 rounded-full" />
-                            <Skeleton className="h-5 w-32" />
+                          <div className='flex items-center gap-3'>
+                            <Skeleton className='h-10 w-10 rounded-full' />
+                            <Skeleton className='h-5 w-32' />
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-5 w-40" />
+                          <Skeleton className='h-5 w-40' />
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-5 w-12" />
+                          <Skeleton className='h-5 w-12' />
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-5 w-24" />
+                          <Skeleton className='h-5 w-24' />
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-5 w-20" />
+                          <Skeleton className='h-5 w-20' />
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-6 w-20 rounded-md" />
+                          <Skeleton className='h-6 w-20 rounded-md' />
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className='h-8 w-8 rounded-md' />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -403,40 +403,40 @@ const InstructorStudentsPage: React.FC = () => {
                 </Table>
               </div>
             ) : isError ? (
-              <Card className="text-center py-12 bg-destructive/10 border-destructive/30">
+              <Card className='text-center py-12 bg-destructive/10 border-destructive/30'>
                 <CardContent>
-                  <Icons.alertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
-                  <h3 className="text-xl font-semibold text-destructive-foreground">
+                  <Icons.alertTriangle className='mx-auto h-12 w-12 text-destructive mb-4' />
+                  <h3 className='text-xl font-semibold text-destructive-foreground'>
                     Failed to Load Students
                   </h3>
-                  <p className="text-destructive/80 mt-1">
+                  <p className='text-destructive/80 mt-1'>
                     {error?.message || 'An unexpected error occurred.'}
                   </p>
                 </CardContent>
               </Card>
             ) : students.length > 0 ? (
-              <div className="border dark:border-slate-700 rounded-lg shadow-sm overflow-hidden">
+              <div className='border dark:border-slate-700 rounded-lg shadow-sm overflow-hidden'>
                 <Table>
-                  <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                  <TableHeader className='bg-slate-50 dark:bg-slate-800/50'>
                     <TableRow>
-                      <TableHead className="w-[280px]">Student</TableHead>
+                      <TableHead className='w-[280px]'>Student</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead className="text-center">Courses</TableHead>
+                      <TableHead className='text-center'>Courses</TableHead>
                       <TableHead>Avg. Progress</TableHead>
                       <TableHead>Last Learning Activity</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className='text-center'>Status</TableHead>
+                      <TableHead className='text-right'>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {students.map((student) => (
                       <TableRow
                         key={student.accountId}
-                        className="hover:bg-muted/50 dark:hover:bg-muted/20"
+                        className='hover:bg-muted/50 dark:hover:bg-muted/20'
                       >
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10 border">
+                          <div className='flex items-center gap-3'>
+                            <Avatar className='h-10 w-10 border'>
                               <AvatarImage
                                 src={student.avatarUrl || undefined}
                                 alt={student.fullName}
@@ -446,27 +446,27 @@ const InstructorStudentsPage: React.FC = () => {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-foreground">
+                              <p className='font-medium text-foreground'>
                                 {student.fullName}
                               </p>
                               {/* <p className="text-xs text-muted-foreground">ID: {student.accountId}</p> */}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
+                        <TableCell className='text-muted-foreground text-xs'>
                           <a
                             href={`mailto:${student.email}`}
-                            className="hover:text-primary flex items-center"
+                            className='hover:text-primary flex items-center'
                           >
-                            <Icons.mail className="w-3.5 h-3.5 mr-1.5 opacity-70" />
+                            <Icons.mail className='w-3.5 h-3.5 mr-1.5 opacity-70' />
                             {student.email}
                           </a>
                         </TableCell>
-                        <TableCell className="text-center font-medium">
+                        <TableCell className='text-center font-medium'>
                           {student.enrolledCoursesCount}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className='flex items-center gap-2'>
                             <Progress
                               value={student.averageCompletionRate || 0}
                               className={cn(
@@ -475,17 +475,17 @@ const InstructorStudentsPage: React.FC = () => {
                                   student.averageCompletionRate < 30
                                   ? 'bg-red-500'
                                   : student.averageCompletionRate &&
-                                    student.averageCompletionRate < 70
-                                  ? 'bg-yellow-500'
-                                  : 'bg-green-500'
+                                      student.averageCompletionRate < 70
+                                    ? 'bg-yellow-500'
+                                    : 'bg-green-500'
                               )}
                             />
-                            <span className="text-xs text-muted-foreground w-8 text-right">
+                            <span className='text-xs text-muted-foreground w-8 text-right'>
                               {student.averageCompletionRate?.toFixed(0) || 0}%
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className='text-xs text-muted-foreground'>
                           {student.lastLearningActivityTimestamp
                             ? format(
                                 parseISO(
@@ -495,30 +495,30 @@ const InstructorStudentsPage: React.FC = () => {
                               )
                             : 'N/A'}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className='text-center'>
                           <Badge
                             variant={
                               student.status === 'ACTIVE'
                                 ? 'success'
                                 : 'destructive'
                             }
-                            className="text-xs px-2 py-0.5"
+                            className='text-xs px-2 py-0.5'
                           >
                             {student.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className='text-right'>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
+                                variant='ghost'
+                                size='icon'
+                                className='h-8 w-8'
                               >
-                                <Icons.moreHorizontal className="h-4 w-4" />
+                                <Icons.moreHorizontal className='h-4 w-4' />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align='end'>
                               <DropdownMenuItem
                                 onClick={() =>
                                   alert(`View profile for ${student.fullName}`)
@@ -534,7 +534,7 @@ const InstructorStudentsPage: React.FC = () => {
                                 Send Message
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                              <DropdownMenuItem className='text-red-600 focus:text-red-600 focus:bg-red-50'>
                                 Remove from Course (TBD)
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -547,13 +547,13 @@ const InstructorStudentsPage: React.FC = () => {
               </div>
             ) : (
               !isFetchingStudents && ( // Chỉ hiển thị khi không fetching
-                <Card className="text-center py-16 col-span-full bg-slate-50 dark:bg-slate-800/30 border-2 border-dashed dark:border-slate-700">
+                <Card className='text-center py-16 col-span-full bg-slate-50 dark:bg-slate-800/30 border-2 border-dashed dark:border-slate-700'>
                   <CardContent>
-                    <Icons.usersRound className="mx-auto h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-                    <h3 className="text-xl font-semibold text-foreground">
+                    <Icons.usersRound className='mx-auto h-16 w-16 text-muted-foreground opacity-50 mb-4' />
+                    <h3 className='text-xl font-semibold text-foreground'>
                       No Students Found
                     </h3>
-                    <p className="mt-2 text-muted-foreground">
+                    <p className='mt-2 text-muted-foreground'>
                       {debouncedSearchTerm ||
                       activeFilters.status ||
                       activeFilters.courseId
@@ -564,11 +564,11 @@ const InstructorStudentsPage: React.FC = () => {
                       activeFilters.status ||
                       activeFilters.courseId) && (
                       <Button
-                        variant="outline"
-                        className="mt-4"
+                        variant='outline'
+                        className='mt-4'
                         onClick={handleResetFilters}
                       >
-                        <Icons.listRestart className="mr-2 h-4 w-4" />
+                        <Icons.listRestart className='mr-2 h-4 w-4' />
                         Clear Filters & Search
                       </Button>
                     )}
@@ -581,7 +581,7 @@ const InstructorStudentsPage: React.FC = () => {
 
         {/* Pagination */}
         {!isError && totalItems > 0 && totalPages > 1 && (
-          <div className="flex justify-center mt-8 md:mt-10">
+          <div className='flex justify-center mt-8 md:mt-10'>
             <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}

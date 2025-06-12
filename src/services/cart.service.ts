@@ -1,4 +1,5 @@
 // src/services/cart.service.ts
+import { PricingDetails } from '@/services/course.service';
 import apiHelper from './apiHelper';
 
 export interface CartItem {
@@ -8,17 +9,26 @@ export interface CartItem {
   slug: string;
   thumbnailUrl: string | null;
   instructorName: string;
-  currentPrice: number;
-  originalPrice: number;
+  // currentPrice: number;
+  // originalPrice: number;
   priceAtAddition: number;
   addedAt: string; // ISO Date string
+  pricing: PricingDetails;
 }
 
 export interface CartSummary {
+  displayCurrency: 'VND' | 'USD' | string;
   totalOriginalPrice: number;
   totalDiscount: number;
   finalPrice: number; // Giá trước khi áp dụng promotion code
   itemCount: number;
+}
+
+export interface ValidatedPromotionInfo {
+  promotionId: number;
+  discountCode: string;
+  discountAmount: number; // Số tiền được giảm từ mã khuyến mãi
+  message?: string;
 }
 
 export interface CartDetails {

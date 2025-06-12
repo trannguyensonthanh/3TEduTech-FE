@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -23,34 +24,32 @@ const DeleteSkillDialog: React.FC<DeleteSkillDialogProps> = ({
   onConfirm,
   skillName,
 }) => {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Skill</DialogTitle>
+          <DialogTitle>{t('deleteSkillDialog.title')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the skill "{skillName}"? This action
-            cannot be undone.
+            {t('deleteSkillDialog.desc', { skillName })}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          <Alert variant="destructive">
-            <AlertTitle>Warning</AlertTitle>
+        <div className='py-4'>
+          <Alert variant='destructive'>
+            <AlertTitle>{t('deleteSkillDialog.warning')}</AlertTitle>
             <AlertDescription>
-              Deleting this skill will remove it from all instructors who have
-              it assigned. This may affect instructor profiles and course
-              listings.
+              {t('deleteSkillDialog.warningDesc')}
             </AlertDescription>
           </Alert>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+          <Button variant='outline' onClick={() => onOpenChange(false)}>
+            {t('deleteSkillDialog.cancel')}
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
-            Delete Skill
+          <Button variant='destructive' onClick={onConfirm}>
+            {t('deleteSkillDialog.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

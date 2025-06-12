@@ -1,13 +1,25 @@
-import { PaymentMethod } from './../types/common.types';
 // src/services/order.service.ts
 import { IsoDateTimeString } from '@/types/common.types';
 import apiHelper from './apiHelper';
+import { PricingDetails } from '@/services/course.service';
 
 export type OrderStatus =
   | 'PENDING_PAYMENT'
   | 'COMPLETED'
   | 'FAILED'
   | 'CANCELLED';
+
+export interface PriceInfo {
+  currency: 'VND' | 'USD' | string;
+  price: number;
+  discountedPrice?: number | null;
+}
+
+export interface PricingOrderDetails {
+  base: PriceInfo;
+  display: PriceInfo;
+  exchangeRateUsed?: number;
+}
 
 export interface OrderItem {
   orderItemId: number;
@@ -19,6 +31,7 @@ export interface OrderItem {
   slug?: string;
   thumbnailUrl?: string | null;
   instructorName?: string | null;
+  pricing: PricingOrderDetails;
 }
 
 export interface Order {

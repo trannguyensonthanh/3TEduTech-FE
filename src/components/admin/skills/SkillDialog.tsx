@@ -21,6 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Skill } from '@/services/skill.service';
+import { useTranslation } from 'react-i18next';
+
 const skillFormSchema = z.object({
   skillName: z
     .string()
@@ -54,6 +56,7 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
   skill,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   const form = useForm<SkillFormValues>({
     resolver: zodResolver(skillFormSchema),
     defaultValues: {
@@ -83,23 +86,28 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle>{skill ? 'Edit Skill' : 'Add New Skill'}</DialogTitle>
+          <DialogTitle>
+            {skill ? t('skillDialog.titleEdit') : t('skillDialog.titleAdd')}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4"
+            className='space-y-4'
           >
             <FormField
               control={form.control}
-              name="skillName"
+              name='skillName'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Skill Name</FormLabel>
+                  <FormLabel>{t('skillDialog.skillName')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter skill name" {...field} />
+                    <Input
+                      placeholder={t('skillDialog.placeholderName')}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -107,13 +115,13 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
             />
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t('skillDialog.description')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter skill description (optional)"
+                      placeholder={t('skillDialog.placeholderDesc')}
                       {...field}
                       value={field.value || ''}
                     />
@@ -123,8 +131,8 @@ const SkillDialog: React.FC<SkillDialogProps> = ({
               )}
             />
             <DialogFooter>
-              <Button type="submit">
-                {skill ? 'Update Skill' : 'Add Skill'}
+              <Button type='submit'>
+                {skill ? t('skillDialog.update') : t('skillDialog.add')}
               </Button>
             </DialogFooter>
           </form>

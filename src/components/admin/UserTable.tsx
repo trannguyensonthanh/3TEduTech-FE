@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   TableBody,
@@ -74,81 +75,88 @@ const UserTable: React.FC<UserTableProps> = ({
   onEditUser,
   onDeleteUser,
 }) => {
+  const { t } = useTranslation();
   console.log('UserTable users:', users); // Debugging line
   return (
-    <div className="border rounded-md">
+    <div className='border rounded-md'>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t('userTable.headers.id')}</TableHead>
+            <TableHead>{t('userTable.headers.name')}</TableHead>
+            <TableHead>{t('userTable.headers.email')}</TableHead>
+            <TableHead>{t('userTable.headers.role')}</TableHead>
+            <TableHead>{t('userTable.headers.status')}</TableHead>
+            <TableHead>{t('userTable.headers.joined')}</TableHead>
+            <TableHead>{t('userTable.headers.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {users.map((user) => (
-            <TableRow key={user.AccountID}>
-              <TableCell>{user.AccountID}</TableCell>
-              <TableCell className="font-medium">{user.FullName}</TableCell>
-              <TableCell>{user.Email}</TableCell>
+            <TableRow key={user.accountId}>
+              <TableCell>{user.accountId}</TableCell>
+              <TableCell className='font-medium'>{user.fullName}</TableCell>
+              <TableCell>{user.email}</TableCell>
               <TableCell>
                 <Badge
                   className={
-                    user.RoleID === 'SA'
+                    user.roleId === 'SA'
                       ? 'bg-red-500'
-                      : user.RoleID === 'AD'
-                      ? 'bg-blue-500'
-                      : user.RoleID === 'GV'
-                      ? 'bg-purple-500'
-                      : 'bg-gray-500'
+                      : user.roleId === 'AD'
+                        ? 'bg-blue-500'
+                        : user.roleId === 'GV'
+                          ? 'bg-purple-500'
+                          : 'bg-gray-500'
                   }
                 >
-                  {user.RoleID}
+                  {t(`userTable.role.${user.roleId}`)}
                 </Badge>
               </TableCell>
               <TableCell>
                 <Badge
                   className={
-                    user.Status === 'ACTIVE'
+                    user.status === 'ACTIVE'
                       ? 'bg-green-500'
-                      : user.Status === 'INACTIVE'
-                      ? 'bg-yellow-500'
-                      : user.Status === 'BANNED'
-                      ? 'bg-red-500'
-                      : 'bg-gray-400'
+                      : user.status === 'INACTIVE'
+                        ? 'bg-yellow-500'
+                        : user.status === 'BANNED'
+                          ? 'bg-red-500'
+                          : 'bg-gray-400'
                   }
                 >
-                  {user.Status}
+                  {t(`userTable.status.${user.status}`)}
                 </Badge>
               </TableCell>
-              <TableCell>{user.CreatedAt}</TableCell>
-
               <TableCell>
-                <div className="flex gap-2">
+                {user.createdAt
+                  ? new Date(user.createdAt).toLocaleString()
+                  : ''}
+              </TableCell>
+              <TableCell>
+                <div className='flex gap-2'>
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    variant='ghost'
+                    size='icon'
+                    title={t('userTable.actions.view')}
                     onClick={() => onViewUser(user)}
                   >
-                    <Eye className="h-4 w-4" />
+                    <Eye className='h-4 w-4' />
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    variant='ghost'
+                    size='icon'
+                    title={t('userTable.actions.edit')}
                     onClick={() => onEditUser(user)}
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className='h-4 w-4' />
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDeleteUser(user.AccountID)}
+                    variant='ghost'
+                    size='icon'
+                    title={t('userTable.actions.delete')}
+                    onClick={() => onDeleteUser(user.accountId)}
                   >
-                    <Trash className="h-4 w-4" />
+                    <Trash className='h-4 w-4' />
                   </Button>
                   {/* <DropdownMenu>
                     <DropdownMenuTrigger asChild>

@@ -6,18 +6,21 @@ import { FacebookLoginButton } from 'react-social-login-buttons'; // Thư viện
 import { useFacebookLoginMutation } from '@/hooks/queries/auth.queries';
 import EmailCollectionModal from './EmailCollectionModal';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+
 const FACEBOOK_APP_ID = '1337377354382081';
 
 const LoginWithFacebook: React.FC = () => {
+  const { t } = useTranslation();
   const facebookLoginMutation = useFacebookLoginMutation({
     onSuccess: (data) => {
       console.log('Facebook login successful:', data);
-      toast.success('Đăng nhập Facebook thành công!');
+      toast.success(t('loginWithFacebook.success'));
       window.location.href = '/'; // Chuyển hướng về trang chính sau khi đăng nhập thành công
     },
     onError: (error) => {
       console.error('Facebook login error:', error);
-      toast.error('Đăng nhập Facebook thất bại.');
+      toast.error(t('loginWithFacebook.error'));
     },
   });
 
@@ -41,24 +44,22 @@ const LoginWithFacebook: React.FC = () => {
         provider,
         data
       );
-      // toast.error('Đăng nhập Facebook thất bại, không nhận được thông tin cần thiết.');
+      toast.error(t('loginWithFacebook.error'));
     }
   };
 
   const handleReject = (error: any) => {
     console.error('Facebook Login Failed:', error);
-    toast.error('Đăng nhập bằng Facebook thất bại hoặc đã bị hủy.');
+    toast.error(t('loginWithFacebook.cancelled'));
   };
 
   if (!FACEBOOK_APP_ID) {
     console.error('Facebook App ID is not configured.');
-    return <p>Lỗi cấu hình đăng nhập Facebook.</p>;
+    return <p>{t('loginWithFacebook.configError')}</p>;
   }
   const handleCompleteSuccess = () => {
     // Hiển thị thông báo yêu cầu check mail (không chuyển hướng login ngay)
-    toast.info(
-      'Vui lòng kiểm tra email bạn vừa cung cấp để xác thực tài khoản.'
-    );
+    toast.info(t('loginWithFacebook.checkEmail'));
   };
   return (
     <div>
@@ -67,7 +68,7 @@ const LoginWithFacebook: React.FC = () => {
         onResolve={handleResolve}
         onReject={handleReject}
         // Các trường yêu cầu thêm (scope) nếu cần
-        fields="name,email,picture" // Giống như trước
+        fields='name,email,picture' // Giống như trước
       >
         <FacebookLoginButton
           style={{
@@ -76,7 +77,9 @@ const LoginWithFacebook: React.FC = () => {
             borderRadius: '4px',
             height: '42px',
           }}
-        />
+        >
+          {t('loginWithFacebook.button')}
+        </FacebookLoginButton>
         {/* Hoặc nút tùy chỉnh của bạn: */}
         {/* <button>Đăng nhập bằng Facebook (Custom)</button> */}
       </LoginSocialFacebook>

@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { Level } from '@/services/level.service';
+import { useTranslation } from 'react-i18next';
 
 interface LevelDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ const LevelDialog: React.FC<LevelDialogProps> = ({
   level,
   onSubmit,
 }) => {
+  const { t } = useTranslation();
   const isEditing = !!level;
   const {
     register,
@@ -33,14 +35,14 @@ const LevelDialog: React.FC<LevelDialogProps> = ({
     reset,
   } = useForm({
     defaultValues: {
-      name: level?.LevelName || '',
+      name: level?.levelName || '',
     },
   });
 
   React.useEffect(() => {
     if (open) {
       reset({
-        name: level?.LevelName || '',
+        name: level?.levelName || '',
       });
     }
   }, [open, level, reset]);
@@ -52,40 +54,40 @@ const LevelDialog: React.FC<LevelDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle className="text-center text-xl text-primary">
-            {isEditing ? 'Edit Level' : 'Add New Level'}
+          <DialogTitle className='text-center text-xl text-primary'>
+            {isEditing ? t('levelDialog.titleEdit') : t('levelDialog.titleAdd')}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Level Name
+        <form onSubmit={handleSubmit(onFormSubmit)} className='space-y-4 py-4'>
+          <div className='space-y-2'>
+            <Label htmlFor='name' className='text-sm font-medium'>
+              {t('levelDialog.levelName')}
             </Label>
             <Input
-              id="name"
-              {...register('name', { required: 'Level name is required' })}
-              className="w-full"
+              id='name'
+              {...register('name', { required: t('levelDialog.nameRequired') })}
+              className='w-full'
             />
             {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
+              <p className='text-sm text-destructive'>{errors.name.message}</p>
             )}
           </div>
-          <DialogFooter className="pt-4">
+          <DialogFooter className='pt-4'>
             <Button
-              type="button"
-              variant="outline"
+              type='button'
+              variant='outline'
               onClick={() => onOpenChange(false)}
-              className="w-full sm:w-auto"
+              className='w-full sm:w-auto'
             >
-              Cancel
+              {t('levelDialog.cancel')}
             </Button>
             <Button
-              type="submit"
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+              type='submit'
+              className='w-full sm:w-auto bg-primary hover:bg-primary/90'
             >
-              {isEditing ? 'Update Level' : 'Add Level'}
+              {isEditing ? t('levelDialog.update') : t('levelDialog.add')}
             </Button>
           </DialogFooter>
         </form>

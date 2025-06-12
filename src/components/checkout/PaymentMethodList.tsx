@@ -1,7 +1,8 @@
-import React from "react";
-import { RadioGroup } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PaymentMethodOption } from "@/components/checkout/PaymentMethodOption";
+import React from 'react';
+import { RadioGroup } from '@/components/ui/radio-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PaymentMethodOption } from '@/components/checkout/PaymentMethodOption';
+import { useTranslation } from 'react-i18next';
 
 // Types for payment methods
 export interface PaymentMethod {
@@ -9,7 +10,7 @@ export interface PaymentMethod {
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: "card" | "bank" | "digital" | "crypto";
+  category: 'card' | 'bank' | 'digital' | 'crypto';
 }
 
 interface PaymentMethodListProps {
@@ -23,23 +24,28 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
   selectedMethod,
   onMethodChange,
 }) => {
+  const { t } = useTranslation();
   return (
-    <Tabs defaultValue="card" className="w-full">
-      <TabsList className="grid grid-cols-4 mb-4">
-        <TabsTrigger value="card">Thẻ</TabsTrigger>
-        <TabsTrigger value="bank">Ngân hàng</TabsTrigger>
-        <TabsTrigger value="digital">Ví điện tử</TabsTrigger>
-        <TabsTrigger value="crypto">Tiền điện tử</TabsTrigger>
+    <Tabs defaultValue='card' className='w-full'>
+      <TabsList className='grid grid-cols-4 mb-4'>
+        <TabsTrigger value='card'>{t('paymentMethodList.tabCard')}</TabsTrigger>
+        <TabsTrigger value='bank'>{t('paymentMethodList.tabBank')}</TabsTrigger>
+        <TabsTrigger value='digital'>
+          {t('paymentMethodList.tabDigital')}
+        </TabsTrigger>
+        <TabsTrigger value='crypto'>
+          {t('paymentMethodList.tabCrypto')}
+        </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="card" className="space-y-4">
+      <TabsContent value='card' className='space-y-4'>
         <RadioGroup
           value={selectedMethod}
           onValueChange={onMethodChange}
-          className="space-y-4"
+          className='space-y-4'
         >
           {paymentMethods
-            .filter((method) => method.category === "card")
+            .filter((method) => method.category === 'card')
             .map((method) => (
               <PaymentMethodOption
                 key={method.id}
@@ -52,14 +58,14 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
         </RadioGroup>
       </TabsContent>
 
-      <TabsContent value="bank" className="space-y-4">
+      <TabsContent value='bank' className='space-y-4'>
         <RadioGroup
           value={selectedMethod}
           onValueChange={onMethodChange}
-          className="space-y-4"
+          className='space-y-4'
         >
           {paymentMethods
-            .filter((method) => method.category === "bank")
+            .filter((method) => method.category === 'bank')
             .map((method) => (
               <PaymentMethodOption
                 key={method.id}
@@ -72,14 +78,14 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
         </RadioGroup>
       </TabsContent>
 
-      <TabsContent value="digital" className="space-y-4">
+      <TabsContent value='digital' className='space-y-4'>
         <RadioGroup
           value={selectedMethod}
           onValueChange={onMethodChange}
-          className="space-y-4"
+          className='space-y-4'
         >
           {paymentMethods
-            .filter((method) => method.category === "digital")
+            .filter((method) => method.category === 'digital')
             .map((method) => (
               <PaymentMethodOption
                 key={method.id}
@@ -92,14 +98,14 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
         </RadioGroup>
       </TabsContent>
 
-      <TabsContent value="crypto" className="space-y-4">
+      <TabsContent value='crypto' className='space-y-4'>
         <RadioGroup
           value={selectedMethod}
           onValueChange={onMethodChange}
-          className="space-y-4"
+          className='space-y-4'
         >
           {paymentMethods
-            .filter((method) => method.category === "crypto")
+            .filter((method) => method.category === 'crypto')
             .map((method) => (
               <PaymentMethodOption
                 key={method.id}

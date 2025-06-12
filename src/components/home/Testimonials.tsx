@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Icons } from '../common/Icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 // SỬA LẠI IMPORT VÀ TYPES CHO EMBLA CAROUSEL
 import useEmblaCarousel from 'embla-carousel-react';
@@ -34,69 +35,64 @@ interface StatItem {
 }
 
 // --- MOCK DATA (Sẽ thay thế bằng API calls) ---
-const mockTestimonials: Testimonial[] = [
+const getMockTestimonials = (t: (key: string) => string): Testimonial[] => [
   {
     id: 1,
-    quote: `The Frontend programming course at 3TEduTech helped me land my
-                dream job. The course content is very practical and easy to
-                understand. Thank you, 3TEduTech!`,
+    quote: t('testimonials.testimonial1.quote'),
     name: 'Sơn Thành',
-    title: 'Software Developer',
+    title: t('testimonials.testimonial1.title'),
     avatarUrl: 'https://i.imgur.com/d5p124y.png',
     rating: 5,
   },
   {
     id: 2,
-    quote: `The Backend Java course helped me master the knowledge and
-                skills needed to develop web applications. The instructors are
-                very enthusiastic and provide excellent support to students.`,
+    quote: t('testimonials.testimonial2.quote'),
     name: 'Cao Duy Thái',
-    title: 'Backend Java Developer',
+    title: t('testimonials.testimonial2.title'),
     avatarUrl: 'https://i.imgur.com/VlQOEul.png',
     rating: 5,
   },
   {
     id: 3,
-    quote: `The AI and Machine Learning course opened up a new world for me. I learned a lot of useful knowledge and applied it to real-world work.`,
+    quote: t('testimonials.testimonial3.quote'),
     name: 'Nguyễn Duy Thái',
-    title: 'AI - Machine Learning Engineer',
+    title: t('testimonials.testimonial3.title'),
     avatarUrl: 'https://i.imgur.com/OKAoeOZ.png',
     rating: 4,
   },
   {
     id: 4,
-    quote:
-      'Flexible learning schedules and a supportive AI assistant made it possible for me to upskill while working full-time. Highly recommended!',
+    quote: t('testimonials.testimonial4.quote'),
     name: 'Sarah Miller',
-    title: 'Student of "Advanced Project Management"',
+    title: t('testimonials.testimonial4.title'),
     avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
     rating: 5,
   },
 ];
 
-const mockStats: StatItem[] = [
+const getMockStats = (t: (key: string) => string): StatItem[] => [
   {
-    icon: <Icons.students className="w-8 h-8" />,
+    icon: <Icons.students className='w-8 h-8' />,
     value: '100K+',
-    label: 'Active Students',
+    label: t('testimonials.stats.activeStudents'),
     colorClass: 'text-blue-500 dark:text-blue-400',
   },
   {
-    icon: <Icons.courses className="w-8 h-8" />,
+    icon: <Icons.courses className='w-8 h-8' />,
     value: '2K+',
-    label: 'Quality Courses',
+    label: t('testimonials.stats.qualityCourses'),
     colorClass: 'text-green-500 dark:text-green-400',
   },
   {
-    icon: <Icons.instructors className="w-8 h-8" />,
+    icon: <Icons.instructors className='w-8 h-8' />,
     value: '150+',
-    label: 'Expert Instructors',
+    label: t('testimonials.stats.expertInstructors'),
     colorClass: 'text-purple-500 dark:text-purple-400',
   },
   {
-    icon: <Icons.star className="w-8 h-8" />,
+    icon: <Icons.star className='w-8 h-8' />,
     value: '4.8/5',
-    label: 'Average Rating',
+    label: t('testimonials.stats.averageRating'),
     colorClass: 'text-yellow-500 dark:text-yellow-400',
   },
 ];
@@ -121,10 +117,12 @@ const itemVariants = {
 };
 
 const TestimonialsSection = () => {
+  const { t } = useTranslation();
   // TODO: Thay thế bằng API call sử dụng React Query hooks
-  const [testimonials, setTestimonials] =
-    useState<Testimonial[]>(mockTestimonials);
-  const [stats, setStats] = useState<StatItem[]>(mockStats);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(
+    getMockTestimonials(t)
+  );
+  const [stats, setStats] = useState<StatItem[]>(getMockStats(t));
 
   const emblaOptions: EmblaOptionsType = { loop: true, align: 'start' };
   const [emblaRef, emblaApi] = useEmblaCarousel(emblaOptions, [
@@ -153,6 +151,11 @@ const TestimonialsSection = () => {
     };
   }, [emblaApi, onSelect]);
 
+  useEffect(() => {
+    setTestimonials(getMockTestimonials(t));
+    setStats(getMockStats(t));
+  }, [t]);
+
   // TODO: Hook để fetch testimonials và stats từ API
   // const { data: testimonialsData, isLoading: isLoadingTestimonials } = useTestimonialsQuery();
   // const { data: platformStats, isLoading: isLoadingStats } = usePlatformStatsQuery();
@@ -160,21 +163,20 @@ const TestimonialsSection = () => {
   // useEffect(() => { if (platformStats) setStats(mapApiStatsToDisplay(platformStats)); }, [platformStats]);
 
   return (
-    <section className="py-16 md:py-24 bg-slate-50 dark:bg-slate-900/70 overflow-hidden">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className='py-16 md:py-24 bg-slate-50 dark:bg-slate-900/70 overflow-hidden'>
+      <div className='container mx-auto px-4 sm:px-6 lg:px-8'>
         <motion.div
           variants={sectionVariants}
-          initial="hidden"
-          whileInView="visible"
+          initial='hidden'
+          whileInView='visible'
           viewport={{ once: true, amount: 0.2 }}
         >
-          <div className="text-center mb-12 md:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
-              Loved by Learners Worldwide
+          <div className='text-center mb-12 md:mb-16'>
+            <h2 className='text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight'>
+              {t('testimonials.title')}
             </h2>
-            <p className="mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Hear from our students who have transformed their skills and
-              careers with 3TEduTech.
+            <p className='mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto'>
+              {t('testimonials.description')}
             </p>
           </div>
 
@@ -182,20 +184,20 @@ const TestimonialsSection = () => {
           {testimonials.length > 0 && (
             <motion.div
               variants={itemVariants}
-              className="embla mb-16 md:mb-24 relative"
+              className='embla mb-16 md:mb-24 relative'
             >
-              <div className="overflow-hidden" ref={emblaRef}>
-                <div className="flex -ml-4 touch-pan-y">
+              <div className='overflow-hidden' ref={emblaRef}>
+                <div className='flex -ml-4 touch-pan-y'>
                   {' '}
                   {/* Negative margin to offset padding on slides */}
                   {testimonials.map((testimonial) => (
                     <div
                       key={testimonial.id}
-                      className="flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 pl-4"
+                      className='flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 pl-4'
                     >
-                      <Card className="h-full flex flex-col bg-white dark:bg-slate-800 shadow-xl rounded-xl overflow-hidden border border-transparent hover:border-blue-500/50 dark:hover:border-blue-500/30 transition-all duration-300">
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center mb-3">
+                      <Card className='h-full flex flex-col bg-white dark:bg-slate-800 shadow-xl rounded-xl overflow-hidden border border-transparent hover:border-blue-500/50 dark:hover:border-blue-500/30 transition-all duration-300'>
+                        <CardHeader className='pb-4'>
+                          <div className='flex items-center mb-3'>
                             {[...Array(5)].map((_, i) => (
                               <Icons.star
                                 key={i}
@@ -208,16 +210,16 @@ const TestimonialsSection = () => {
                               />
                             ))}
                           </div>
-                          <Icons.quote className="w-8 h-8 text-blue-500 dark:text-blue-400 opacity-30 mb-2" />
+                          <Icons.quote className='w-8 h-8 text-blue-500 dark:text-blue-400 opacity-30 mb-2' />
                         </CardHeader>
-                        <CardContent className="flex-grow">
-                          <blockquote className="text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                        <CardContent className='flex-grow'>
+                          <blockquote className='text-slate-700 dark:text-slate-300 leading-relaxed italic'>
                             "{testimonial.quote}"
                           </blockquote>
                         </CardContent>
-                        <div className="p-6 mt-auto bg-slate-50 dark:bg-slate-800/50 border-t dark:border-slate-700/50">
-                          <div className="flex items-center">
-                            <Avatar className="h-12 w-12 border-2 border-blue-200 dark:border-blue-700">
+                        <div className='p-6 mt-auto bg-slate-50 dark:bg-slate-800/50 border-t dark:border-slate-700/50'>
+                          <div className='flex items-center'>
+                            <Avatar className='h-12 w-12 border-2 border-blue-200 dark:border-blue-700'>
                               <AvatarImage
                                 src={testimonial.avatarUrl}
                                 alt={testimonial.name}
@@ -226,11 +228,11 @@ const TestimonialsSection = () => {
                                 {testimonial.name.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="ml-4">
-                              <p className="font-semibold text-slate-800 dark:text-slate-100">
+                            <div className='ml-4'>
+                              <p className='font-semibold text-slate-800 dark:text-slate-100'>
                                 {testimonial.name}
                               </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                              <p className='text-xs text-slate-500 dark:text-slate-400'>
                                 {testimonial.title}
                               </p>
                             </div>
@@ -244,7 +246,7 @@ const TestimonialsSection = () => {
               {/* Carousel Dots */}
               {emblaApi &&
                 scrollSnaps.length > 3 && ( // Chỉ hiển thị dots nếu có nhiều hơn 3 slide (vì lg:flex-[0_0_33.33%])
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-2 mt-6">
+                  <div className='absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-2 mt-6'>
                     {scrollSnaps.map((_, index) => (
                       <button
                         key={index}
@@ -266,11 +268,11 @@ const TestimonialsSection = () => {
           {/* Platform Statistics */}
           <motion.div
             variants={itemVariants}
-            className="bg-white dark:bg-slate-800/70 rounded-2xl shadow-2xl p-8 md:p-12"
+            className='bg-white dark:bg-slate-800/70 rounded-2xl shadow-2xl p-8 md:p-12'
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className='grid grid-cols-2 md:grid-cols-4 gap-8 text-center'>
               {stats.map((stat) => (
-                <div key={stat.label} className="flex flex-col items-center">
+                <div key={stat.label} className='flex flex-col items-center'>
                   <div
                     className={`p-3 rounded-full mb-3 ${stat.colorClass
                       .replace('text-', 'bg-')
@@ -285,7 +287,7 @@ const TestimonialsSection = () => {
                   >
                     {stat.value}
                   </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p className='text-sm text-slate-600 dark:text-slate-400'>
                     {stat.label}
                   </p>
                 </div>

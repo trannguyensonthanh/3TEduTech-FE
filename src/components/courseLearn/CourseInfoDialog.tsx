@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface CourseInfoDialogProps {
   isOpen: boolean;
@@ -27,45 +28,59 @@ const CourseInfoDialog: React.FC<CourseInfoDialogProps> = ({
   onClose,
   course,
 }) => {
+  const { t } = useTranslation();
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className='sm:max-w-lg'>
         <DialogHeader>
-          <DialogTitle>Course Information</DialogTitle>
+          <DialogTitle>{t('courseInfoDialog.title')}</DialogTitle>
           <DialogDescription>
-            Detailed information about the course.
+            {t('courseInfoDialog.description')}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className='space-y-4'>
           <div>
-            <h3 className="font-medium text-lg">Course Title</h3>
+            <h3 className='font-medium text-lg'>
+              {t('courseInfoDialog.courseTitle')}
+            </h3>
             <p>{course.title}</p>
           </div>
           <div>
-            <h3 className="font-medium text-lg">Instructor</h3>
+            <h3 className='font-medium text-lg'>
+              {t('courseInfoDialog.instructor')}
+            </h3>
             <p>{course.instructor}</p>
           </div>
           <div>
-            <h3 className="font-medium text-lg">Progress</h3>
+            <h3 className='font-medium text-lg'>
+              {t('courseInfoDialog.progress')}
+            </h3>
             <p>
-              {course.completedLessons} of {course.totalLessons} lessons
-              completed ({course.progress}%)
+              {t('courseInfoDialog.progressValue', {
+                completed: course.completedLessons,
+                total: course.totalLessons,
+                percent: course.progress,
+              })}
             </p>
           </div>
           <div>
-            <h3 className="font-medium text-lg">Sections</h3>
-            <ul className="list-disc pl-5">
+            <h3 className='font-medium text-lg'>
+              {t('courseInfoDialog.sections')}
+            </h3>
+            <ul className='list-disc pl-5'>
               {course.sections.map((section) => (
                 <li key={section.id}>
                   {section.title} -{' '}
-                  {section.completed ? 'Completed' : 'In Progress'}
+                  {section.completed
+                    ? t('courseInfoDialog.completed')
+                    : t('courseInfoDialog.inProgress')}
                 </li>
               ))}
             </ul>
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>{t('courseInfoDialog.close')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

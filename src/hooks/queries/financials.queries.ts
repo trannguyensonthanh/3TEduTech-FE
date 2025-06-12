@@ -37,16 +37,16 @@ import {
   RequestWithdrawalFormData,
   WithdrawalActivityListResponse,
   getWithdrawalActivityHistory,
+  AdminWithdrawalRequestParams,
+  AdminWithdrawalRequestListResponse,
+  getWithdrawalRequestsForAdmin,
 } from '@/services/financials.service';
 
 // Query Key Factory
 const financialsKeys = {
   all: ['financials'] as const,
   myBalance: () => [...financialsKeys.all, 'myBalance'] as const,
-  // myWithdrawals: (params?: WithdrawalHistoryParams) =>
-  //   [...financialsKeys.all, 'myWithdrawals', params || {}] as const,
-  // myPayouts: (params?: PayoutQueryParams) =>
-  //   [...financialsKeys.all, 'myPayouts', params || {}] as const, // Chỉ lấy statusId
+
   myWithdrawalActivities: (params?: WithdrawalActivityQueryParams) =>
     [...financialsKeys.all, 'myWithdrawalActivities', params || {}] as const,
   myTransactions: (params?: TransactionHistoryParams) =>
@@ -62,6 +62,13 @@ const financialsKeys = {
     [...financialsKeys.all, 'myMonthlyEarnings', params || {}] as const,
   myRevenueByCourse: (params?: CourseRevenueQueryParams) =>
     [...financialsKeys.all, 'myRevenueByCourse', params || {}] as const,
+  adminWithdrawalRequests: (params?: AdminWithdrawalRequestParams) =>
+    [
+      ...financialsKeys.all,
+      'adminWithdrawalRequests',
+      'list',
+      params || {},
+    ] as const,
 };
 
 // --- Instructor Queries ---
@@ -77,44 +84,10 @@ export const useMyAvailableBalance = (
     queryKey: financialsKeys.myBalance(),
     queryFn: getMyAvailableBalance,
     // Cân nhắc staleTime ngắn hơn vì số dư có thể thay đổi thường xuyên
-    staleTime: 1000 * 30, // 30 giây
+    staleTime: 1000 * 60 * 5, // 30 giây
     ...options,
   });
 };
-
-// /** Hook Instructor lấy lịch sử yêu cầu rút tiền */
-// export const useMyWithdrawalHistory = (
-//   params?: WithdrawalHistoryParams,
-//   options?: Omit<
-//     UseQueryOptions<WithdrawalHistoryResponse, Error>,
-//     'queryKey' | 'queryFn'
-//   >
-// ) => {
-//   const queryKey = financialsKeys.myWithdrawals(params);
-//   return useQuery<WithdrawalHistoryResponse, Error>({
-//     queryKey: queryKey,
-//     queryFn: () => getMyWithdrawalHistory(params),
-//     placeholderData: undefined,
-//     ...options,
-//   });
-// };
-
-// /** Hook Instructor lấy lịch sử chi trả */
-// export const useMyPayoutHistory = (
-//   params?: PayoutQueryParams,
-//   options?: Omit<
-//     UseQueryOptions<PayoutListResponse, Error>,
-//     'queryKey' | 'queryFn'
-//   >
-// ) => {
-//   const queryKey = financialsKeys.myPayouts(params); // Dùng PayoutQueryParams nhưng bỏ instructorId
-//   return useQuery<PayoutListResponse, Error>({
-//     queryKey: queryKey,
-//     queryFn: () => getMyPayoutHistory(params),
-//     staleTime: 1000 * 60, // 1 minute
-//     ...options,
-//   });
-// };
 
 /** Hook Instructor lấy lịch sử giao dịch tổng hợp */
 export const useMyTransactions = (
@@ -134,30 +107,6 @@ export const useMyTransactions = (
 
 // --- Instructor Mutations ---
 
-// /** Hook Instructor tạo yêu cầu rút tiền */
-// export const useRequestWithdrawal = (
-//   options?: UseMutationOptions<WithdrawalRequest, Error, WithdrawalRequestData>
-// ) => {
-//   const queryClient = useQueryClient();
-//   return useMutation<WithdrawalRequest, Error, WithdrawalRequestData>({
-//     mutationFn: requestWithdrawal,
-//     onSuccess: () => {
-//       // Invalidate số dư và lịch sử yêu cầu rút tiền
-//       queryClient.invalidateQueries({ queryKey: financialsKeys.myBalance() });
-//       queryClient.invalidateQueries({
-//         queryKey: financialsKeys.myWithdrawalActivities(),
-//       });
-//       console.log('Withdrawal request created.');
-//       // toast.success('Yêu cầu rút tiền đã được gửi!');
-//     },
-//     onError: (error) => {
-//       console.error('Withdrawal request failed:', error.message);
-//       // toast.error(error.message || 'Gửi yêu cầu rút tiền thất bại.');
-//     },
-//     ...options,
-//   });
-// };
-
 export const useRequestWithdrawal = (
   options?: UseMutationOptions<
     WithdrawalRequest,
@@ -174,8 +123,6 @@ export const useRequestWithdrawal = (
       queryClient.invalidateQueries({
         queryKey: financialsKeys.myWithdrawalActivities(),
       }); // Invalidate lịch sử hoạt động
-      console.log('Withdrawal request created.');
-      // toast.success('Yêu cầu rút tiền đã được gửi!');
     },
     onError: (error) => {
       console.error('Withdrawal request failed:', error.message);
@@ -186,9 +133,6 @@ export const useRequestWithdrawal = (
 };
 
 // --- Admin Queries ---
-
-// Hook Admin lấy danh sách Withdrawal Requests (Cần tạo service/repo nếu chưa có)
-// export const useAdminGetWithdrawalRequests = (params?: any, options?: ...) => { ... }
 
 /** Hook Admin lấy danh sách Payouts */
 export const useAdminGetPayouts = (
@@ -304,7 +248,7 @@ export const useProcessPayoutExecution = (
         }),
       });
       // Invalidate số dư của instructor nếu thành công
-      if (updatedPayout.PayoutStatusID === 'PAID') {
+      if (updatedPayout.payoutStatusId === 'PAID') {
         queryClient.invalidateQueries({ queryKey: financialsKeys.myBalance() }); // Cần instructorId?
         queryClient.invalidateQueries({
           queryKey: financialsKeys.myTransactions(),
@@ -319,7 +263,7 @@ export const useProcessPayoutExecution = (
       });
 
       console.log(
-        `Payout ${variables.payoutId} processed with status ${updatedPayout.PayoutStatusID}.`
+        `Payout ${variables.payoutId} processed with status ${updatedPayout.payoutStatusId}.`
       );
       // toast.success('Đã cập nhật trạng thái chi trả.');
     },
@@ -361,5 +305,23 @@ export const useMyRevenueByCourse = (
     queryKey: queryKey,
     queryFn: () => getMyRevenueByCourse(params),
     ...(options || {}),
+  });
+};
+
+/** Hook cho Admin lấy danh sách các yêu cầu rút tiền */
+export const useAdminGetWithdrawalRequests = (
+  params?: AdminWithdrawalRequestParams,
+  options?: Omit<
+    UseQueryOptions<AdminWithdrawalRequestListResponse, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  const queryKey = financialsKeys.adminWithdrawalRequests(params);
+  return useQuery<AdminWithdrawalRequestListResponse, Error>({
+    queryKey,
+    queryFn: () => getWithdrawalRequestsForAdmin(params),
+    placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60, // 1 minute
+    ...options,
   });
 };

@@ -19,12 +19,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCompleteFacebookRegistrationMutation } from '@/hooks/queries/auth.queries';
-
-// Schema cho form nhập email
-const emailSchema = z.object({
-  email: z.string().email('Email không hợp lệ').min(1, 'Vui lòng nhập email'),
-});
-type EmailFormData = z.infer<typeof emailSchema>;
+import { useTranslation } from 'react-i18next';
 
 interface CompleteRegistrationModalProps {
   open: boolean; // Trạng thái mở modal
@@ -39,6 +34,16 @@ const EmailCollectionModal = ({
   onClose,
   onSuccess,
 }: CompleteRegistrationModalProps) => {
+  const { t } = useTranslation();
+  // Schema cho form nhập email
+  const emailSchema = z.object({
+    email: z
+      .string()
+      .email(t('emailModal.error.invalid'))
+      .min(1, t('emailModal.error.required')),
+  });
+  type EmailFormData = z.infer<typeof emailSchema>;
+
   const {
     register,
     handleSubmit,
@@ -51,13 +56,13 @@ const EmailCollectionModal = ({
 
   const completeMutation = useCompleteFacebookRegistrationMutation({
     onSuccess: () => {
-      onSuccess(); // Gọi callback xử lý thành công từ component cha
-      onClose(); // Đóng modal
+      onSuccess();
+      onClose();
     },
     onError: (error) => {
       toast({
-        title: 'Error',
-        description: error.message || 'An error occurred. Please try again.',
+        title: t('emailModal.toast.errorTitle'),
+        description: error.message || t('emailModal.toast.errorDesc'),
         variant: 'destructive',
       });
     },
@@ -73,21 +78,18 @@ const EmailCollectionModal = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Email Required</DialogTitle>
-          <DialogDescription>
-            Facbook didn't provide your email. Please enter it below to complete
-            your registration.
-          </DialogDescription>
+          <DialogTitle>{t('emailModal.title')}</DialogTitle>
+          <DialogDescription>{t('emailModal.description')}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+          <div className='space-y-4 py-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='email'>{t('emailModal.label.email')}</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="your.email@example.com"
+                id='email'
+                type='email'
+                placeholder={t('emailModal.placeholder.email')}
                 {...register('email')}
               />
               {errors.email && (
@@ -97,17 +99,17 @@ const EmailCollectionModal = ({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+            <Button type='button' variant='outline' onClick={onClose}>
+              {t('emailModal.cancel')}
             </Button>
-            <Button type="submit" disabled={completeMutation.isPending}>
+            <Button type='submit' disabled={completeMutation.isPending}>
               {completeMutation.isPending ? (
                 <>
-                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
+                  <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+                  {t('emailModal.processing')}
                 </>
               ) : (
-                'Continue'
+                t('emailModal.continue')
               )}
             </Button>
           </DialogFooter>

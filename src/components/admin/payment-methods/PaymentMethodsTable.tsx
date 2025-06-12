@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/admin/payment-methods/PaymentMethodsTable.tsx
 import React from 'react';
-import { Edit, Trash } from 'lucide-react';
+import { PaymentMethod } from '@/services/paymentMethod.service';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -10,83 +11,134 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-
-export interface PaymentMethod {
-  id: string;
-  name: string;
-}
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Icons } from '@/components/common/Icons';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PaymentMethodsTableProps {
-  paymentMethods: PaymentMethod[];
+  paymentMethods?: PaymentMethod[];
   onEdit: (paymentMethod: PaymentMethod) => void;
-  onDelete: (paymentMethodId: any) => void;
+  onDelete: (paymentMethod: PaymentMethod) => void;
+  isLoading: boolean;
 }
 
 const PaymentMethodsTable: React.FC<PaymentMethodsTableProps> = ({
   paymentMethods,
   onEdit,
   onDelete,
+  isLoading,
 }) => {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow className="bg-muted/50">
-          <TableHead className="w-40 font-semibold">Method ID</TableHead>
-          <TableHead className="font-semibold">Method Name</TableHead>
-          <TableHead className="text-right font-semibold">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {paymentMethods.length === 0 ? (
+  if (isLoading) {
+    return (
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell
-              colSpan={3}
-              className="text-center py-8 text-muted-foreground"
-            >
-              No payment methods found.
-            </TableCell>
+            <TableHead className='w-40'>Method ID</TableHead>
+            <TableHead>Method Name</TableHead>
+            <TableHead className='text-right'>Actions</TableHead>
           </TableRow>
-        ) : (
-          paymentMethods.map((method) => (
-            <TableRow
-              key={method.id}
-              className="hover:bg-muted/30 transition-colors"
-            >
-              <TableCell className="font-medium">
-                <Badge
-                  variant="outline"
-                  className="bg-primary/10 text-primary border-primary/20"
-                >
-                  {method.id}
-                </Badge>
+        </TableHeader>
+        <TableBody>
+          {[...Array(5)].map((_, i) => (
+            <TableRow key={i}>
+              <TableCell>
+                <Skeleton className='h-6 w-24 rounded-md' />
               </TableCell>
-              <TableCell>{method.name}</TableCell>
-              <TableCell className="text-right space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onEdit(method)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span className="sr-only">Edit</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDelete(method.id)}
-                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                >
-                  <Trash className="h-4 w-4" />
-                  <span className="sr-only">Delete</span>
-                </Button>
+              <TableCell>
+                <Skeleton className='h-5 w-40' />
+              </TableCell>
+              <TableCell className='text-right space-x-2'>
+                <Skeleton className='h-8 w-8 inline-block' />
+                <Skeleton className='h-8 w-8 inline-block' />
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
+
+  return (
+    <div className='border rounded-md'>
+      <Table>
+        <TableHeader>
+          <TableRow className='bg-muted/50'>
+            <TableHead className='w-40 font-semibold'>Method ID</TableHead>
+            <TableHead className='font-semibold'>Method Name</TableHead>
+            <TableHead className='font-semibold hidden md:table-cell'>
+              Description
+            </TableHead>
+            <TableHead className='text-right font-semibold'>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paymentMethods && paymentMethods.length > 0 ? (
+            paymentMethods.map((method) => (
+              <TableRow key={method.methodId} className='hover:bg-muted/50'>
+                <TableCell className='font-mono text-sm'>
+                  <Badge variant='outline'>{method.methodId}</Badge>
+                </TableCell>
+                <TableCell className='font-medium'>
+                  {method.methodName}
+                </TableCell>
+                <TableCell
+                  className='text-muted-foreground hidden md:table-cell truncate max-w-xs'
+                  title={method.description || ''}
+                >
+                  {method.description || '—'}
+                </TableCell>
+                <TableCell className='text-right'>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          onClick={() => onEdit(method)}
+                        >
+                          <Icons.edit className='h-4 w-4 text-muted-foreground' />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit Method</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          onClick={() => onDelete(method)}
+                        >
+                          <Icons.trash className='h-4 w-4 text-destructive' />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete Method</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={4}
+                className='h-32 text-center text-muted-foreground'
+              >
+                No payment methods found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 

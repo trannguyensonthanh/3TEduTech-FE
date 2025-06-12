@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 // import { Icons } from '@/components/common/Icons'; // Bỏ nếu không dùng nữa
 
-const PaymentStatusPage: React.FC = () => {
+const CheckoutReturn: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams(); // Dùng useSearchParams để lấy query params
 
@@ -171,8 +171,8 @@ const PaymentStatusPage: React.FC = () => {
       case 'loading': // Trạng thái loading ban đầu
         return (
           <>
-            <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto" />
-            <p className="mt-4 text-lg text-muted-foreground">
+            <Loader2 className='h-16 w-16 animate-spin text-primary mx-auto' />
+            <p className='mt-4 text-lg text-muted-foreground'>
               Loading payment status...
             </p>
           </>
@@ -180,26 +180,26 @@ const PaymentStatusPage: React.FC = () => {
       case 'success':
         return (
           <>
-            <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-800/30 flex items-center justify-center mx-auto ring-4 ring-green-200 dark:ring-green-700/40 mb-5">
-              <CheckCircle className="h-10 w-10 text-green-500 dark:text-green-400" />
+            <div className='h-20 w-20 rounded-full bg-green-100 dark:bg-green-800/30 flex items-center justify-center mx-auto ring-4 ring-green-200 dark:ring-green-700/40 mb-5'>
+              <CheckCircle className='h-10 w-10 text-green-500 dark:text-green-400' />
             </div>
-            <h3 className="text-2xl font-semibold">Payment Successful!</h3>
-            <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
+            <h3 className='text-2xl font-semibold'>Payment Successful!</h3>
+            <p className='mt-2 text-muted-foreground max-w-sm mx-auto'>
               {displayMessage}
             </p>
             {orderIdDisplay && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className='text-xs text-muted-foreground mt-1'>
                 Order ID: #{orderIdDisplay}
               </p>
             )}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleNavigateToOrder} size="lg">
+            <div className='mt-8 flex flex-col sm:flex-row gap-3 justify-center'>
+              <Button onClick={handleNavigateToOrder} size='lg'>
                 View My Learning
               </Button>
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={() => navigate('/courses')}
-                size="lg"
+                size='lg'
               >
                 Explore More Courses
               </Button>
@@ -218,37 +218,37 @@ const PaymentStatusPage: React.FC = () => {
               } flex items-center justify-center mx-auto ring-4 mb-5`}
             >
               {status === 'cancelled' ? (
-                <AlertTriangle className="h-10 w-10 text-amber-500 dark:text-amber-400" />
+                <AlertTriangle className='h-10 w-10 text-amber-500 dark:text-amber-400' />
               ) : (
-                <XCircle className="h-10 w-10 text-red-500 dark:text-red-400" />
+                <XCircle className='h-10 w-10 text-red-500 dark:text-red-400' />
               )}
             </div>
-            <h3 className="text-2xl font-semibold">
+            <h3 className='text-2xl font-semibold'>
               {status === 'cancelled' ? 'Payment Cancelled' : 'Payment Failed'}
             </h3>
-            <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
+            <p className='mt-2 text-muted-foreground max-w-sm mx-auto'>
               {displayMessage}
             </p>
             {orderIdDisplay && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className='text-xs text-muted-foreground mt-1'>
                 Order ID: #{orderIdDisplay}
               </p>
             )}
             {errorCodeDisplay && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className='text-xs text-muted-foreground mt-1'>
                 Details: Code {errorCodeDisplay}
               </p>
             )}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleRetryOrBrowse} size="lg">
+            <div className='mt-8 flex flex-col sm:flex-row gap-3 justify-center'>
+              <Button onClick={handleRetryOrBrowse} size='lg'>
                 {status === 'cancelled'
                   ? 'Browse Courses'
                   : 'Try Another Payment'}
               </Button>
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={() => navigate('/support')}
-                size="lg"
+                size='lg'
               >
                 Contact Support
               </Button>
@@ -258,26 +258,26 @@ const PaymentStatusPage: React.FC = () => {
       case 'pending_confirmation':
         return (
           <>
-            <Clock className="h-16 w-16 text-amber-500 mx-auto mb-5" />
-            <h3 className="text-2xl font-semibold">
+            <Clock className='h-16 w-16 text-amber-500 mx-auto mb-5' />
+            <h3 className='text-2xl font-semibold'>
               Payment Pending Confirmation
             </h3>
-            <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
+            <p className='mt-2 text-muted-foreground max-w-sm mx-auto'>
               {displayMessage}
             </p>
             {orderIdDisplay && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className='text-xs text-muted-foreground mt-1'>
                 Order ID: #{orderIdDisplay}
               </p>
             )}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={handleNavigateToOrder} size="lg">
+            <div className='mt-8 flex flex-col sm:flex-row gap-3 justify-center'>
+              <Button onClick={handleNavigateToOrder} size='lg'>
                 Check Order Status
               </Button>
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={() => navigate('/courses')}
-                size="lg"
+                size='lg'
               >
                 Browse Courses
               </Button>
@@ -287,18 +287,18 @@ const PaymentStatusPage: React.FC = () => {
       default: // Trường hợp không xác định hoặc lỗi URL
         return (
           <>
-            <AlertTriangle className="h-16 w-16 text-destructive mx-auto mb-5" />
-            <h3 className="text-2xl font-semibold">Unknown Payment Status</h3>
-            <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
+            <AlertTriangle className='h-16 w-16 text-destructive mx-auto mb-5' />
+            <h3 className='text-2xl font-semibold'>Unknown Payment Status</h3>
+            <p className='mt-2 text-muted-foreground max-w-sm mx-auto'>
               {displayMessage}
             </p>
             {orderIdDisplay && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className='text-xs text-muted-foreground mt-1'>
                 Reference Order ID: #{orderIdDisplay}
               </p>
             )}
-            <div className="mt-8">
-              <Button onClick={() => navigate('/')} size="lg">
+            <div className='mt-8'>
+              <Button onClick={() => navigate('/')} size='lg'>
                 Go to Homepage
               </Button>
             </div>
@@ -309,13 +309,13 @@ const PaymentStatusPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-12 sm:py-16 md:py-20 px-4">
-        <div className="max-w-md mx-auto">
-          <Card className="shadow-xl border-t-4 border-primary animate-fadeIn">
+      <div className='container mx-auto py-12 sm:py-16 md:py-20 px-4'>
+        <div className='max-w-md mx-auto'>
+          <Card className='shadow-xl border-t-4 border-primary animate-fadeIn'>
             {' '}
             {/* Thêm animation */}
-            <CardHeader className="pb-4">
-              <CardTitle className="text-center text-2xl sm:text-3xl font-bold tracking-tight">
+            <CardHeader className='pb-4'>
+              <CardTitle className='text-center text-2xl sm:text-3xl font-bold tracking-tight'>
                 {status === 'loading' && 'Processing...'}
                 {status === 'success' && 'Payment Confirmed'}
                 {status === 'failed' && 'Payment Failed'}
@@ -324,7 +324,7 @@ const PaymentStatusPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col items-center text-center py-6 sm:py-8">
+              <div className='flex flex-col items-center text-center py-6 sm:py-8'>
                 {renderContent()}
               </div>
             </CardContent>
@@ -335,4 +335,4 @@ const PaymentStatusPage: React.FC = () => {
   );
 };
 
-export default PaymentStatusPage;
+export default CheckoutReturn;

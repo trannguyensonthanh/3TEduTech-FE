@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/instructor/courseCreate/SectionDialog.tsx
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -188,16 +187,16 @@ const SectionDialog: React.FC<SectionDialogProps> = ({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleDialogSubmit)}
-            className="space-y-4 py-2"
+            className='space-y-4 py-2'
           >
             <FormField
               control={form.control}
-              name="sectionName"
+              name='sectionName'
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>Section Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Introduction" {...field} />
+                    <Input placeholder='e.g. Introduction' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -206,16 +205,16 @@ const SectionDialog: React.FC<SectionDialogProps> = ({
 
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field, fieldState }) => (
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="What this section covers..."
+                      placeholder='What this section covers...'
                       {...field}
                       value={field.value ?? ''}
-                      className="min-h-[80px]"
+                      className='min-h-[80px]'
                     />
                   </FormControl>
                   <FormMessage />
@@ -225,19 +224,19 @@ const SectionDialog: React.FC<SectionDialogProps> = ({
 
             <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={onClose}
                 disabled={isProcessing}
               >
                 Cancel
               </Button>
               <Button
-                type="submit"
+                type='submit'
                 disabled={isProcessing || !form.formState.isValid}
               >
                 {isProcessing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 ) : null}
                 {isEditing ? 'Update Section' : 'Add Section'}
               </Button>

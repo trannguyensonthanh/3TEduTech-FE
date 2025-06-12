@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { UserRole } from './UserTable';
+import { useTranslation } from 'react-i18next';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -41,13 +42,14 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
   onOpenChange,
   onAddUser,
 }) => {
-  const [formRole, setFormRole] = useState<UserRole>('STUDENT');
+  const { t } = useTranslation();
+  const [formRole, setFormRole] = useState<UserRole>('NU');
 
   const form = useForm({
     defaultValues: {
       fullName: '',
       email: '',
-      role: 'STUDENT',
+      role: 'NU',
       password: '',
       confirmPassword: '',
       gender: '',
@@ -72,7 +74,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
     // In a real app, this would call an API to create the user
     onAddUser(data);
     form.reset();
-    setFormRole('STUDENT');
+    setFormRole('NU');
   };
 
   // Handle role change to show/hide instructor fields
@@ -83,38 +85,43 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className='sm:max-w-xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{t('addUserDialog.title')}</DialogTitle>
           <DialogDescription>
-            Create a new user account in the system.
+            {t('addUserDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4 py-4"
+            className='space-y-4 py-4'
           >
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="basic">Basic Information</TabsTrigger>
-                {formRole === 'INSTRUCTOR' && (
-                  <TabsTrigger value="instructor">
-                    Instructor Details
+            <Tabs defaultValue='basic' className='w-full'>
+              <TabsList className='grid w-full grid-cols-2'>
+                <TabsTrigger value='basic'>
+                  {t('addUserDialog.tabs.basic')}
+                </TabsTrigger>
+                {formRole === 'GV' && (
+                  <TabsTrigger value='instructor'>
+                    {t('addUserDialog.tabs.instructor')}
                   </TabsTrigger>
                 )}
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4 pt-4">
+              <TabsContent value='basic' className='space-y-4 pt-4'>
                 <FormField
                   control={form.control}
-                  name="fullName"
+                  name='fullName'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel>{t('addUserDialog.fullName')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
+                        <Input
+                          placeholder={t('addUserDialog.placeholder.fullName')}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -123,12 +130,15 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                 <FormField
                   control={form.control}
-                  name="email"
+                  name='email'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('addUserDialog.email')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="user@example.com" {...field} />
+                        <Input
+                          placeholder={t('addUserDialog.placeholder.email')}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -137,10 +147,10 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                 <FormField
                   control={form.control}
-                  name="role"
+                  name='role'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>{t('addUserDialog.role')}</FormLabel>
                       <Select
                         onValueChange={(value) =>
                           handleRoleChange(value as UserRole)
@@ -149,37 +159,47 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue
+                              placeholder={t('addUserDialog.placeholder.role')}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="STUDENT">Student</SelectItem>
-                          <SelectItem value="INSTRUCTOR">Instructor</SelectItem>
-                          <SelectItem value="ADMIN">Admin</SelectItem>
-                          <SelectItem value="SUPER_ADMIN">
-                            Super Admin
+                          <SelectItem value='STUDENT'>
+                            {t('addUserDialog.roles.student')}
+                          </SelectItem>
+                          <SelectItem value='INSTRUCTOR'>
+                            {t('addUserDialog.roles.instructor')}
+                          </SelectItem>
+                          <SelectItem value='ADMIN'>
+                            {t('addUserDialog.roles.admin')}
+                          </SelectItem>
+                          <SelectItem value='SUPER_ADMIN'>
+                            {t('addUserDialog.roles.superAdmin')}
                           </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        This determines what permissions the user will have.
+                        {t('addUserDialog.roleDesc')}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="password"
+                    name='password'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>{t('addUserDialog.password')}</FormLabel>
                         <FormControl>
                           <Input
-                            type="password"
-                            placeholder="••••••••"
+                            type='password'
+                            placeholder={t(
+                              'addUserDialog.placeholder.password'
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -190,14 +210,18 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="confirmPassword"
+                    name='confirmPassword'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
+                        <FormLabel>
+                          {t('addUserDialog.confirmPassword')}
+                        </FormLabel>
                         <FormControl>
                           <Input
-                            type="password"
-                            placeholder="••••••••"
+                            type='password'
+                            placeholder={t(
+                              'addUserDialog.placeholder.confirmPassword'
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -207,25 +231,33 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="gender"
+                    name='gender'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Gender</FormLabel>
+                        <FormLabel>{t('addUserDialog.gender')}</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
+                              <SelectValue
+                                placeholder={t(
+                                  'addUserDialog.placeholder.gender'
+                                )}
+                              />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="MALE">Male</SelectItem>
-                            <SelectItem value="FEMALE">Female</SelectItem>
+                            <SelectItem value='MALE'>
+                              {t('addUserDialog.genders.male')}
+                            </SelectItem>
+                            <SelectItem value='FEMALE'>
+                              {t('addUserDialog.genders.female')}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -235,12 +267,12 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="birthDate"
+                    name='birthDate'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Birth Date</FormLabel>
+                        <FormLabel>{t('addUserDialog.birthDate')}</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type='date' {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -248,15 +280,20 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                   <FormField
                     control={form.control}
-                    name="phoneNumber"
+                    name='phoneNumber'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>{t('addUserDialog.phoneNumber')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="+1234567890" {...field} />
+                          <Input
+                            placeholder={t(
+                              'addUserDialog.placeholder.phoneNumber'
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -265,12 +302,17 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="location"
+                    name='location'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location</FormLabel>
+                        <FormLabel>{t('addUserDialog.location')}</FormLabel>
                         <FormControl>
-                          <Input placeholder="City, Country" {...field} />
+                          <Input
+                            placeholder={t(
+                              'addUserDialog.placeholder.location'
+                            )}
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -279,17 +321,21 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
                 </div>
               </TabsContent>
 
-              {formRole === 'INSTRUCTOR' && (
-                <TabsContent value="instructor" className="space-y-4 pt-4">
+              {formRole === 'GV' && (
+                <TabsContent value='instructor' className='space-y-4 pt-4'>
                   <FormField
                     control={form.control}
-                    name="professionalTitle"
+                    name='professionalTitle'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Professional Title</FormLabel>
+                        <FormLabel>
+                          {t('addUserDialog.professionalTitle')}
+                        </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Web Developer, Data Scientist, etc."
+                            placeholder={t(
+                              'addUserDialog.placeholder.professionalTitle'
+                            )}
                             {...field}
                           />
                         </FormControl>
@@ -300,19 +346,18 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="bio"
+                    name='bio'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Short Bio</FormLabel>
+                        <FormLabel>{t('addUserDialog.bio')}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Short professional description"
+                            placeholder={t('addUserDialog.placeholder.bio')}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          A brief professional description (shown in instructor
-                          cards)
+                          {t('addUserDialog.bioDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -321,20 +366,19 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="aboutMe"
+                    name='aboutMe'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>About Me</FormLabel>
+                        <FormLabel>{t('addUserDialog.aboutMe')}</FormLabel>
                         <FormControl>
                           <textarea
-                            className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            placeholder="Detailed professional background and experience"
+                            className='flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50'
+                            placeholder={t('addUserDialog.placeholder.aboutMe')}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Detailed description shown on the instructor profile
-                          page
+                          {t('addUserDialog.aboutMeDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -343,36 +387,40 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                   <FormField
                     control={form.control}
-                    name="skills"
+                    name='skills'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Skills</FormLabel>
+                        <FormLabel>{t('addUserDialog.skills')}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="JavaScript, React, Node.js, etc. (comma separated)"
+                            placeholder={t('addUserDialog.placeholder.skills')}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Enter skills separated by commas
+                          {t('addUserDialog.skillsDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Social Links</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className='space-y-2'>
+                    <h3 className='text-sm font-medium'>
+                      {t('addUserDialog.socialLinks')}
+                    </h3>
+                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                       <FormField
                         control={form.control}
-                        name="linkedinUrl"
+                        name='linkedinUrl'
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>LinkedIn</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="LinkedIn profile URL"
+                                placeholder={t(
+                                  'addUserDialog.placeholder.linkedinUrl'
+                                )}
                                 {...field}
                               />
                             </FormControl>
@@ -383,13 +431,15 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                       <FormField
                         control={form.control}
-                        name="githubUrl"
+                        name='githubUrl'
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>GitHub</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="GitHub profile URL"
+                                placeholder={t(
+                                  'addUserDialog.placeholder.githubUrl'
+                                )}
                                 {...field}
                               />
                             </FormControl>
@@ -400,13 +450,15 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                       <FormField
                         control={form.control}
-                        name="twitterUrl"
+                        name='twitterUrl'
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Twitter</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Twitter profile URL"
+                                placeholder={t(
+                                  'addUserDialog.placeholder.twitterUrl'
+                                )}
                                 {...field}
                               />
                             </FormControl>
@@ -417,17 +469,24 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Payment Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className='space-y-2'>
+                    <h3 className='text-sm font-medium'>
+                      {t('addUserDialog.paymentInfo')}
+                    </h3>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                       <FormField
                         control={form.control}
-                        name="bankName"
+                        name='bankName'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Bank Name</FormLabel>
+                            <FormLabel>{t('addUserDialog.bankName')}</FormLabel>
                             <FormControl>
-                              <Input placeholder="Bank name" {...field} />
+                              <Input
+                                placeholder={t(
+                                  'addUserDialog.placeholder.bankName'
+                                )}
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -436,13 +495,17 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                       <FormField
                         control={form.control}
-                        name="bankAccountNumber"
+                        name='bankAccountNumber'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Account Number</FormLabel>
+                            <FormLabel>
+                              {t('addUserDialog.bankAccountNumber')}
+                            </FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Bank account number"
+                                placeholder={t(
+                                  'addUserDialog.placeholder.bankAccountNumber'
+                                )}
                                 {...field}
                               />
                             </FormControl>
@@ -454,13 +517,17 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
 
                     <FormField
                       control={form.control}
-                      name="bankAccountHolderName"
+                      name='bankAccountHolderName'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Account Holder Name</FormLabel>
+                          <FormLabel>
+                            {t('addUserDialog.bankAccountHolderName')}
+                          </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Name as it appears on the account"
+                              placeholder={t(
+                                'addUserDialog.placeholder.bankAccountHolderName'
+                              )}
                               {...field}
                             />
                           </FormControl>
@@ -473,8 +540,8 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
               )}
             </Tabs>
 
-            <DialogFooter className="pt-4">
-              <Button type="submit">Add User</Button>
+            <DialogFooter className='pt-4'>
+              <Button type='submit'>{t('addUserDialog.addButton')}</Button>
             </DialogFooter>
           </form>
         </Form>

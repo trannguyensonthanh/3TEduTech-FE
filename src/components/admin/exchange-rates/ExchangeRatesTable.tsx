@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/admin/exchange-rates/ExchangeRatesTable.tsx
 import React from 'react';
-import { Edit, Trash } from 'lucide-react';
+import { ExchangeRate } from '@/services/exchangeRate.service';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -10,107 +10,165 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatDate } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-
-export interface ExchangeRate {
-  id: number;
-  fromCurrencyId: string;
-  toCurrencyId: string;
-  rate: number;
-  effectiveTimestamp: string;
-  source: string | null;
-}
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Icons } from '@/components/common/Icons';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 interface ExchangeRatesTableProps {
-  exchangeRates: ExchangeRate[];
+  exchangeRates?: ExchangeRate[];
   onEdit: (rate: ExchangeRate) => void;
-  onDelete: (rateId: any) => void;
+  onDelete: (rate: ExchangeRate) => void;
+  isLoading: boolean;
 }
+
+const formatRate = (rate: number) => {
+  // Hiển thị nhiều chữ số thập phân cho các tỷ giá nhỏ
+  if (rate < 0.001) {
+    return rate.toPrecision(6);
+  }
+  return rate.toLocaleString(undefined, { maximumFractionDigits: 4 });
+};
 
 const ExchangeRatesTable: React.FC<ExchangeRatesTableProps> = ({
   exchangeRates,
   onEdit,
   onDelete,
+  isLoading,
 }) => {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow className="bg-muted/50">
-          <TableHead className="w-12 font-semibold">ID</TableHead>
-          <TableHead className="font-semibold">From</TableHead>
-          <TableHead className="font-semibold">To</TableHead>
-          <TableHead className="font-semibold">Rate</TableHead>
-          <TableHead className="font-semibold">Effective From</TableHead>
-          <TableHead className="font-semibold">Source</TableHead>
-          <TableHead className="text-right font-semibold">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {exchangeRates.length === 0 ? (
+  if (isLoading) {
+    return (
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell
-              colSpan={7}
-              className="text-center py-8 text-muted-foreground"
-            >
-              No exchange rates found.
-            </TableCell>
+            <TableHead>From → To</TableHead>
+            <TableHead>Rate</TableHead>
+            <TableHead className='hidden md:table-cell'>
+              Effective From
+            </TableHead>
+            <TableHead className='hidden lg:table-cell'>Source</TableHead>
+            <TableHead className='text-right'>Actions</TableHead>
           </TableRow>
-        ) : (
-          exchangeRates.map((rate) => (
-            <TableRow
-              key={rate.id}
-              className="hover:bg-muted/30 transition-colors"
-            >
-              <TableCell>{rate.id}</TableCell>
+        </TableHeader>
+        <TableBody>
+          {[...Array(5)].map((_, i) => (
+            <TableRow key={i}>
               <TableCell>
-                <Badge
-                  variant="outline"
-                  className="bg-blue-100 text-blue-800 border-blue-200"
-                >
-                  {rate.fromCurrencyId}
-                </Badge>
+                <Skeleton className='h-5 w-24' />
               </TableCell>
               <TableCell>
-                <Badge
-                  variant="outline"
-                  className="bg-green-100 text-green-800 border-green-200"
-                >
-                  {rate.toCurrencyId}
-                </Badge>
+                <Skeleton className='h-5 w-20' />
               </TableCell>
-              <TableCell className="font-mono">
-                {rate.rate.toLocaleString(undefined, {
-                  maximumFractionDigits: 18,
-                })}
+              <TableCell className='hidden md:table-cell'>
+                <Skeleton className='h-5 w-32' />
               </TableCell>
-              <TableCell>{formatDate(rate.effectiveTimestamp)}</TableCell>
-              <TableCell>{rate.source || '—'}</TableCell>
-              <TableCell className="text-right space-x-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onEdit(rate)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                >
-                  <Edit className="h-4 w-4" />
-                  <span className="sr-only">Edit</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDelete(rate.id)}
-                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                >
-                  <Trash className="h-4 w-4" />
-                  <span className="sr-only">Delete</span>
-                </Button>
+              <TableCell className='hidden lg:table-cell'>
+                <Skeleton className='h-5 w-28' />
+              </TableCell>
+              <TableCell className='text-right space-x-2'>
+                <Skeleton className='h-8 w-8 inline-block' />
+                <Skeleton className='h-8 w-8 inline-block' />
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
+
+  return (
+    <div className='border rounded-md'>
+      <Table>
+        <TableHeader>
+          <TableRow className='bg-muted/50'>
+            <TableHead className='font-semibold'>From → To</TableHead>
+            <TableHead className='font-semibold'>Rate</TableHead>
+            <TableHead className='font-semibold hidden md:table-cell'>
+              Effective From
+            </TableHead>
+            <TableHead className='font-semibold hidden lg:table-cell'>
+              Source
+            </TableHead>
+            <TableHead className='text-right font-semibold'>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {exchangeRates && exchangeRates.length > 0 ? (
+            exchangeRates.map((rate) => (
+              <TableRow key={rate.rateId} className='hover:bg-muted/50'>
+                <TableCell className='font-medium'>
+                  <span className='font-mono text-primary'>
+                    {rate.fromCurrencyId}
+                  </span>
+                  <Icons.arrowRight className='inline-block mx-2 h-4 w-4 text-muted-foreground' />
+                  <span className='font-mono text-primary'>
+                    {rate.toCurrencyId}
+                  </span>
+                </TableCell>
+                <TableCell className='font-mono'>
+                  {formatRate(rate.rate)}
+                </TableCell>
+                <TableCell className='hidden md:table-cell'>
+                  {format(
+                    new Date(rate.effectiveTimestamp),
+                    'dd MMM, yyyy HH:mm'
+                  )}
+                </TableCell>
+                <TableCell className='text-muted-foreground hidden lg:table-cell'>
+                  {rate.source || '—'}
+                </TableCell>
+                <TableCell className='text-right'>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          onClick={() => onEdit(rate)}
+                        >
+                          <Icons.edit className='h-4 w-4 text-muted-foreground' />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit Rate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          onClick={() => onDelete(rate)}
+                        >
+                          <Icons.trash className='h-4 w-4 text-destructive' />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete Rate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={5}
+                className='h-32 text-center text-muted-foreground'
+              >
+                No exchange rates found.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 

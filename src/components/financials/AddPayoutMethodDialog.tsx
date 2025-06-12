@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/financials/AddPayoutMethodDialog.tsx
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  useForm,
-  Controller,
-  SubmitHandler,
-  FieldErrors,
-} from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, SubmitHandler, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { AnimatePresence, motion } from 'framer-motion';
+import { toast } from 'sonner';
+
+// UI
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,618 +20,316 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup,
-  SelectLabel,
-} from '@/components/ui/select';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Icons } from '@/components/common/Icons';
-import { useAddMyPayoutMethod } from '@/hooks/queries/instructor.queries';
-import { useToast } from '@/components/ui/use-toast';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+
+// Logic
 import {
-  BankAccountDetails,
+  payoutMethodSchema,
+  TPayoutMethodSchema,
+} from '@/lib/validators/payoutMethodValidator'; // Đổi tên file validator
+import { useAddMyPayoutMethod } from '@/hooks/queries/instructor.queries';
+import {
   CreateInstructorPayoutMethodData,
   InstructorPayoutMethodItem,
 } from '@/services/instructor.service';
-import { AnimatePresence, motion } from 'framer-motion';
 
-// --- Dữ liệu ví dụ (Nên lấy từ nguồn tin cậy hoặc API) ---
-const countries = [
-  { code: '', name: 'Select Country...' },
-  { code: 'US', name: 'United States' },
-  { code: 'VN', name: 'Vietnam' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'OTHER', name: 'Other International' },
-];
-
-const currencies = [
-  { code: '', name: 'Select Currency...' },
-  { code: 'USD', name: 'USD - US Dollar' },
-  { code: 'VND', name: 'VND - Vietnamese Dong' },
-  { code: 'EUR', name: 'EUR - Euro' },
-  { code: 'GBP', name: 'GBP - British Pound' },
-];
-// --- Kết thúc Dữ liệu ví dụ ---
-
-// --- Zod Schemas ---
-const paypalDetailsSchema = z.object({
-  email: z
-    .string()
-    .email({ message: 'Please enter a valid PayPal email address.' })
-    .min(1, 'PayPal email is required.'),
-});
-
-// Type cho details của BankAccount trong form
-type BankAccountFormDetails = {
-  accountHolderName: string;
-  bankName: string;
-  accountNumber: string;
-  country: string;
-  currencyId: string;
-  iban?: string | null; // Cho phép null để Zod optional hoạt động tốt hơn với reset
-  swiftBic?: string | null;
-  routingNumber?: string | null;
-};
-
-const bankAccountDetailsBaseSchema = z.object({
-  accountHolderName: z
-    .string()
-    .min(3, { message: 'Account holder name is required (min 3 characters).' }),
-  bankName: z
-    .string()
-    .min(2, { message: 'Bank name is required (min 2 characters).' }),
-  accountNumber: z
-    .string()
-    .min(5, { message: 'Account number is required (min 5 characters).' }),
-  country: z
-    .string()
-    .min(2, { message: 'Please select the country of your bank.' }),
-  currencyId: z
-    .string()
-    .min(3, { message: 'Please select account currency.' })
-    .max(3),
-});
-
-const bankAccountDetailsConditionalSchema = z.object({
-  iban: z.string().optional().nullable(),
-  swiftBic: z.string().optional().nullable(),
-  routingNumber: z.string().optional().nullable(),
-});
-
-const paypalFormSchema = z.object({
-  methodId: z.literal('PAYPAL'),
-  details: paypalDetailsSchema,
-});
-
-const bankAccountFormSchema = z.object({
-  methodId: z.literal('BANK_TRANSFER'),
-  details: bankAccountDetailsBaseSchema
-    .merge(bankAccountDetailsConditionalSchema)
-    .superRefine((data, ctx) => {
-      if (
-        data.country === 'US' &&
-        (!data.routingNumber || !/^\d{9}$/.test(data.routingNumber))
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'A valid 9-digit Routing Number is required for US banks.',
-          path: ['routingNumber'],
-        });
-      }
-      // Ví dụ: Yêu cầu IBAN cho các nước châu Âu (thêm mã quốc gia vào list)
-      const europeanCountries = ['DE', 'FR', 'ES', 'IT', 'GB']; // Mở rộng danh sách này
-      if (
-        data.country &&
-        europeanCountries.includes(data.country) &&
-        (!data.iban || data.iban.length < 15)
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'A valid IBAN is required for this European country.',
-          path: ['iban'],
-        });
-      }
-      // Ví dụ: Yêu cầu SWIFT/BIC cho giao dịch quốc tế hoặc các nước "OTHER"
-      if (
-        data.country === 'OTHER' &&
-        (!data.swiftBic ||
-          (data.swiftBic.length !== 8 && data.swiftBic.length !== 11))
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "A valid 8 or 11 character SWIFT/BIC code is required for 'Other International'.",
-          path: ['swiftBic'],
-        });
-      }
-    }),
-});
-
-const addPayoutMethodFormSchema = z.discriminatedUnion('methodId', [
-  paypalFormSchema,
-  bankAccountFormSchema,
-]);
-type AddPayoutMethodFormData = z.infer<typeof addPayoutMethodFormSchema>;
-
-// --- Props Interface ---
+// --- Component Props ---
 interface AddPayoutMethodDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (newMethod: InstructorPayoutMethodItem) => void;
+  refetch?: () => void; // Thêm refetch nếu cần
 }
+
+type PayoutCurrency = 'VND' | 'USD';
+type PayoutMethod = 'VNPAY' | 'MOMO' | 'STRIPE' | 'PAYPAL';
+
+const methodOptions: Record<
+  PayoutCurrency,
+  { id: PayoutMethod; name: string; icon: React.ReactNode }[]
+> = {
+  VND: [
+    {
+      id: 'MOMO',
+      name: 'MoMo E-Wallet',
+      icon: (
+        <img
+          src='/images/payment/momo_logo.png'
+          alt='MoMo'
+          className='h-6 w-6'
+        />
+      ),
+    },
+    {
+      id: 'VNPAY',
+      name: 'VNPay (Bank Transfer)',
+      icon: (
+        <img
+          src='/images/payment/vnpay_logo.jpg'
+          alt='VNPAY'
+          className='h-6 w-6'
+        />
+      ),
+    },
+  ],
+  USD: [
+    {
+      id: 'PAYPAL',
+      name: 'PayPal',
+      icon: <Icons.paypal className='h-6 w-6 text-blue-600' />,
+    },
+    {
+      id: 'STRIPE',
+      name: 'Stripe',
+      icon: <Icons.stripe className='h-6 w-6 text-indigo-600' />,
+    },
+  ],
+};
 
 // --- Component ---
 export const AddPayoutMethodDialog: React.FC<AddPayoutMethodDialogProps> = ({
   isOpen,
   onOpenChange,
   onSuccess,
+  refetch,
 }) => {
-  const { toast } = useToast();
-  const [selectedMethodType, setSelectedMethodType] = useState<
-    'PAYPAL' | 'BANK_TRANSFER'
-  >('PAYPAL');
+  const [selectedCurrency, setSelectedCurrency] =
+    useState<PayoutCurrency | null>(null);
+  const [selectedMethodId, setSelectedMethodId] = useState<PayoutMethod | null>(
+    null
+  );
 
-  const form = useForm<AddPayoutMethodFormData>({
-    resolver: zodResolver(addPayoutMethodFormSchema),
-    // Default values sẽ được set trong useEffect
+  const { mutate: addMethod, isPending } = useAddMyPayoutMethod();
+
+  const form = useForm<TPayoutMethodSchema>({
+    resolver: zodResolver(payoutMethodSchema),
   });
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    watch,
-    formState: { errors, isDirty },
-  } = form;
 
-  const watchedMethodId = watch('methodId');
-  const watchedBankDetails = watch('details') as
-    | BankAccountFormDetails
-    | undefined; // Cast để truy cập an toàn hơn
-  const watchedCountryForBank = watchedBankDetails?.country;
+  const { handleSubmit, control, reset } = form;
 
   useEffect(() => {
-    if (isOpen) {
-      const defaultValuesBasedOnType =
-        selectedMethodType === 'PAYPAL'
-          ? { methodId: 'PAYPAL', details: { email: '' } }
-          : {
-              methodId: 'BANK_TRANSFER',
-              details: {
-                accountHolderName: '',
-                bankName: '',
-                accountNumber: '',
-                country: '',
-                currencyId: 'USD',
-                routingNumber: '',
-                iban: '',
-                swiftBic: '',
-              },
-            };
-      reset(defaultValuesBasedOnType as AddPayoutMethodFormData); // Đảm bảo kiểu khớp
+    if (!isOpen) {
+      // Reset hoàn toàn khi dialog đóng
+      setTimeout(() => {
+        setSelectedCurrency(null);
+        setSelectedMethodId(null);
+        reset();
+      }, 200); // Đợi animation đóng
     }
-  }, [selectedMethodType, isOpen, reset]);
+  }, [isOpen, reset]);
 
-  const addMethodMutation = useAddMyPayoutMethod({
-    onSuccess: (newMethod) => {
-      toast({
-        title: 'Payout Method Added',
-        description: `${
-          newMethod.methodName || newMethod.methodId
-        } has been successfully added.`,
-      });
-      onSuccess?.(newMethod);
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to Add Method',
-        description: error.message || 'An unexpected error occurred.',
-      });
-    },
-  });
-
-  const onSubmitForm: SubmitHandler<AddPayoutMethodFormData> = (data) => {
-    // `data` đã được Zod validate và có kiểu đúng theo `methodId`
-    // Chuyển đổi `details` để loại bỏ các trường `null` hoặc `undefined` không cần thiết trước khi gửi
-    let finalDetails = {};
-    if (data.methodId === 'PAYPAL') {
-      finalDetails = data.details;
-    } else if (data.methodId === 'BANK_TRANSFER') {
-      const bankDetails = data.details as BankAccountFormDetails;
-      finalDetails = Object.fromEntries(
-        Object.entries(bankDetails).filter(
-          ([_, value]) => value !== null && value !== undefined && value !== ''
-        )
-      ) as unknown as BankAccountDetails;
-    }
-
-    const submissionData: CreateInstructorPayoutMethodData = {
-      methodId: data.methodId,
-      details: finalDetails,
-    };
-    addMethodMutation.mutate(submissionData);
+  const handleMethodSelect = (methodId: PayoutMethod) => {
+    setSelectedMethodId(methodId);
+    // Reset form với schema tương ứng
+    const defaultValues: any = { methodId, details: {} };
+    if (methodId === 'PAYPAL') defaultValues.details = { email: '' };
+    if (methodId === 'STRIPE') defaultValues.details = { accountId: '' };
+    if (methodId === 'MOMO')
+      defaultValues.details = { phoneNumber: '', accountName: '' };
+    if (methodId === 'VNPAY')
+      defaultValues.details = {
+        accountNumber: '',
+        accountName: '',
+        bankName: '',
+      };
+    reset(defaultValues);
   };
 
-  // Helper để lấy lỗi chi tiết một cách an toàn
-  const getDetailError = (
-    fieldName: keyof BankAccountFormDetails | 'email'
-  ): string | undefined => {
-    if (!errors.details) return undefined;
-    return errors.details[fieldName]?.message;
+  const onSubmit: SubmitHandler<TPayoutMethodSchema> = (data) => {
+    addMethod(data as CreateInstructorPayoutMethodData, {
+      onSuccess: (newMethod) => {
+        toast.success('Payout method added successfully.');
+        onSuccess?.(newMethod);
+        onOpenChange(false);
+        refetch?.();
+      },
+      onError: (error) =>
+        toast.error((error as Error).message || 'Failed to add method.'),
+    });
   };
+
+  const renderFormField = (
+    name: string,
+    label: string,
+    placeholder: string
+  ) => (
+    <FormField
+      control={control}
+      name={name as any}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input placeholder={placeholder} {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!addMethodMutation.isPending) {
-          reset();
-          onOpenChange(open);
-        }
-      }}
-    >
-      <DialogContent className="sm:max-w-lg md:max-w-xl dark:bg-slate-800/90 backdrop-blur-sm border-slate-700/70">
-        <DialogHeader className="pb-4 mb-4 border-b dark:border-slate-700">
-          <DialogTitle className="text-2xl font-semibold flex items-center">
-            <Icons.plusCircle className="mr-3 h-6 w-6 text-primary dark:text-primary/90" />
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className='sm:max-w-md dark:bg-slate-800/90 backdrop-blur-sm border-slate-700/70'>
+        <DialogHeader>
+          <DialogTitle className='text-2xl font-semibold flex items-center'>
+            <Icons.plusCircle className='mr-3 h-6 w-6 text-primary' />
             Add New Payout Method
           </DialogTitle>
-          <DialogDescription className="pt-1">
-            Securely add a new PayPal or Bank Account to receive your earnings.
-            All information is encrypted.
+          <DialogDescription>
+            Choose your currency to see available payout options.
           </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmitForm)} className="py-2 space-y-6">
-          {' '}
-          {/* Giảm py */}
-          <div className="space-y-1.5">
-            <Label htmlFor="add-methodType-select">Payment Method Type</Label>
-            <Controller
-              name="methodId"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value as 'PAYPAL' | 'BANK_TRANSFER');
-                    setSelectedMethodType(value as 'PAYPAL' | 'BANK_TRANSFER');
+        <FormProvider {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+            {/* Step 1: Choose Currency */}
+            <div className='space-y-2'>
+              <Label>Step 1: Choose Payout Currency</Label>
+              <div className='grid grid-cols-2 gap-3'>
+                <Button
+                  type='button'
+                  variant={selectedCurrency === 'USD' ? 'default' : 'outline'}
+                  onClick={() => {
+                    setSelectedCurrency('USD');
+                    setSelectedMethodId(null);
                   }}
-                  value={field.value}
-                  disabled={addMethodMutation.isPending}
                 >
-                  <SelectTrigger
-                    id="add-methodType-select"
-                    className="h-11 text-sm"
-                  >
-                    <SelectValue placeholder="Select method type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PAYPAL">
-                      <div className="flex items-center">
-                        <Icons.paypal className="mr-2 h-5 w-5 text-blue-600" />
-                        PayPal
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="BANK_TRANSFER">
-                      <div className="flex items-center">
-                        <Icons.landmark className="mr-2 h-5 w-5 text-green-600" />
-                        Bank Account
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedMethodType}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{
-                opacity: 1,
-                height: 'auto',
-                transition: { duration: 0.3, ease: 'easeInOut' },
-              }}
-              exit={{
-                opacity: 0,
-                height: 0,
-                transition: { duration: 0.2, ease: 'easeInOut' },
-              }}
-              className="overflow-hidden"
-            >
-              {watchedMethodId === 'PAYPAL' && ( // Dùng watchedMethodId để UI khớp với state của form
-                <div className="space-y-1.5 pt-2">
-                  <Label htmlFor="paypal-email-input">
-                    PayPal Email Address{' '}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="paypal-email-input"
-                    type="email"
-                    {...register('details.email' as any)}
-                    placeholder="your.paypal.email@example.com"
-                    className={cn(
-                      'h-11',
-                      getDetailError('email') && 'border-destructive'
-                    )}
-                    disabled={addMethodMutation.isPending}
-                  />
-                  {getDetailError('email') && (
-                    <p className="text-xs text-destructive mt-1">
-                      {getDetailError('email')}
-                    </p>
-                  )}
-                </div>
-              )}
+                  USD
+                </Button>
+                <Button
+                  type='button'
+                  variant={selectedCurrency === 'VND' ? 'default' : 'outline'}
+                  onClick={() => {
+                    setSelectedCurrency('VND');
+                    setSelectedMethodId(null);
+                  }}
+                >
+                  VND
+                </Button>
+              </div>
+            </div>
 
-              {watchedMethodId === 'BANK_TRANSFER' && (
-                <div className="space-y-5 pt-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="bank-country-select">
-                        Country of Bank{' '}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Controller
-                        name={'details.country' as any}
-                        control={control}
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || ''}
-                            disabled={addMethodMutation.isPending}
-                          >
-                            <SelectTrigger
-                              id="bank-country-select"
-                              className={cn(
-                                'h-11',
-                                getDetailError('country') &&
-                                  'border-destructive'
-                              )}
-                            >
-                              <SelectValue placeholder="Select Country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                <SelectLabel>Select Country</SelectLabel>
-                                {countries.map((c) => (
-                                  <SelectItem key={c.code} value={c.code}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      {getDetailError('country') && (
-                        <p className="text-xs text-destructive mt-1">
-                          {getDetailError('country')}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="bank-currency-select">
-                        Account Currency{' '}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Controller
-                        name={'details.currencyId' as any}
-                        control={control}
-                        defaultValue="USD"
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || 'USD'}
-                            disabled={addMethodMutation.isPending}
-                          >
-                            <SelectTrigger
-                              id="bank-currency-select"
-                              className={cn(
-                                'h-11',
-                                getDetailError('currencyId') &&
-                                  'border-destructive'
-                              )}
-                            >
-                              <SelectValue placeholder="Select Currency" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {currencies.map((c) => (
-                                <SelectItem key={c.code} value={c.code}>
-                                  {c.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      {getDetailError('currencyId') && (
-                        <p className="text-xs text-destructive mt-1">
-                          {getDetailError('currencyId')}
-                        </p>
-                      )}
-                    </div>
+            <AnimatePresence>
+              {selectedCurrency && (
+                <motion.div
+                  key='method-selection'
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className='space-y-2'
+                >
+                  <Separator />
+                  <Label>Step 2: Choose Payout Method</Label>
+                  <div className='grid grid-cols-2 gap-3'>
+                    {methodOptions[selectedCurrency].map((method) => (
+                      <Button
+                        key={method.id}
+                        type='button'
+                        variant={
+                          selectedMethodId === method.id
+                            ? 'secondary'
+                            : 'outline'
+                        }
+                        className='h-auto py-3 flex flex-col gap-2'
+                        onClick={() => handleMethodSelect(method.id)}
+                      >
+                        {method.icon}
+                        <span className='text-xs font-semibold'>
+                          {method.name}
+                        </span>
+                      </Button>
+                    ))}
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bank-holderName-input">
-                      Account Holder Name{' '}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="bank-holderName-input"
-                      {...register('details.accountHolderName' as any)}
-                      placeholder="Full name as on bank account"
-                      className={cn(
-                        'h-11',
-                        getDetailError('accountHolderName') &&
-                          'border-destructive'
-                      )}
-                      disabled={addMethodMutation.isPending}
-                    />
-                    {getDetailError('accountHolderName') && (
-                      <p className="text-xs text-destructive mt-1">
-                        {getDetailError('accountHolderName')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bank-bankName-input">
-                      Bank Name <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="bank-bankName-input"
-                      {...register('details.bankName' as any)}
-                      placeholder="Full legal name of the bank"
-                      className={cn(
-                        'h-11',
-                        getDetailError('bankName') && 'border-destructive'
-                      )}
-                      disabled={addMethodMutation.isPending}
-                    />
-                    {getDetailError('bankName') && (
-                      <p className="text-xs text-destructive mt-1">
-                        {getDetailError('bankName')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bank-accountNumber-input">
-                      Account Number <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="bank-accountNumber-input"
-                      {...register('details.accountNumber' as any)}
-                      placeholder="Your bank account number"
-                      className={cn(
-                        'h-11',
-                        getDetailError('accountNumber') && 'border-destructive'
-                      )}
-                      disabled={addMethodMutation.isPending}
-                    />
-                    {getDetailError('accountNumber') && (
-                      <p className="text-xs text-destructive mt-1">
-                        {getDetailError('accountNumber')}
-                      </p>
-                    )}
-                  </div>
-
-                  {watchedCountryForBank === 'US' && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="bank-routingNumber-input">
-                        Routing Number (ABA){' '}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="bank-routingNumber-input"
-                        {...register('details.routingNumber' as any)}
-                        placeholder="9-digit number"
-                        className={cn(
-                          'h-11',
-                          getDetailError('routingNumber') &&
-                            'border-destructive'
-                        )}
-                        disabled={addMethodMutation.isPending}
-                      />
-                      {getDetailError('routingNumber') && (
-                        <p className="text-xs text-destructive mt-1">
-                          {getDetailError('routingNumber')}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {watchedCountryForBank &&
-                    !['US', 'VN'].includes(watchedCountryForBank) && (
-                      <>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="bank-iban-input">
-                            IBAN{' '}
-                            {countries
-                              .find((c) => c.code === watchedCountryForBank)
-                              ?.name?.includes('Europe') && (
-                              <span className="text-destructive">*</span>
-                            )}
-                          </Label>
-                          <Input
-                            id="bank-iban-input"
-                            {...register('details.iban' as any)}
-                            placeholder="International Bank Account Number"
-                            className={cn(
-                              'h-11',
-                              getDetailError('iban') && 'border-destructive'
-                            )}
-                            disabled={addMethodMutation.isPending}
-                          />
-                          {getDetailError('iban') && (
-                            <p className="text-xs text-destructive mt-1">
-                              {getDetailError('iban')}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="bank-swiftBic-input">
-                            SWIFT/BIC Code{' '}
-                            {countries
-                              .find((c) => c.code === watchedCountryForBank)
-                              ?.name?.includes('Europe') && (
-                              <span className="text-destructive">*</span>
-                            )}
-                          </Label>
-                          <Input
-                            id="bank-swiftBic-input"
-                            {...register('details.swiftBic' as any)}
-                            placeholder="8 or 11 character bank code"
-                            className={cn(
-                              'h-11',
-                              getDetailError('swiftBic') && 'border-destructive'
-                            )}
-                            disabled={addMethodMutation.isPending}
-                          />
-                          {getDetailError('swiftBic') && (
-                            <p className="text-xs text-destructive mt-1">
-                              {getDetailError('swiftBic')}
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                </div>
+                </motion.div>
               )}
-            </motion.div>
-          </AnimatePresence>
-          <DialogFooter className="pt-8 mt-2 border-t dark:border-slate-700">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 px-6 text-base"
-                disabled={addMethodMutation.isPending}
-              >
-                Cancel
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {selectedMethodId && (
+                <motion.div
+                  key={selectedMethodId}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className='space-y-4 pt-4 border-t'
+                >
+                  <h4 className='font-semibold text-center'>
+                    Enter {selectedMethodId} Details
+                  </h4>
+                  {selectedMethodId === 'PAYPAL' &&
+                    renderFormField(
+                      'details.email',
+                      'PayPal Email',
+                      'your.paypal@example.com'
+                    )}
+                  {selectedMethodId === 'STRIPE' &&
+                    renderFormField(
+                      'details.accountId',
+                      'Stripe Account ID',
+                      'acct_...'
+                    )}
+                  {selectedMethodId === 'MOMO' && (
+                    <>
+                      {renderFormField(
+                        'details.phoneNumber',
+                        'MoMo Phone Number',
+                        '090...'
+                      )}
+                      {renderFormField(
+                        'details.accountName',
+                        'Full Name on MoMo',
+                        'NGUYEN VAN A'
+                      )}
+                    </>
+                  )}
+                  {selectedMethodId === 'VNPAY' && (
+                    <>
+                      {renderFormField(
+                        'details.accountNumber',
+                        'Bank Account Number',
+                        '123456789'
+                      )}
+                      {renderFormField(
+                        'details.accountName',
+                        'Account Holder Name',
+                        'NGUYEN VAN A'
+                      )}
+                      {renderFormField(
+                        'details.bankName',
+                        'Bank Name',
+                        'e.g., Vietcombank'
+                      )}
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <DialogFooter className='pt-6'>
+              <DialogClose asChild>
+                <Button type='button' variant='outline' disabled={isPending}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type='submit' disabled={isPending || !selectedMethodId}>
+                {isPending && (
+                  <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+                )}
+                Save Method
               </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              className="h-11 px-6 text-base"
-              disabled={addMethodMutation.isPending || !isDirty}
-            >
-              {addMethodMutation.isPending ? (
-                <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Icons.plus className="mr-2 h-5 w-5" />
-              )}
-              Save Payment Method
-            </Button>
-          </DialogFooter>
-        </form>
+            </DialogFooter>
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

@@ -19,6 +19,8 @@ import {
   CreatePromotionData,
   UpdatePromotionData,
   ValidatePromoResponse,
+  ValidatePromoPayload,
+  deletePromotion,
 } from '@/services/promotion.service';
 
 // Query Key Factory
@@ -60,6 +62,23 @@ export const usePromotionDetail = (
     queryKey: queryKey,
     queryFn: () => getPromotionById(promotionId!),
     enabled: !!promotionId,
+    ...options,
+  });
+};
+
+/** Hook Admin xóa promotion */
+export const useDeletePromotion = (
+  options?: UseMutationOptions<void, Error, number>
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, number>({
+    mutationFn: deletePromotion,
+    onSuccess: (_, promotionId) => {
+      queryClient.invalidateQueries({ queryKey: promotionKeys.lists() });
+      queryClient.removeQueries({
+        queryKey: promotionKeys.detail(promotionId),
+      });
+    },
     ...options,
   });
 };
@@ -146,12 +165,17 @@ export const useDeactivatePromotion = (
 
 /** Hook User kiểm tra mã giảm giá */
 export const useValidatePromotionCode = (
-  options?: UseMutationOptions<ValidatePromoResponse, Error, string>
+  options?: UseMutationOptions<
+    ValidatePromoResponse,
+    Error,
+    ValidatePromoPayload
+  > // Cập nhật kiểu Payload
 ) => {
-  return useMutation<ValidatePromoResponse, Error, string>({
-    // Input là promotionCode (string)
-    mutationFn: validatePromotionCode,
-    // Không cần onSuccess/onError chung, component tự xử lý kết quả/lỗi
+  return useMutation<ValidatePromoResponse, Error, ValidatePromoPayload>({
+    // Cập nhật kiểu Payload
+    // Input giờ là một object chứa cả code và currency
+    mutationFn: (payload: ValidatePromoPayload) =>
+      validatePromotionCode(payload),
     ...options,
   });
 };

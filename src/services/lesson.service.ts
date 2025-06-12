@@ -160,7 +160,7 @@ export const updateLessonVideo = async (
 /** Lấy Signed URL cho video private */
 export const getLessonVideoSignedUrl = async (
   lessonId: number
-): Promise<{ signedUrl: string }> => {
+): Promise<{ signedUrl: string; publicEmbedUrl?: string }> => {
   return apiHelper.get(`/lessons/${lessonId}/video-url`);
 };
 

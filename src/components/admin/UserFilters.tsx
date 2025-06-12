@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import {
@@ -26,14 +27,15 @@ const UserFilters: React.FC<UserFiltersProps> = ({
   selectedStatus,
   setSelectedStatus,
 }) => {
+  const { t } = useTranslation();
   return (
-    <div className="flex flex-col md:flex-row gap-4">
-      <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className='flex flex-col md:flex-row gap-4'>
+      <div className='relative flex-1'>
+        <Search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
         <Input
-          type="search"
-          placeholder="Search users..."
-          className="pl-8"
+          type='search'
+          placeholder={t('userFilters.searchPlaceholder')}
+          className='pl-8'
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -45,15 +47,15 @@ const UserFilters: React.FC<UserFiltersProps> = ({
           setSelectedRole(value === 'all' ? null : value)
         }
       >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Filter by role" />
+        <SelectTrigger className='w-[180px]'>
+          <SelectValue placeholder={t('userFilters.filterByRole')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Roles</SelectItem>
-          <SelectItem value="NU">Student</SelectItem>
-          <SelectItem value="GV">Instructor</SelectItem>
-          <SelectItem value="AD">Admin</SelectItem>
-          <SelectItem value="SA">Super Admin</SelectItem>
+          <SelectItem value='all'>{t('userFilters.allRoles')}</SelectItem>
+          <SelectItem value='NU'>{t('userFilters.role.student')}</SelectItem>
+          <SelectItem value='GV'>{t('userFilters.role.instructor')}</SelectItem>
+          <SelectItem value='AD'>{t('userFilters.role.admin')}</SelectItem>
+          <SelectItem value='SA'>{t('userFilters.role.superAdmin')}</SelectItem>
         </SelectContent>
       </Select>
 
@@ -63,16 +65,22 @@ const UserFilters: React.FC<UserFiltersProps> = ({
           setSelectedStatus(value === 'all' ? null : value)
         }
       >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Filter by status" />
+        <SelectTrigger className='w-[180px]'>
+          <SelectValue placeholder={t('userFilters.filterByStatus')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          <SelectItem value="ACTIVE">Active</SelectItem>
-          <SelectItem value="INACTIVE">Inactive</SelectItem>
-          <SelectItem value="BANNED">Banned</SelectItem>
-          <SelectItem value="PENDING_VERIFICATION">
-            Pending Verification
+          <SelectItem value='all'>{t('userFilters.allStatuses')}</SelectItem>
+          <SelectItem value='ACTIVE'>
+            {t('userFilters.status.active')}
+          </SelectItem>
+          <SelectItem value='INACTIVE'>
+            {t('userFilters.status.inactive')}
+          </SelectItem>
+          <SelectItem value='BANNED'>
+            {t('userFilters.status.banned')}
+          </SelectItem>
+          <SelectItem value='PENDING_VERIFICATION'>
+            {t('userFilters.status.pendingVerification')}
           </SelectItem>
         </SelectContent>
       </Select>

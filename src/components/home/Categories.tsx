@@ -5,42 +5,43 @@ import { useCategories } from '@/hooks/queries/category.queries'; // Hook lấy 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton'; // Cho trạng thái loading
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 // Function để map tên icon từ API (hoặc slug) ra component Icon
 // Bạn cần tùy chỉnh logic này dựa trên dữ liệu `iconUrl` hoặc `slug` từ API của bạn
 const getCategoryIcon = (iconIdentifier?: string | null) => {
-  if (!iconIdentifier) return <Icons.help className="h-8 w-8" />; // Default icon
+  if (!iconIdentifier) return <Icons.help className='h-8 w-8' />; // Default icon
 
   const iconName = iconIdentifier.toLowerCase();
   // Ví dụ map dựa trên slug hoặc tên icon từ API
   if (iconName.includes('programm') || iconName.includes('laptop'))
-    return <Icons.laptop className="h-8 w-8" />;
+    return <Icons.laptop className='h-8 w-8' />;
   if (iconName.includes('business') || iconName.includes('briefcase'))
-    return <Icons.business className="h-8 w-8" />;
+    return <Icons.business className='h-8 w-8' />;
   if (iconName.includes('data') || iconName.includes('database'))
-    return <Icons.dataScience className="h-8 w-8" />;
+    return <Icons.dataScience className='h-8 w-8' />;
   if (iconName.includes('design') || iconName.includes('palette'))
-    return <Icons.design className="h-8 w-8" />;
+    return <Icons.design className='h-8 w-8' />;
   if (iconName.includes('market') || iconName.includes('megaphone'))
-    return <Icons.marketing className="h-8 w-8" />;
+    return <Icons.marketing className='h-8 w-8' />;
   if (iconName.includes('lang') || iconName.includes('language'))
-    return <Icons.language className="h-8 w-8" />;
+    return <Icons.language className='h-8 w-8' />;
   if (iconName.includes('person') || iconName.includes('user'))
-    return <Icons.user className="h-8 w-8" />;
+    return <Icons.user className='h-8 w-8' />;
   if (iconName.includes('ai') || iconName.includes('brain'))
-    return <Icons.ai className="h-8 w-8" />;
+    return <Icons.ai className='h-8 w-8' />;
 
   // Nếu iconUrl là một URL ảnh thực sự
   if (iconIdentifier.startsWith('http'))
     return (
       <img
         src={iconIdentifier}
-        alt="category icon"
-        className="h-8 w-8 object-contain"
+        alt='category icon'
+        className='h-8 w-8 object-contain'
       />
     );
 
-  return <Icons.help className="h-8 w-8" />;
+  return <Icons.help className='h-8 w-8' />;
 };
 
 // Animation variants cho Framer Motion
@@ -69,6 +70,7 @@ const itemVariants = {
 
 const CategoriesSection = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // Lấy categories từ API, chỉ lấy trang đầu, giới hạn số lượng (ví dụ 8)
   const {
     data: categoryData,
@@ -93,52 +95,58 @@ const CategoriesSection = () => {
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-slate-50 dark:bg-slate-900/50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section className='py-16 md:py-24 bg-slate-50 dark:bg-slate-900/50'>
+      <div className='container mx-auto px-4 sm:px-6 lg:px-8'>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="text-center mb-12 md:mb-16"
+          className='text-center mb-12 md:mb-16'
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
-            Explore Top Categories
+          <h2 className='text-3xl sm:text-4xl font-bold text-slate-800 dark:text-slate-100 tracking-tight'>
+            {t('categories.title', 'Explore Top Categories')}
           </h2>
-          <p className="mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Discover our most popular course categories and find the perfect fit
-            for your learning goals.
+          <p className='mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto'>
+            {t(
+              'categories.description',
+              'Discover our most popular course categories and find the perfect fit for your learning goals.'
+            )}
           </p>
         </motion.div>
 
         {isLoading && (
           <motion.div
             variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            initial='hidden'
+            animate='visible'
+            className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'
           >
             {[...Array(8)].map((_, index) => (
               <motion.div
                 key={index}
                 variants={itemVariants}
-                className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg flex flex-col items-center text-center h-full"
+                className='bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg flex flex-col items-center text-center h-full'
               >
-                <Skeleton className="w-16 h-16 rounded-full mb-5" />
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className='w-16 h-16 rounded-full mb-5' />
+                <Skeleton className='h-6 w-3/4 mb-2' />
+                <Skeleton className='h-4 w-1/2' />
               </motion.div>
             ))}
           </motion.div>
         )}
 
         {error && (
-          <div className="text-center text-red-500 dark:text-red-400 py-10">
-            <Icons.warning className="h-12 w-12 mx-auto mb-4" />{' '}
-            {/* Giả sử có Icons.warning */}
-            <p className="text-lg font-semibold">Oops! Something went wrong.</p>
+          <div className='text-center text-red-500 dark:text-red-400 py-10'>
+            <Icons.warning className='h-12 w-12 mx-auto mb-4' />
+            <p className='text-lg font-semibold'>
+              {t('categories.errorTitle', 'Oops! Something went wrong.')}
+            </p>
             <p>
-              We couldn't load the categories right now. Please try again later.
+              {t(
+                'categories.errorDesc',
+                "We couldn't load the categories right now. Please try again later."
+              )}
             </p>
           </div>
         )}
@@ -146,16 +154,16 @@ const CategoriesSection = () => {
         {!isLoading && !error && categories.length > 0 && (
           <motion.div
             variants={containerVariants}
-            initial="hidden"
-            whileInView="visible" // Trigger animation khi scroll vào view
-            viewport={{ once: true, amount: 0.2 }} // Chạy 1 lần, trigger khi 20% vào view
-            className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-6"
+            initial='hidden'
+            whileInView='visible'
+            viewport={{ once: true, amount: 0.2 }}
+            className='grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-6'
           >
             {categories.map((category, index) => (
               <motion.div key={category.categoryId} variants={itemVariants}>
                 <Link
                   to={`/categories/${category.slug}`}
-                  className="group bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg hover:shadow-xl dark:hover:shadow-slate-700/50 transition-all duration-300 flex flex-col items-center text-center h-full transform hover:-translate-y-1 border border-transparent hover:border-blue-500 dark:border-slate-700 dark:hover:border-blue-500"
+                  className='group bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg hover:shadow-xl dark:hover:shadow-slate-700/50 transition-all duration-300 flex flex-col items-center text-center h-full transform hover:-translate-y-1 border border-transparent hover:border-blue-500 dark:border-slate-700 dark:hover:border-blue-500'
                 >
                   <div
                     className={`w-16 h-16 rounded-full flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 ${
@@ -164,12 +172,15 @@ const CategoriesSection = () => {
                   >
                     {getCategoryIcon(category.iconUrl || category.slug)}
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors'>
                     {category.categoryName}
                   </h3>
-                  {category.courseCount !== undefined && ( // Chỉ hiển thị nếu có courseCount
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {category.courseCount} courses
+                  {category.courseCount !== undefined && (
+                    <p className='text-sm text-slate-500 dark:text-slate-400'>
+                      {t('categories.courseCount', {
+                        count: category.courseCount,
+                        defaultValue: '{{count}} courses',
+                      })}
                     </p>
                   )}
                 </Link>
@@ -182,10 +193,15 @@ const CategoriesSection = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-slate-500 dark:text-slate-400 py-10"
+            className='text-center text-slate-500 dark:text-slate-400 py-10'
           >
-            <Icons.help className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">No categories available at the moment.</p>
+            <Icons.help className='h-12 w-12 mx-auto mb-4 opacity-50' />
+            <p className='text-lg'>
+              {t(
+                'categories.noCategories',
+                'No categories available at the moment.'
+              )}
+            </p>
           </motion.div>
         )}
 
@@ -196,17 +212,17 @@ const CategoriesSection = () => {
           transition={{
             duration: 0.5,
             delay: categories.length > 0 ? 0.5 : 0.2,
-          }} // Delay sau khi categories load xong (nếu có)
-          className="mt-12 md:mt-16 text-center"
+          }}
+          className='mt-12 md:mt-16 text-center'
         >
           <Button
-            variant="ghost"
-            size="lg"
+            variant='ghost'
+            size='lg'
             onClick={() => navigate('/categories')}
-            className="text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/30 group px-6 py-3"
+            className='text-blue-600 dark:text-blue-400 font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/30 group px-6 py-3'
           >
-            View All Categories
-            <Icons.arrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+            {t('categories.viewAll', 'View All Categories')}
+            <Icons.arrowRight className='ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1' />
           </Button>
         </motion.div>
       </div>

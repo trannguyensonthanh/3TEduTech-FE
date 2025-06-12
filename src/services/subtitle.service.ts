@@ -71,7 +71,7 @@ export const addSubtitleByUpload = async (
   formData.append('subtitleFile', file); // Tên field tùy thuộc vào backend Multer config
   formData.append('languageCode', languageCode);
   formData.append('languageName', languageName);
-  formData.append('isDefault', String(isDefault)); // Chuyển boolean thành string
+  formData.append('isDefault', isDefault.toString()); // Chuyển boolean thành string
 
   // Cần API endpoint riêng cho việc upload subtitle
   // Ví dụ: POST /v1/lessons/:lessonId/subtitles/upload

@@ -1,274 +1,232 @@
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+// src/pages/admin/CurrenciesManagement.tsx
+import React, { useState } from 'react';
+import {
+  useCurrencies,
+  useCreateCurrency,
+  useUpdateCurrency,
+  useDeleteCurrency,
+} from '@/hooks/queries/currency.queries';
+import { TCurrencySchema } from '@/lib/validators/currencyValidator';
+import { Currency } from '@/services/currency.service';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import CurrenciesTable, {
-  Currency,
-} from '@/components/admin/currencies/CurrenciesTable';
-import CurrencyDialog from '@/components/admin/currencies/CurrencyDialog';
-import DeleteCurrencyDialog from '@/components/admin/currencies/DeleteCurrencyDialog';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { useToast } from '@/components/ui/use-toast';
+import CurrenciesTable from '@/components/admin/currencies/CurrenciesTable';
+import CurrencyDialog from '@/components/admin/currencies/CurrencyDialog';
+import DeleteCurrencyDialog from '@/components/admin/currencies/DeleteCurrencyDialog';
+import { Icons } from '@/components/common/Icons';
+import { toast } from 'sonner';
 
-// Mock data for currencies
-const mockCurrencies: Currency[] = [
-  { id: 'USD', name: 'US Dollar', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'EUR', name: 'Euro', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'JPY', name: 'Japanese Yen', type: 'FIAT', decimalPlaces: 0 },
-  { id: 'GBP', name: 'British Pound', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'AUD', name: 'Australian Dollar', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'CAD', name: 'Canadian Dollar', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'CHF', name: 'Swiss Franc', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'CNY', name: 'Chinese Yuan', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'VND', name: 'Vietnamese Dong', type: 'FIAT', decimalPlaces: 0 },
-  { id: 'BTC', name: 'Bitcoin', type: 'CRYPTO', decimalPlaces: 8 },
-  { id: 'ETH', name: 'Ethereum', type: 'CRYPTO', decimalPlaces: 18 },
-  { id: 'USDT', name: 'Tether', type: 'CRYPTO', decimalPlaces: 6 },
-];
+const CurrenciesManagement: React.FC = () => {
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
-const CurrenciesManagement = () => {
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency | null>(
     null
   );
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(
-    null
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
 
-  const itemsPerPage = 10;
+  const { data, isLoading, isError, error } = useCurrencies({
+    page,
+    limit: itemsPerPage,
+  });
 
-  useEffect(() => {
-    // In a real app, fetch currencies from API
-    // For now, using mock data
-    const fetchCurrencies = async () => {
-      try {
-        setIsLoading(true);
-        // Simulating API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setCurrencies(mockCurrencies);
-        setTotalPages(Math.ceil(mockCurrencies.length / itemsPerPage));
-      } catch (error) {
-        console.error('Error fetching currencies:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load currencies. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const createCurrencyMutation = useCreateCurrency({
+    onSuccess: () => {
+      toast.success('Currency created successfully!');
+      setIsDialogOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to create currency.');
+    },
+  });
 
-    fetchCurrencies();
-  }, [toast]);
+  const updateCurrencyMutation = useUpdateCurrency({
+    onSuccess: () => {
+      toast.success('Currency updated successfully!');
+      setIsDialogOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to update currency.');
+    },
+  });
 
-  const handleAddCurrency = (data: {
-    id: string;
-    name: string;
-    type: 'FIAT' | 'CRYPTO';
-    decimalPlaces: number;
-  }) => {
-    // Check if currency ID already exists
-    if (currencies.some((currency) => currency.id === data.id)) {
-      toast({
-        title: 'Error',
-        description: `Currency with ID ${data.id} already exists.`,
-        variant: 'destructive',
-      });
-      return;
-    }
+  const deleteCurrencyMutation = useDeleteCurrency({
+    onSuccess: () => {
+      toast.success('Currency deleted successfully!');
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to delete currency.');
+    },
+  });
 
-    // In a real app, make API call to add currency
-    const newCurrency: Currency = {
-      id: data.id,
-      name: data.name,
-      type: data.type,
-      decimalPlaces: data.decimalPlaces,
-    };
-
-    setCurrencies([...currencies, newCurrency]);
-    toast({
-      title: 'Success',
-      description: 'Currency added successfully.',
-    });
-  };
-
-  const handleEditCurrency = (currency: Currency) => {
-    setSelectedCurrency(currency);
-    setIsAddDialogOpen(true);
-  };
-
-  const handleUpdateCurrency = (data: {
-    id: string;
-    name: string;
-    type: 'FIAT' | 'CRYPTO';
-    decimalPlaces: number;
-  }) => {
-    if (!selectedCurrency) return;
-
-    // In a real app, make API call to update currency
-    const updatedCurrencies = currencies.map((currency) =>
-      currency.id === selectedCurrency.id
-        ? {
-            ...currency,
-            name: data.name,
-            type: data.type,
-            decimalPlaces: data.decimalPlaces,
-          }
-        : currency
-    );
-
-    setCurrencies(updatedCurrencies);
+  const handleOpenAddDialog = () => {
+    setIsEditing(false);
     setSelectedCurrency(null);
-    toast({
-      title: 'Success',
-      description: 'Currency updated successfully.',
-    });
+    setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (currency: Currency) => {
-    setCurrencyToDelete(currency);
+  const handleOpenEditDialog = (currency: Currency) => {
+    setIsEditing(true);
+    setSelectedCurrency(currency);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (currency: Currency) => {
+    setSelectedCurrency(currency);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteCurrency = () => {
-    if (!currencyToDelete) return;
-
-    // In a real app, make API call to delete currency
-    const updatedCurrencies = currencies.filter(
-      (currency) => currency.id !== currencyToDelete.id
-    );
-    setCurrencies(updatedCurrencies);
-    setCurrencyToDelete(null);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: 'Success',
-      description: 'Currency deleted successfully.',
-    });
+  const handleDialogSubmit = (data: TCurrencySchema) => {
+    if (isEditing && selectedCurrency) {
+      // Chỉ gửi các trường đã thay đổi để tối ưu
+      const changedData = Object.keys(data).reduce((acc, key) => {
+        if (data[key] !== selectedCurrency[key]) {
+          acc[key] = data[key];
+        }
+        return acc;
+      }, {});
+      if (Object.keys(changedData).length > 0) {
+        updateCurrencyMutation.mutate({
+          currencyId: selectedCurrency.currencyId,
+          data: changedData,
+        });
+      } else {
+        setIsDialogOpen(false); // Không có gì thay đổi, chỉ cần đóng dialog
+      }
+    } else {
+      // Ensure currencyId is included for creation
+      createCurrencyMutation.mutate({
+        currencyId: data.currencyId,
+        currencyName: data.currencyName,
+        type: data.type,
+        decimalPlaces: data.decimalPlaces,
+      });
+    }
   };
 
-  // Calculate pagination
-  const paginatedCurrencies = currencies.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleDeleteConfirm = () => {
+    if (selectedCurrency) {
+      deleteCurrencyMutation.mutate(selectedCurrency.currencyId);
+    }
+  };
+
+  if (isError) {
+    toast.error(
+      error.message || 'An error occurred while fetching currencies.'
+    );
+  }
+
+  const totalPages = data?.totalPages || 1;
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Currencies Management
-          </h1>
-          <Button
-            onClick={() => {
-              setSelectedCurrency(null);
-              setIsAddDialogOpen(true);
-            }}
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-4 w-4" /> Add Currency
+      <div className='space-y-6'>
+        <div className='flex flex-col sm:flex-row justify-between sm:items-center gap-4'>
+          <div>
+            <h1 className='text-2xl font-bold tracking-tight'>
+              Currencies Management
+            </h1>
+            <p className='text-muted-foreground'>
+              Manage all supported currencies in the system.
+            </p>
+          </div>
+          <Button onClick={handleOpenAddDialog}>
+            <Icons.plus className='mr-2 h-4 w-4' /> Add Currency
           </Button>
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader>
             <CardTitle>Supported Currencies</CardTitle>
+            <CardDescription>
+              A list of all currencies available for course pricing and payouts.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="py-10 text-center text-muted-foreground">
-                Loading currencies...
-              </div>
-            ) : (
-              <>
-                <CurrenciesTable
-                  currencies={paginatedCurrencies}
-                  onEdit={handleEditCurrency}
-                  onDelete={handleDeleteClick}
-                />
-                {totalPages > 1 && (
-                  <div className="mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() =>
-                              setCurrentPage((p) => Math.max(1, p - 1))
-                            }
-                            className={
-                              currentPage === 1
-                                ? 'pointer-events-none opacity-50'
-                                : 'cursor-pointer'
-                            }
-                          />
-                        </PaginationItem>
-
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              isActive={currentPage === page}
-                              onClick={() => setCurrentPage(page)}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() =>
-                              setCurrentPage((p) => Math.min(totalPages, p + 1))
-                            }
-                            className={
-                              currentPage === totalPages
-                                ? 'pointer-events-none opacity-50'
-                                : 'cursor-pointer'
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </>
-            )}
+            <CurrenciesTable
+              currencies={data?.currencies}
+              isLoading={isLoading}
+              onEdit={handleOpenEditDialog}
+              onDelete={handleOpenDeleteDialog}
+            />
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <div className='flex items-center justify-center'>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <PaginationPrevious
+                      href='#'
+                      onClick={(e) => e.preventDefault()}
+                    />
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className='px-4 py-2 text-sm font-medium'>
+                    Page {page} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <PaginationNext
+                      href='#'
+                      onClick={(e) => e.preventDefault()}
+                    />
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       <CurrencyDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
         currency={selectedCurrency}
-        onSubmit={selectedCurrency ? handleUpdateCurrency : handleAddCurrency}
-        isEditing={!!selectedCurrency}
+        onSubmit={handleDialogSubmit}
+        isEditing={isEditing}
+        isPending={
+          createCurrencyMutation.isPending || updateCurrencyMutation.isPending
+        }
       />
 
       <DeleteCurrencyDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDeleteCurrency}
-        currencyName={currencyToDelete?.name || ''}
-        currencyId={currencyToDelete?.id || ''}
+        onConfirm={handleDeleteConfirm}
+        currency={selectedCurrency}
+        isPending={deleteCurrencyMutation.isPending}
       />
     </AdminLayout>
   );

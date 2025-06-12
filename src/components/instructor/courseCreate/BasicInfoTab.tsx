@@ -1,4 +1,5 @@
-import React from 'react';
+// src/components/instructor/courseCreate/BasicInfoTab.tsx
+import React, { useCallback, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import {
   Form,
@@ -10,7 +11,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -18,231 +18,241 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
-import TiptapEditor from '@/components/editor/TiptapEditor';
+import { Category } from '@/services/category.service';
+import { Level } from '@/services/level.service';
+import { Language } from '@/services/language.service';
+import { TranslateButton } from '@/components/common/TranslateButton';
+import TiptapEditor from '@/components/editor/TiptapEditor'; // Giả sử TiptapEditor đã được tạo
 
 interface BasicInfoTabProps {
-  form: UseFormReturn<{
-    courseName?: string;
-    slug?: string;
-    shortDescription?: string;
-    fullDescription?: string;
-    originalPrice?: number;
-    discountedPrice?: number;
-    categoryId?: number;
-    levelId?: number;
-    language?: string;
-    requirements?: string;
-    learningOutcomes?: string;
-  }>;
-  mockCategories: { categoryId: number; categoryName: string }[];
-  mockLevels: { levelId: number; levelName: string }[];
-  mockLanguages: { languageCode: string; languageName: string }[];
-  handleTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  categories: Category[];
+  levels: Level[];
+  languages: Language[];
+  isLoading: boolean;
 }
 
 const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
-  form,
-  mockCategories,
-  mockLevels,
-  mockLanguages,
-  handleTitleChange,
+  categories,
+  levels,
+  languages,
+  isLoading,
 }) => {
-  const { control } = form; // Lấy control từ form
+  const form = useFormContext();
+  const { control, watch, setValue } = form;
+
+  const courseName = watch('courseName');
+  const shortDescription = watch('shortDescription');
+  const courseLanguage = watch('language');
+
+  const generateSlug = useCallback((title: string): string => {
+    if (!title) return '';
+    return title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .trim();
+  }, []);
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    form.setValue('courseName', title, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    form.setValue('slug', generateSlug(title), { shouldDirty: true });
+  };
+  const [shortDescriptionKey, setShortDescriptionKey] = useState(1);
   return (
-    <Form {...form}>
-      <form className="space-y-6 relative">
+    <div className='space-y-6'>
+      <FormField
+        control={control}
+        name='courseName'
+        render={({ field }) => (
+          <FormItem>
+            <div className='flex items-center justify-between'>
+              <FormLabel>Course Title*</FormLabel>
+              <TranslateButton
+                sourceText={courseName}
+                sourceLang={courseLanguage as 'vi' | 'en'}
+                onTranslated={(text) =>
+                  setValue('courseName', text, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
+            </div>
+            <FormControl>
+              <Input
+                placeholder='e.g. The Complete 2024 Web Development Bootcamp'
+                {...field}
+                onChange={handleTitleChange}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name='slug'
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>URL Slug</FormLabel>
+            <FormControl>
+              <Input
+                placeholder='auto-generated-from-title'
+                {...field}
+                disabled
+              />
+            </FormControl>
+            <FormDescription>
+              The URL slug is automatically generated from your title.
+            </FormDescription>
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name='shortDescription'
+        render={() => (
+          <FormItem>
+            <div className='flex items-center justify-between mb-2'>
+              <FormLabel>Short Description*</FormLabel>
+              <TranslateButton
+                sourceText={watch('shortDescription')}
+                sourceLang={courseLanguage as 'vi' | 'en'}
+                onTranslated={(text) => {
+                  setValue('shortDescription', text, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+
+                  setShortDescriptionKey((prev) => prev + 1);
+                }}
+              />
+            </div>
+            <FormControl>
+              <Controller
+                name='shortDescription'
+                control={control}
+                render={({ field: controllerField }) => (
+                  <TiptapEditor
+                    // *** SỬA LỖI: Truyền key ***
+                    key={shortDescriptionKey}
+                    initialContent={controllerField.value || ''}
+                    onContentChange={(htmlContent) => {
+                      const contentToSave =
+                        htmlContent === '<p></p>' ? '' : htmlContent;
+                      controllerField.onChange(contentToSave);
+                    }}
+                  />
+                )}
+              />
+            </FormControl>
+            <FormDescription>
+              This appears on search results and course cards. Keep it
+              compelling.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
         <FormField
           control={form.control}
-          name="courseName"
-          render={({ field, fieldState }) => (
+          name='categoryId'
+          render={({ field }) => (
             <FormItem>
-              <FormLabel>Course Title</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="e.g. Complete Web Development Bootcamp"
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(e); // Gọi onChange của React Hook Form
-                    handleTitleChange(e); // Gọi logic tùy chỉnh của bạn
-                  }}
-                />
-              </FormControl>
-              <FormDescription>
-                Give your course an attractive title that clearly explains what
-                the course is about.
-              </FormDescription>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
+              <FormLabel>Category*</FormLabel>
+              <Select
+                onValueChange={(value) => field.onChange(Number(value))}
+                value={field.value?.toString()}
+              >
+                <FormControl>
+                  <SelectTrigger disabled={isLoading}>
+                    <SelectValue placeholder='Select a category' />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem
+                      key={cat.categoryId}
+                      value={cat.categoryId.toString()}
+                    >
+                      {cat.categoryName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
-          name="slug"
-          render={({ field, fieldState }) => (
+          name='levelId'
+          render={({ field }) => (
             <FormItem>
-              <FormLabel>URL Slug</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="e.g. complete-web-development-bootcamp"
-                  {...field}
-                  disabled
-                />
-              </FormControl>
-              <FormDescription>
-                The URL slug is automatically generated from your title.
-              </FormDescription>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
+              <FormLabel>Level*</FormLabel>
+              <Select
+                onValueChange={(value) => field.onChange(Number(value))}
+                value={field.value?.toString()}
+              >
+                <FormControl>
+                  <SelectTrigger disabled={isLoading}>
+                    <SelectValue placeholder='Select a level' />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {levels.map((level) => (
+                    <SelectItem
+                      key={level.levelId}
+                      value={level.levelId.toString()}
+                    >
+                      {level.levelName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
           )}
         />
-
         <FormField
-          control={control}
-          name="shortDescription"
-          render={(
-            { field, fieldState } // field ở đây là của FormField
-          ) => (
+          control={form.control}
+          name='language'
+          render={({ field }) => (
             <FormItem>
-              <FormLabel>Short Description</FormLabel>
-              <FormControl>
-                <Controller
-                  name="shortDescription" // Tên field phải khớp
-                  control={control}
-                  render={(
-                    { field: controllerField } // Đổi tên field từ Controller để tránh nhầm lẫn
-                  ) => (
-                    <TiptapEditor
-                      initialContent={controllerField.value || ''} // Giá trị ban đầu từ RHF
-                      onContentChange={(htmlContent) => {
-                        controllerField.onChange(htmlContent); // Cập nhật giá trị cho RHF
-                      }}
-                      // onBlur={controllerField.onBlur} // Có thể thêm nếu cần
-                    />
-                  )}
-                />
-              </FormControl>
-              <FormDescription>
-                This appears in search results and course cards. Write a
-                compelling summary. (Tiptap editor)
-              </FormDescription>
-              {fieldState.error && (
-                <FormMessage>{fieldState.error.message}</FormMessage>
-              )}
+              <FormLabel>Language*</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger disabled={isLoading}>
+                    <SelectValue placeholder='Select a language' />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem
+                      key={lang.languageCode}
+                      value={lang.languageCode}
+                    >
+                      {lang.languageName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
           )}
         />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <FormField
-            control={form.control}
-            name="categoryId"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(Number(value))}
-                  defaultValue={field.value?.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {mockCategories?.map((category) => (
-                      <SelectItem
-                        key={category.categoryId}
-                        value={category?.categoryId?.toString()}
-                      >
-                        {category.categoryName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldState.error && (
-                  <FormMessage>{fieldState.error.message}</FormMessage>
-                )}
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="levelId"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormLabel>Level</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value?.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {mockLevels?.map((level) => (
-                      <SelectItem
-                        key={level.levelId}
-                        value={level?.levelId?.toString()}
-                      >
-                        {level.levelName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {fieldState.error && (
-                  <FormMessage>{fieldState.error.message}</FormMessage>
-                )}
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="language"
-            render={({ field, fieldState }) => (
-              <FormItem>
-                <FormLabel>Language</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {mockLanguages.map((language) => (
-                      <SelectItem
-                        key={language.languageCode}
-                        value={language.languageCode}
-                      >
-                        {language.languageName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {/* Hiển thị lỗi nếu có */}
-                {fieldState.error && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {fieldState.error.message}
-                  </p>
-                )}
-              </FormItem>
-            )}
-          />
-        </div>
-      </form>
-    </Form>
+      </div>
+    </div>
   );
 };
-
 export default BasicInfoTab;

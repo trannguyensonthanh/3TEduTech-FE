@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/queries/course.queries.ts
 import {
   useQuery,
@@ -31,7 +30,6 @@ import {
   updateLessonsOrderApi,
   OrderItemData,
   updateSectionsOrderApi,
-  syncCourseCurriculum,
   SyncCurriculumPayload,
   SyncCurriculumResponse,
   getCourseStatuses,
@@ -345,6 +343,33 @@ export const useAdminGetApprovalRequests = (
   });
 };
 
+/**
+ * Hook dành cho Instructor để lấy danh sách các yêu cầu phê duyệt của chính họ.
+ * @param params - Các tham số lọc và phân trang.
+ * @param options - Các tùy chọn của React Query.
+ */
+export const useInstructorGetApprovalRequests = (
+  params?: ApprovalRequestQueryParams,
+  options?: Omit<
+    UseQueryOptions<ApprovalRequestListResponse, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  // Key sẽ bao gồm 'instructor-view' để phân biệt với cache của admin
+  const queryKey = [
+    ...courseKeys.approvalRequestLists(params),
+    'instructor-view',
+  ];
+  return useQuery<ApprovalRequestListResponse, Error>({
+    queryKey,
+    // Hàm getApprovalRequests đã hỗ trợ instructorId, chúng ta sẽ truyền nó vào từ component
+    queryFn: () => getApprovalRequests(params),
+    placeholderData: (previousData) => previousData, // Giữ dữ liệu cũ khi phân trang
+    staleTime: 1000 * 60, // Cache 1 phút
+    ...options,
+  });
+};
+
 /** Hook Admin lấy chi tiết yêu cầu phê duyệt */
 export const useAdminGetApprovalRequestDetail = (
   requestId: number | undefined,
@@ -393,42 +418,6 @@ export const useToggleCourseFeature = (
     onError: (error) => {
       console.error('Toggle feature failed:', error.message);
       // toast.error(error.message || 'Cập nhật trạng thái nổi bật thất bại.');
-    },
-    ...options,
-  });
-};
-
-// --- Hook Mutation MỚI cho Sync Curriculum ---
-export const useSyncCourseCurriculum = (
-  options?: UseMutationOptions<
-    SyncCurriculumResponse,
-    Error,
-    { courseId: number; payload: SyncCurriculumPayload }
-  >
-) => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    SyncCurriculumResponse,
-    Error,
-    { courseId: number; payload: SyncCurriculumPayload }
-  >({
-    mutationFn: ({ courseId, payload }) =>
-      syncCourseCurriculum(courseId, payload),
-    onSuccess: (data, variables) => {
-      // Invalidate cache chi tiết khóa học để lấy lại dữ liệu mới nhất
-      queryClient.invalidateQueries({
-        queryKey: courseKeys.detailById(variables.courseId),
-      });
-      // Cần lấy slug để invalidate? Hoặc invalidate all slugs
-      queryClient.invalidateQueries({
-        queryKey: courseKeys.detailBySlug(undefined),
-      });
-      console.log(`Curriculum synced for course ${variables.courseId}`);
-      // toast.success(data.message || 'Curriculum saved successfully!');
-    },
-    onError: (error) => {
-      console.error('Curriculum sync failed:', error.message);
-      // toast.error(`Failed to save curriculum: ${error.message}`);
     },
     ...options,
   });
@@ -520,23 +509,6 @@ export const useCourseStatuses = (
     ...options,
   });
 };
-
-// /** Hook Admin lấy danh sách khóa học chờ duyệt */
-// export const useAdminGetPendingCourses = (
-//   params?: PendingCourseQueryParams,
-//   options?: Omit<
-//     UseQueryOptions<PendingCourseListResponse, Error>,
-//     'queryKey' | 'queryFn'
-//   >
-// ) => {
-//   const queryKey = courseKeys.adminPending(params);
-//   return useQuery<PendingCourseListResponse, Error>({
-//     queryKey: queryKey,
-//     queryFn: () => getPendingCoursesForAdmin(params),
-//     placeholderData: undefined, // Giữ lại data cũ khi đang fetch trang/sort mới
-//     ...options,
-//   });
-// };
 
 // --- Hook mới để lấy danh sách khóa học theo category slug ---
 export const useCoursesByCategorySlug = (

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/instructor/courseCreate/QuizQuestionDialog.tsx
 import React, { useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -81,7 +80,6 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
   initialData,
   isEditing,
   lessonId,
-  courseId, // Nhận courseId
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -265,32 +263,32 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
   };
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className='max-w-2xl max-h-[90vh]'>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Edit Question' : 'Add New Question'}
           </DialogTitle>
           {/* <DialogDescription>...</DialogDescription> */}
         </DialogHeader>
-        <ScrollArea className="max-h-[calc(90vh-200px)] pr-6">
+        <ScrollArea className='max-h-[calc(90vh-200px)] pr-6'>
           {' '}
           {/* Thêm ScrollArea */}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(handleDialogSubmit)}
-              className="space-y-5 py-2 pr-2"
+              className='space-y-5 py-2 pr-2'
             >
               <FormField
                 control={form.control}
-                name="questionText"
+                name='questionText'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Question Text *</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter question..."
+                        placeholder='Enter question...'
                         {...field}
-                        className="min-h-[80px]"
+                        className='min-h-[80px]'
                       />
                     </FormControl>
                     <FormMessage />
@@ -299,19 +297,19 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
               />
               <FormField
                 control={form.control}
-                name="explanation"
+                name='explanation'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Explanation (Optional)</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Explain the correct answer..."
+                        placeholder='Explain the correct answer...'
                         {...field}
                         value={field.value ?? ''}
-                        className="min-h-[80px]"
+                        className='min-h-[80px]'
                       />
                     </FormControl>
-                    <FormDescription className="text-xs">
+                    <FormDescription className='text-xs'>
                       Shown after attempt.
                     </FormDescription>
                     <FormMessage />
@@ -319,24 +317,24 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
                 )}
               />
 
-              <div className="space-y-3 border-t pt-4">
-                <Label className="font-medium">Answer Options *</Label>
+              <div className='space-y-3 border-t pt-4'>
+                <Label className='font-medium'>Answer Options *</Label>
                 <FormField
                   control={form.control}
-                  name="options"
+                  name='options'
                   render={() => <FormMessage />}
                 />
                 {/* Lỗi chung của mảng */}
                 {fields.map((fieldItem, index) => (
                   <div
                     key={fieldItem.fieldId}
-                    className="flex items-center space-x-2"
+                    className='flex items-center space-x-2'
                   >
                     <FormField
                       control={form.control}
                       name={`options.${index}.isCorrectAnswer`}
                       render={({ field: checkField }) => (
-                        <FormItem className="flex items-center pt-6">
+                        <FormItem className='flex items-center pt-6'>
                           <FormControl>
                             <Checkbox
                               checked={checkField.value}
@@ -346,7 +344,7 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
                           </FormControl>
                           <FormLabel
                             htmlFor={`correct-${fieldItem.fieldId}`}
-                            className="sr-only"
+                            className='sr-only'
                           >
                             Correct
                           </FormLabel>
@@ -357,10 +355,10 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
                       control={form.control}
                       name={`options.${index}.optionText`}
                       render={({ field: inputField }) => (
-                        <FormItem className="flex-1">
+                        <FormItem className='flex-1'>
                           <FormLabel
                             htmlFor={`option-text-${fieldItem.fieldId}`}
-                            className="sr-only"
+                            className='sr-only'
                           >
                             Option {index + 1}
                           </FormLabel>
@@ -376,43 +374,43 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
                       )}
                     />
                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
+                      type='button'
+                      variant='ghost'
+                      size='icon'
                       onClick={() => handleRemoveOption(index)}
-                      className="mt-6"
+                      className='mt-6'
                       disabled={fields.length <= 2}
                     >
-                      <Trash className="h-4 w-4 text-destructive" />
+                      <Trash className='h-4 w-4 text-destructive' />
                     </Button>
                   </div>
                 ))}
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                  type='button'
+                  variant='outline'
+                  size='sm'
                   onClick={handleAddOption}
-                  className="mt-2"
+                  className='mt-2'
                 >
-                  <Plus className="h-4 w-4 mr-1" /> Add Option
+                  <Plus className='h-4 w-4 mr-1' /> Add Option
                 </Button>
               </div>
 
-              <DialogFooter className="pt-4">
+              <DialogFooter className='pt-4'>
                 <Button
-                  type="button"
-                  variant="outline"
+                  type='button'
+                  variant='outline'
                   onClick={onClose}
                   disabled={isProcessing}
                 >
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
+                  type='submit'
                   disabled={isProcessing || !form.formState.isValid}
                 >
                   {isProcessing ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   ) : null}
                   {isEditing ? 'Update Question' : 'Add Question'}
                 </Button>

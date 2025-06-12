@@ -1,29 +1,41 @@
-import React from 'react';
+// src/components/admin/currencies/CurrencyDialog.tsx
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  currencySchema,
+  TCurrencySchema,
+} from '@/lib/validators/currencyValidator';
+import { Currency } from '@/services/currency.service';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { Currency } from './CurrenciesTable';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Icons } from '@/components/common/Icons';
+import { useTranslation } from 'react-i18next';
 
 interface CurrencyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currency: Currency | null;
-  onSubmit: (data: {
-    id: string;
-    name: string;
-    type: 'FIAT' | 'CRYPTO';
-    decimalPlaces: number;
-  }) => void;
+  onSubmit: (data: TCurrencySchema) => void;
   isEditing: boolean;
+  isPending: boolean;
 }
 
 const CurrencyDialog: React.FC<CurrencyDialogProps> = ({
@@ -32,164 +44,172 @@ const CurrencyDialog: React.FC<CurrencyDialogProps> = ({
   currency,
   onSubmit,
   isEditing,
+  isPending,
 }) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-    watch,
-  } = useForm({
+  const { t } = useTranslation();
+  const form = useForm<TCurrencySchema>({
+    resolver: zodResolver(currencySchema),
     defaultValues: {
-      id: currency?.id || '',
-      name: currency?.name || '',
-      type: currency?.type || 'FIAT',
-      decimalPlaces: currency?.decimalPlaces || 2,
+      currencyId: '',
+      currencyName: '',
+      type: 'FIAT',
+      decimalPlaces: 2,
     },
   });
 
-  const currencyType = watch('type');
-
-  React.useEffect(() => {
-    if (open) {
-      reset({
-        id: currency?.id || '',
-        name: currency?.name || '',
-        type: currency?.type || 'FIAT',
-        decimalPlaces: currency?.decimalPlaces || 2,
+  useEffect(() => {
+    if (open && currency) {
+      form.reset({
+        currencyId: currency.currencyId,
+        currencyName: currency.currencyName,
+        type: currency.type,
+        decimalPlaces: currency.decimalPlaces,
+      });
+    } else if (open && !currency) {
+      form.reset({
+        currencyId: '',
+        currencyName: '',
+        type: 'FIAT',
+        decimalPlaces: 2,
       });
     }
-  }, [open, currency, reset]);
-
-  const onFormSubmit = (data: {
-    id: string;
-    name: string;
-    type: string;
-    decimalPlaces: number;
-  }) => {
-    onSubmit({
-      id: data.id,
-      name: data.name,
-      type: data.type as 'FIAT' | 'CRYPTO',
-      decimalPlaces: Number(data.decimalPlaces),
-    });
-    onOpenChange(false);
-  };
-
-  const handleTypeChange = (value: string) => {
-    setValue('type', value as 'FIAT' | 'CRYPTO');
-  };
+  }, [open, currency, form]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle className="text-center text-xl text-primary">
-            {isEditing ? 'Edit Currency' : 'Add New Currency'}
+          <DialogTitle>
+            {isEditing
+              ? t('currencyDialog.titleEdit', 'Edit Currency')
+              : t('currencyDialog.titleAdd', 'Add New Currency')}
           </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? t(
+                  'currencyDialog.descEdit',
+                  `Update the details for ${currency?.currencyName}.`,
+                  { name: currency?.currencyName }
+                )
+              : t(
+                  'currencyDialog.descAdd',
+                  'Add a new currency to the system.'
+                )}
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="id" className="text-sm font-medium">
-              Currency ID
-            </Label>
-            <Input
-              id="id"
-              {...register('id', {
-                required: 'Currency ID is required',
-                maxLength: {
-                  value: 10,
-                  message: 'Currency ID cannot exceed 10 characters',
-                },
-              })}
-              className="w-full"
-              disabled={isEditing}
-              placeholder="USD, EUR, BTC"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+            <FormField
+              control={form.control}
+              name='currencyId'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {t('currencyDialog.currencyId', 'Currency ID')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t(
+                        'currencyDialog.placeholderId',
+                        'e.g. USD, VND, BTC'
+                      )}
+                      {...field}
+                      disabled={isEditing}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.id && (
-              <p className="text-sm text-destructive">{errors.id.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium">
-              Currency Name
-            </Label>
-            <Input
-              id="name"
-              {...register('name', { required: 'Currency name is required' })}
-              className="w-full"
-              placeholder="US Dollar, Euro, Bitcoin"
+            <FormField
+              control={form.control}
+              name='currencyName'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {t('currencyDialog.currencyName', 'Currency Name')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t(
+                        'currencyDialog.placeholderName',
+                        'e.g. US Dollar, Bitcoin'
+                      )}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Currency Type</Label>
-            <RadioGroup
-              defaultValue={currency?.type || 'FIAT'}
-              value={currencyType}
-              onValueChange={handleTypeChange}
-              className="flex space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="FIAT" id="fiat" />
-                <Label htmlFor="fiat" className="cursor-pointer">
-                  FIAT
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="CRYPTO" id="crypto" />
-                <Label htmlFor="crypto" className="cursor-pointer">
-                  CRYPTO
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="decimalPlaces" className="text-sm font-medium">
-              Decimal Places
-            </Label>
-            <Input
-              id="decimalPlaces"
-              type="number"
-              min="0"
-              max="18"
-              {...register('decimalPlaces', {
-                required: 'Decimal places is required',
-                min: { value: 0, message: 'Minimum value is 0' },
-                max: { value: 18, message: 'Maximum value is 18' },
-              })}
-              className="w-full"
+            <FormField
+              control={form.control}
+              name='type'
+              render={({ field }) => (
+                <FormItem className='space-y-3'>
+                  <FormLabel>{t('currencyDialog.type', 'Type')}</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className='flex items-center space-x-4'
+                    >
+                      <FormItem className='flex items-center space-x-2 space-y-0'>
+                        <FormControl>
+                          <RadioGroupItem value='FIAT' />
+                        </FormControl>
+                        <FormLabel className='font-normal cursor-pointer'>
+                          {t('currencyDialog.fiat', 'FIAT')}
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className='flex items-center space-x-2 space-y-0'>
+                        <FormControl>
+                          <RadioGroupItem value='CRYPTO' />
+                        </FormControl>
+                        <FormLabel className='font-normal cursor-pointer'>
+                          {t('currencyDialog.crypto', 'CRYPTO')}
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {errors.decimalPlaces && (
-              <p className="text-sm text-destructive">
-                {errors.decimalPlaces.message}
-              </p>
-            )}
-          </div>
-
-          <DialogFooter className="pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90"
-            >
-              {isEditing ? 'Update Currency' : 'Add Currency'}
-            </Button>
-          </DialogFooter>
-        </form>
+            <FormField
+              control={form.control}
+              name='decimalPlaces'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {t('currencyDialog.decimals', 'Decimal Places')}
+                  </FormLabel>
+                  <FormControl>
+                    <Input type='number' min='0' max='18' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter className='pt-4'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => onOpenChange(false)}
+              >
+                {t('currencyDialog.cancel', 'Cancel')}
+              </Button>
+              <Button type='submit' disabled={isPending}>
+                {isPending && (
+                  <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+                )}
+                {isEditing
+                  ? t('currencyDialog.save', 'Save Changes')
+                  : t('currencyDialog.add', 'Add Currency')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

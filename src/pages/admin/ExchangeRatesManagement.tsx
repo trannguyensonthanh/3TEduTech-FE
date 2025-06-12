@@ -1,354 +1,236 @@
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/pages/admin/ExchangeRatesManagement.tsx
+import React, { useState } from 'react';
+import {
+  useExchangeRates,
+  useCreateExchangeRate,
+  useUpdateExchangeRate,
+  useDeleteExchangeRate,
+} from '@/hooks/queries/exchangeRate.queries';
+import { useCurrencies } from '@/hooks/queries/currency.queries';
+import { TExchangeRateSchema } from '@/lib/validators/exchangeRateValidator';
+import { ExchangeRate } from '@/services/exchangeRate.service';
+import { Currency } from '@/services/currency.service';
+
+// Layouts & Components
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ExchangeRatesTable, {
-  ExchangeRate,
-} from '@/components/admin/exchange-rates/ExchangeRatesTable';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
+import PaginationControls from '@/components/admin/PaginationControls'; // Reusable pagination component
+import ExchangeRatesTable from '@/components/admin/exchange-rates/ExchangeRatesTable';
 import ExchangeRateDialog from '@/components/admin/exchange-rates/ExchangeRateDialog';
 import DeleteExchangeRateDialog from '@/components/admin/exchange-rates/DeleteExchangeRateDialog';
+import { Icons } from '@/components/common/Icons';
+import { toast } from 'sonner';
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-import { useToast } from '@/components/ui/use-toast';
-import { Currency } from '@/components/admin/currencies/CurrenciesTable';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-// Mock data for currencies (should be fetched in a real app)
-const mockCurrencies: Currency[] = [
-  { id: 'USD', name: 'US Dollar', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'EUR', name: 'Euro', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'JPY', name: 'Japanese Yen', type: 'FIAT', decimalPlaces: 0 },
-  { id: 'GBP', name: 'British Pound', type: 'FIAT', decimalPlaces: 2 },
-  { id: 'VND', name: 'Vietnamese Dong', type: 'FIAT', decimalPlaces: 0 },
-  { id: 'BTC', name: 'Bitcoin', type: 'CRYPTO', decimalPlaces: 8 },
-  { id: 'ETH', name: 'Ethereum', type: 'CRYPTO', decimalPlaces: 18 },
-  { id: 'USDT', name: 'Tether', type: 'CRYPTO', decimalPlaces: 6 },
-];
-
-// Mock data for exchange rates
-const mockExchangeRates: ExchangeRate[] = [
-  {
-    id: 1,
-    fromCurrencyId: 'USD',
-    toCurrencyId: 'VND',
-    rate: 24565,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'Yahoo Finance',
-  },
-  {
-    id: 2,
-    fromCurrencyId: 'EUR',
-    toCurrencyId: 'USD',
-    rate: 1.08,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'Yahoo Finance',
-  },
-  {
-    id: 3,
-    fromCurrencyId: 'BTC',
-    toCurrencyId: 'USD',
-    rate: 61254.89,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'CoinMarketCap',
-  },
-  {
-    id: 4,
-    fromCurrencyId: 'ETH',
-    toCurrencyId: 'USD',
-    rate: 3028.45,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'CoinMarketCap',
-  },
-  {
-    id: 5,
-    fromCurrencyId: 'USDT',
-    toCurrencyId: 'USD',
-    rate: 0.9998,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'CoinMarketCap',
-  },
-  {
-    id: 6,
-    fromCurrencyId: 'VND',
-    toCurrencyId: 'USD',
-    rate: 0.000040747,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'Yahoo Finance',
-  },
-  {
-    id: 7,
-    fromCurrencyId: 'USD',
-    toCurrencyId: 'EUR',
-    rate: 0.9259,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'Yahoo Finance',
-  },
-  {
-    id: 8,
-    fromCurrencyId: 'USD',
-    toCurrencyId: 'JPY',
-    rate: 151.59,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'Yahoo Finance',
-  },
-  {
-    id: 9,
-    fromCurrencyId: 'USD',
-    toCurrencyId: 'GBP',
-    rate: 0.7893,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'Yahoo Finance',
-  },
-  {
-    id: 10,
-    fromCurrencyId: 'BTC',
-    toCurrencyId: 'ETH',
-    rate: 20.23,
-    effectiveTimestamp: '2023-05-01T00:00:00Z',
-    source: 'CoinMarketCap',
-  },
-];
-
-const ExchangeRatesManagement = () => {
-  const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [rateToDelete, setRateToDelete] = useState<ExchangeRate | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
+const ExchangeRatesManagement: React.FC = () => {
+  const [page, setPage] = useState(1);
   const itemsPerPage = 10;
+  const [fromFilter, setFromFilter] = useState('');
+  const [toFilter, setToFilter] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
 
-  useEffect(() => {
-    // In a real app, fetch exchange rates and currencies from API
-    // For now, using mock data
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        // Simulating API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+  // Fetching data
+  const { data: ratesData, isLoading: isLoadingRates } = useExchangeRates({
+    page,
+    limit: itemsPerPage,
+    fromCurrency: fromFilter || undefined,
+    toCurrency: toFilter || undefined,
+  });
+  const { data: currenciesData, isLoading: isLoadingCurrencies } =
+    useCurrencies({ limit: 100 });
 
-        // Load currencies first (needed for the dropdown in the dialog)
-        setCurrencies(mockCurrencies);
+  // Mutations
+  const createMutation = useCreateExchangeRate({
+    onSuccess: () => {
+      toast.success('Exchange rate created successfully!');
+      setIsDialogOpen(false);
+    },
+    onError: (err: any) =>
+      toast.error(err.body?.message || 'Failed to create exchange rate.'),
+  });
 
-        // Then load exchange rates
-        setExchangeRates(mockExchangeRates);
-        setTotalPages(Math.ceil(mockExchangeRates.length / itemsPerPage));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load data. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const updateMutation = useUpdateExchangeRate({
+    onSuccess: () => {
+      toast.success('Exchange rate updated successfully!');
+      setIsDialogOpen(false);
+    },
+    onError: (err: any) =>
+      toast.error(err.body?.message || 'Failed to update exchange rate.'),
+  });
 
-    fetchData();
-  }, [toast]);
+  const deleteMutation = useDeleteExchangeRate({
+    onSuccess: () => {
+      toast.success('Exchange rate deleted successfully!');
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (err: any) =>
+      toast.error(err.body?.message || 'Failed to delete exchange rate.'),
+  });
 
-  const handleAddExchangeRate = (data: Omit<ExchangeRate, 'id'>) => {
-    // Check if exchange rate already exists for the same currency pair
-    if (
-      exchangeRates.some(
-        (rate) =>
-          rate.fromCurrencyId === data.fromCurrencyId &&
-          rate.toCurrencyId === data.toCurrencyId &&
-          new Date(rate.effectiveTimestamp).getTime() ===
-            new Date(data.effectiveTimestamp).getTime()
-      )
-    ) {
-      toast({
-        title: 'Error',
-        description: `Exchange rate already exists for ${data.fromCurrencyId} to ${data.toCurrencyId} at the specified time.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // In a real app, make API call to add exchange rate
-    const newRate: ExchangeRate = {
-      id: Math.max(0, ...exchangeRates.map((rate) => rate.id)) + 1,
-      ...data,
-    };
-
-    setExchangeRates([...exchangeRates, newRate]);
-    toast({
-      title: 'Success',
-      description: 'Exchange rate added successfully.',
-    });
-  };
-
-  const handleEditRate = (rate: ExchangeRate) => {
-    setSelectedRate(rate);
-    setIsAddDialogOpen(true);
-  };
-
-  const handleUpdateRate = (data: Omit<ExchangeRate, 'id'>) => {
-    if (!selectedRate) return;
-
-    // In a real app, make API call to update exchange rate
-    const updatedRates = exchangeRates.map((rate) =>
-      rate.id === selectedRate.id
-        ? {
-            ...rate,
-            rate: data.rate,
-            effectiveTimestamp: data.effectiveTimestamp,
-            source: data.source,
-          }
-        : rate
-    );
-
-    setExchangeRates(updatedRates);
+  const handleOpenAddDialog = () => {
     setSelectedRate(null);
-    toast({
-      title: 'Success',
-      description: 'Exchange rate updated successfully.',
-    });
+    setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (rate: ExchangeRate) => {
-    setRateToDelete(rate);
+  const handleOpenEditDialog = (rate: ExchangeRate) => {
+    setSelectedRate(rate);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (rate: ExchangeRate) => {
+    setSelectedRate(rate);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteRate = () => {
-    if (!rateToDelete) return;
-
-    // In a real app, make API call to delete exchange rate
-    const updatedRates = exchangeRates.filter(
-      (rate) => rate.id !== rateToDelete.id
-    );
-    setExchangeRates(updatedRates);
-    setRateToDelete(null);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: 'Success',
-      description: 'Exchange rate deleted successfully.',
-    });
+  const handleDialogSubmit = (data: TExchangeRateSchema) => {
+    if (selectedRate) {
+      // Editing
+      updateMutation.mutate({ rateId: selectedRate.rateId, data });
+    } else {
+      // Creating
+      createMutation.mutate({
+        fromCurrencyId: data.fromCurrencyId!,
+        toCurrencyId: data.toCurrencyId!,
+        rate: data.rate!,
+        effectiveTimestamp: data.effectiveTimestamp!,
+        source: data.source!,
+      });
+    }
   };
 
-  // Calculate pagination
-  const paginatedRates = exchangeRates.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleDeleteConfirm = () => {
+    if (selectedRate) {
+      deleteMutation.mutate(selectedRate.rateId);
+    }
+  };
 
+  const isDataLoading = isLoadingRates || isLoadingCurrencies;
+  const isMutationPending =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+  const currencies: Currency[] = currenciesData?.currencies || [];
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Exchange Rates Management
-          </h1>
+      <div className='space-y-6'>
+        <div className='flex flex-col sm:flex-row justify-between sm:items-center gap-4'>
+          <div>
+            <h1 className='text-2xl font-bold tracking-tight'>
+              Exchange Rates
+            </h1>
+            <p className='text-muted-foreground'>
+              Manage currency conversion rates for payments.
+            </p>
+          </div>
           <Button
-            onClick={() => {
-              setSelectedRate(null);
-              setIsAddDialogOpen(true);
-            }}
-            className="flex items-center gap-1"
+            onClick={handleOpenAddDialog}
+            disabled={isLoadingCurrencies || currencies.length < 2}
           >
-            <Plus className="h-4 w-4" /> Add Rate
+            <Icons.plus className='mr-2 h-4 w-4' /> Add Rate
           </Button>
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Exchange Rates</CardTitle>
+          <CardHeader>
+            <CardTitle>System Exchange Rates</CardTitle>
+            <div className='flex flex-col sm:flex-row gap-2 pt-2 items-center'>
+              <CardDescription className='flex-grow'>
+                Filter and manage conversion rates.
+              </CardDescription>
+              <div className='flex w-full sm:w-auto gap-2'>
+                <Select
+                  value={fromFilter}
+                  onValueChange={(value) => {
+                    setFromFilter(value === 'ALL' ? '' : value);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className='w-full sm:w-[150px]'>
+                    <SelectValue placeholder='From...' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='ALL'>From (All)</SelectItem>
+                    {currencies.map((c) => (
+                      <SelectItem key={c.currencyId} value={c.currencyId}>
+                        {c.currencyId}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={toFilter}
+                  onValueChange={(value) => {
+                    setToFilter(value === 'ALL' ? '' : value);
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className='w-full sm:w-[150px]'>
+                    <SelectValue placeholder='To...' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='ALL'>To (All)</SelectItem>
+                    {currencies.map((c) => (
+                      <SelectItem key={c.currencyId} value={c.currencyId}>
+                        {c.currencyId}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="py-10 text-center text-muted-foreground">
-                Loading exchange rates...
-              </div>
-            ) : (
-              <>
-                <ExchangeRatesTable
-                  exchangeRates={paginatedRates}
-                  onEdit={handleEditRate}
-                  onDelete={handleDeleteClick}
-                />
-                {totalPages > 1 && (
-                  <div className="mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() =>
-                              setCurrentPage((p) => Math.max(1, p - 1))
-                            }
-                            className={
-                              currentPage === 1
-                                ? 'pointer-events-none opacity-50'
-                                : 'cursor-pointer'
-                            }
-                          />
-                        </PaginationItem>
-
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              isActive={currentPage === page}
-                              onClick={() => setCurrentPage(page)}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() =>
-                              setCurrentPage((p) => Math.min(totalPages, p + 1))
-                            }
-                            className={
-                              currentPage === totalPages
-                                ? 'pointer-events-none opacity-50'
-                                : 'cursor-pointer'
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </>
-            )}
+            <ExchangeRatesTable
+              exchangeRates={ratesData?.exchangeRates}
+              isLoading={isLoadingRates}
+              onEdit={handleOpenEditDialog}
+              onDelete={handleOpenDeleteDialog}
+            />
           </CardContent>
         </Card>
+
+        {ratesData && ratesData.totalPages > 1 && (
+          <PaginationControls
+            currentPage={page}
+            totalPages={ratesData.totalPages}
+            setCurrentPage={setPage}
+          />
+        )}
       </div>
 
       <ExchangeRateDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
         exchangeRate={selectedRate}
-        onSubmit={selectedRate ? handleUpdateRate : handleAddExchangeRate}
+        onSubmit={handleDialogSubmit}
         isEditing={!!selectedRate}
+        isPending={isMutationPending}
         currencies={currencies}
       />
 
       <DeleteExchangeRateDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDeleteRate}
-        fromCurrency={rateToDelete?.fromCurrencyId || ''}
-        toCurrency={rateToDelete?.toCurrencyId || ''}
+        onConfirm={handleDeleteConfirm}
+        exchangeRate={selectedRate}
+        isPending={deleteMutation.isPending}
       />
     </AdminLayout>
   );

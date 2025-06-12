@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Icons } from '../common/Icons';
 import { useRegisterMutation } from '@/hooks/queries/auth.queries';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 // Define schema using zod
 const signupSchema = z
@@ -35,6 +36,7 @@ interface SignupFormProps {
 }
 
 const SignupForm = ({ onSuccess }: SignupFormProps) => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,17 +59,16 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
   const registerMutation = useRegisterMutation({
     onSuccess: (data) => {
       toast({
-        title: 'Account created successfully',
-        description: data.message || 'Please sign in with your new account.',
+        title: t('signupForm.successTitle'),
+        description: data.message || t('signupForm.successDesc'),
       });
       onSuccess();
     },
     onError: (error: any) => {
       toast({
         variant: 'destructive',
-        title: 'Registration failed',
-        description:
-          error.message || 'There was an error creating your account.',
+        title: t('signupForm.errorTitle'),
+        description: error.message || t('signupForm.errorDesc'),
       });
     },
   });
@@ -87,18 +88,18 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <div className="space-y-1.5">
-        <Label htmlFor="signup-fullName">Full Name</Label>
-        <div className="relative">
-          <Icons.user className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
+      <div className='space-y-1.5'>
+        <Label htmlFor='signup-fullName'>{t('signupForm.fullName')}</Label>
+        <div className='relative'>
+          <Icons.user className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Controller
-            name="fullName"
+            name='fullName'
             control={control}
             render={({ field }) => (
               <Input
-                id="signup-fullName"
-                placeholder="John Doe"
+                id='signup-fullName'
+                placeholder={t('signupForm.fullNamePlaceholder')}
                 {...field}
                 disabled={registerMutation.isPending}
                 className={cn(
@@ -111,22 +112,23 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
           />
         </div>
         {errors.fullName && (
-          <p className="text-xs text-destructive">{errors.fullName.message}</p>
+          <p className='text-xs text-destructive'>
+            {t(errors.fullName.message as string)}
+          </p>
         )}
       </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="signup-email">Email Address</Label>
-        <div className="relative">
-          <Icons.mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <div className='space-y-1.5'>
+        <Label htmlFor='signup-email'>{t('signupForm.email')}</Label>
+        <div className='relative'>
+          <Icons.mail className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Controller
-            name="email"
+            name='email'
             control={control}
             render={({ field }) => (
               <Input
-                id="signup-email"
-                type="email"
-                placeholder="you@example.com"
+                id='signup-email'
+                type='email'
+                placeholder={t('signupForm.emailPlaceholder')}
                 {...field}
                 disabled={registerMutation.isPending}
                 className={cn(
@@ -139,22 +141,23 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
           />
         </div>
         {errors.email && (
-          <p className="text-xs text-destructive">{errors.email.message}</p>
+          <p className='text-xs text-destructive'>
+            {t(errors.email.message as string)}
+          </p>
         )}
       </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="signup-password">Password</Label>
-        <div className="relative">
-          <Icons.lockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <div className='space-y-1.5'>
+        <Label htmlFor='signup-password'>{t('signupForm.password')}</Label>
+        <div className='relative'>
+          <Icons.lockKeyhole className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Controller
-            name="password"
+            name='password'
             control={control}
             render={({ field }) => (
               <Input
-                id="signup-password"
+                id='signup-password'
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Min. 8 characters"
+                placeholder={t('signupForm.passwordPlaceholder')}
                 {...field}
                 disabled={registerMutation.isPending}
                 className={cn(
@@ -166,37 +169,40 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
             )}
           />
           <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground'
             onClick={() => setShowPassword(!showPassword)}
-            aria-label="Toggle password visibility"
+            aria-label={t('signupForm.togglePassword')}
           >
             {showPassword ? (
-              <Icons.eyeOff className="h-4 w-4" />
+              <Icons.eyeOff className='h-4 w-4' />
             ) : (
-              <Icons.eye className="h-4 w-4" />
+              <Icons.eye className='h-4 w-4' />
             )}
           </Button>
         </div>
         {errors.password && (
-          <p className="text-xs text-destructive">{errors.password.message}</p>
+          <p className='text-xs text-destructive'>
+            {t(errors.password.message as string)}
+          </p>
         )}
       </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="signup-confirmPassword">Confirm Password</Label>
-        <div className="relative">
-          <Icons.lockKeyhole className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <div className='space-y-1.5'>
+        <Label htmlFor='signup-confirmPassword'>
+          {t('signupForm.confirmPassword')}
+        </Label>
+        <div className='relative'>
+          <Icons.lockKeyhole className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
           <Controller
-            name="confirmPassword"
+            name='confirmPassword'
             control={control}
             render={({ field }) => (
               <Input
-                id="signup-confirmPassword"
+                id='signup-confirmPassword'
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Re-enter password"
+                placeholder={t('signupForm.confirmPasswordPlaceholder')}
                 {...field}
                 disabled={registerMutation.isPending}
                 className={cn(
@@ -208,52 +214,38 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
             )}
           />
           <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground'
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            aria-label="Toggle confirm password visibility"
+            aria-label={t('signupForm.toggleConfirmPassword')}
           >
             {showConfirmPassword ? (
-              <Icons.eyeOff className="h-4 w-4" />
+              <Icons.eyeOff className='h-4 w-4' />
             ) : (
-              <Icons.eye className="h-4 w-4" />
+              <Icons.eye className='h-4 w-4' />
             )}
           </Button>
         </div>
         {errors.confirmPassword && (
-          <p className="text-xs text-destructive">
-            {errors.confirmPassword.message}
+          <p className='text-xs text-destructive'>
+            {t(errors.confirmPassword.message as string)}
           </p>
         )}
       </div>
-
       <Button
-        type="submit"
-        className="w-full h-11 text-base font-semibold"
+        type='submit'
+        className='w-full h-11 text-base font-semibold'
         disabled={registerMutation.isPending}
       >
         {registerMutation.isPending ? (
-          <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+          <Icons.spinner className='mr-2 h-5 w-5 animate-spin' />
         ) : (
-          <Icons.userPlus className="mr-2 h-5 w-5" />
+          <Icons.userPlus className='mr-2 h-5 w-5' />
         )}{' '}
-        {/* Giả sử có Icons.userPlus */}
-        Create Account
+        {t('signupForm.createAccount')}
       </Button>
-
-      {/* Phần social login có thể không cần ở đây nếu AuthModal đã có cách xử lý chung */}
-      {/* <div className="relative pt-2">
-        <Separator />
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-          <span className="bg-background px-3 text-xs uppercase text-muted-foreground">Or sign up with</span>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <LoginWithGoogle />
-        <LoginWithFacebook />
-      </div> */}
     </form>
   );
 };

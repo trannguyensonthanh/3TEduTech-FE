@@ -23,7 +23,7 @@ import {
   Award,
   ListChecks,
 } from 'lucide-react';
-
+import { useTranslation } from 'react-i18next';
 import {
   useStartQuizAttempt,
   useSubmitQuizAttempt,
@@ -44,18 +44,17 @@ import {
 interface QuizPlayerProps {
   lessonId: number | string;
   lessonName?: string;
-  courseId: number; // Not directly used here, but good for context or if hooks need it
+
   onQuizComplete: (result: QuizAttemptResultResponse) => void;
 }
 
 const QuizPlayer: React.FC<QuizPlayerProps> = ({
   lessonId,
   lessonName,
-  courseId,
   onQuizComplete,
 }) => {
   const { toast } = useToast();
-
+  const { t } = useTranslation();
   const [currentAttemptId, setCurrentAttemptId] = useState<number | null>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -116,8 +115,9 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
         },
         onError: (error: any) => {
           toast({
-            title: 'Error Starting Quiz',
-            description: error.message || 'Could not load quiz.',
+            title: t('lessonContent.quiz.errorStartTitle'),
+            description:
+              error.message || t('lessonContent.quiz.errorStartDesc'),
             variant: 'destructive',
           });
         },
@@ -170,8 +170,8 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   const handleSubmitQuiz = async () => {
     if (!currentAttemptId) {
       toast({
-        title: 'Error',
-        description: 'No active quiz attempt.',
+        title: t('common.error'),
+        description: t('lessonContent.quiz.errorNoActiveAttempt'),
         variant: 'destructive',
       });
       return;
@@ -184,8 +184,11 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
     ).length;
     if (unansweredQuestionsCount > 0) {
       toast({
-        title: 'Incomplete Quiz',
-        description: `Please answer all ${questions.length} questions. You have ${unansweredQuestionsCount} unanswered.`,
+        title: t('lessonContent.quiz.incompleteTitle'),
+        description: t('lessonContent.quiz.incompleteDesc', {
+          total: questions.length,
+          unanswered: unansweredQuestionsCount,
+        }),
         variant: 'destructive',
         duration: 4000,
       });
@@ -208,8 +211,9 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
         },
         onError: (error: any) => {
           toast({
-            title: 'Submission Error',
-            description: error.message || 'Could not submit quiz.',
+            title: t('lessonContent.quiz.errorSubmitTitle'),
+            description:
+              error.message || t('lessonContent.quiz.errorSubmitDesc'),
             variant: 'destructive',
           });
         },
@@ -238,9 +242,11 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   // --- Render Logic ---
   if (isLoadingQuiz && viewMode === 'playing' && !questions.length) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 min-h-[400px] bg-card rounded-xl shadow-lg">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading Quiz...</p>
+      <div className='flex flex-col items-center justify-center p-8 min-h-[400px] bg-card rounded-xl shadow-lg'>
+        <Loader2 className='h-12 w-12 animate-spin text-primary mb-4' />
+        <p className='text-muted-foreground'>
+          {t('lessonContent.quiz.loading')}
+        </p>
       </div>
     );
   }
@@ -259,7 +265,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card p-6 sm:p-10 rounded-xl shadow-2xl text-center"
+        className='bg-card p-6 sm:p-10 rounded-xl shadow-2xl text-center'
       >
         <motion.div
           initial={{ scale: 0.7 }}
@@ -270,50 +276,53 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
             damping: 15,
             delay: 0.1,
           }}
-          className="mb-6"
+          className='mb-6'
         >
           {isPassed ? (
-            <Award className="h-20 w-20 text-green-500 mx-auto p-3 bg-green-100 dark:bg-green-900/30 rounded-full" />
+            <Award className='h-20 w-20 text-green-500 mx-auto p-3 bg-green-100 dark:bg-green-900/30 rounded-full' />
           ) : (
-            <XCircle className="h-20 w-20 text-red-500 mx-auto p-3 bg-red-100 dark:bg-red-900/30 rounded-full" />
+            <XCircle className='h-20 w-20 text-red-500 mx-auto p-3 bg-red-100 dark:bg-red-900/30 rounded-full' />
           )}
         </motion.div>
-        <h2 className="text-3xl sm:text-4xl font-bold mb-2 text-foreground">
-          Quiz Completed!
+        <h2 className='text-3xl sm:text-4xl font-bold mb-2 text-foreground'>
+          {t('lessonContent.quiz.results.title')}
         </h2>
         <p
-          className="text-5xl sm:text-6xl font-extrabold mb-3"
+          className='text-5xl sm:text-6xl font-extrabold mb-3'
           style={{
             color: isPassed ? 'hsl(var(--success))' : 'hsl(var(--destructive))',
           }}
         >
           {score.toFixed(0)}
-          <span className="text-3xl">%</span>
+          <span className='text-3xl'>%</span>
         </p>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+        <p className='text-muted-foreground mb-8 max-w-md mx-auto'>
           {isPassed
-            ? `Congratulations! You've successfully passed the "${
-                lessonName || 'lesson'
-              }" quiz.`
-            : `You scored ${score.toFixed(0)}%. ${
-                quizResult.attempt?.score
-                  ? `Passing score is ${quizResult.attempt?.score}%. `
-                  : ''
-              }Don't give up, review your answers and try again!`}
+            ? t('lessonContent.quiz.results.passedDesc', {
+                lessonName:
+                  lessonName ||
+                  t('lessonContent.quiz.results.defaultLessonName'),
+              })
+            : t('lessonContent.quiz.results.failedDesc', {
+                score: score.toFixed(0),
+                passingScore: quizResult.attempt?.score,
+              })}
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className='flex flex-col sm:flex-row gap-3 justify-center'>
           {quizResult.details && quizResult.details.length > 0 && (
             <Button
               onClick={handleReviewAnswers}
-              variant="outline"
-              size="lg"
-              className="sm:w-auto"
+              variant='outline'
+              size='lg'
+              className='sm:w-auto'
             >
-              <ListChecks className="mr-2 h-5 w-5" /> Review Answers
+              <ListChecks className='mr-2 h-5 w-5' />{' '}
+              {t('lessonContent.quiz.results.reviewBtn')}
             </Button>
           )}
-          <Button onClick={handleTryAgain} size="lg" className="sm:w-auto">
-            <RotateCcw className="mr-2 h-5 w-5" /> Try Again
+          <Button onClick={handleTryAgain} size='lg' className='sm:w-auto'>
+            <RotateCcw className='mr-2 h-5 w-5' />{' '}
+            {t('lessonContent.quiz.results.tryAgainBtn')}
           </Button>
         </div>
       </motion.div>
@@ -324,37 +333,40 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   if (viewMode === 'review' && quizResult && currentQuestionForReview) {
     const reviewedQuestion = currentQuestionForReview; // Đã được memoized ở trên
     return (
-      <Card className="shadow-xl animate-fadeInWipe">
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-center mb-2">
-            <CardTitle className="text-lg md:text-xl">
-              Reviewing:{' '}
-              <span className="font-normal">
-                {lessonName || 'Quiz Answers'}
+      <Card className='shadow-xl animate-fadeInWipe'>
+        <CardHeader className='pb-4'>
+          <div className='flex justify-between items-center mb-2'>
+            <CardTitle className='text-lg md:text-xl'>
+              {t('lessonContent.quiz.review.title')}:{' '}
+              <span className='font-normal'>
+                {lessonName || t('lessonContent.quiz.review.defaultTitle')}
               </span>
             </CardTitle>
-            <Badge variant="outline" className="text-sm font-mono px-2 py-1">
-              Question {currentQuestionIndex + 1} / {quizResult.details.length}
+            <Badge variant='outline' className='text-sm font-mono px-2 py-1'>
+              {t('lessonContent.quiz.questionProgress', {
+                current: currentQuestionIndex + 1,
+                total: quizResult.details.length,
+              })}
             </Badge>
           </div>
           <Progress
             value={
               ((currentQuestionIndex + 1) / quizResult.details.length) * 100
             }
-            className="h-1.5"
+            className='h-1.5'
           />
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 space-y-5">
+        <CardContent className='p-4 sm:p-6 space-y-5'>
           <motion.p
             key={`review-q-${reviewedQuestion.questionId}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="text-base sm:text-lg font-semibold leading-relaxed mb-1"
+            className='text-base sm:text-lg font-semibold leading-relaxed mb-1'
           >
             {currentQuestionIndex + 1}. {reviewedQuestion.questionText}
           </motion.p>
-          <div className="space-y-3">
+          <div className='space-y-3'>
             {/* Sắp xếp options theo optionOrder từ API */}
             {reviewedQuestion.options
               .sort((a, b) => a.optionOrder - b.optionOrder)
@@ -363,7 +375,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                   option.optionId === reviewedQuestion.selectedOptionId;
                 const isCorrect = option.isCorrectAnswer;
                 let variantStyles = 'border-border bg-card';
-                let resultIcon = <div className="w-5 h-5 shrink-0"></div>;
+                let resultIcon = <div className='w-5 h-5 shrink-0'></div>;
 
                 if (isCorrect) {
                   variantStyles =
@@ -371,14 +383,14 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                   resultIcon = (
                     <CheckCircle
                       size={18}
-                      className="text-green-500 shrink-0"
+                      className='text-green-500 shrink-0'
                     />
                   );
                 } else if (isSelectedByUser && !isCorrect) {
                   variantStyles =
                     'border-red-600 bg-red-50 dark:bg-red-700/20 text-red-700 dark:text-red-300 ring-1 ring-red-500';
                   resultIcon = (
-                    <XCircle size={18} className="text-red-500 shrink-0" />
+                    <XCircle size={18} className='text-red-500 shrink-0' />
                   );
                 } else {
                   variantStyles =
@@ -393,32 +405,32 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                       variantStyles
                     )}
                   >
-                    <div className="shrink-0">{resultIcon}</div>
-                    <span className="text-sm sm:text-base flex-1">
+                    <div className='shrink-0'>{resultIcon}</div>
+                    <span className='text-sm sm:text-base flex-1'>
                       {option.optionText}
                     </span>
                     {isSelectedByUser && !isCorrect && (
                       <Badge
-                        variant="destructive"
-                        className="text-xs ml-auto shrink-0 px-1.5 py-0.5"
+                        variant='destructive'
+                        className='text-xs ml-auto shrink-0 px-1.5 py-0.5'
                       >
-                        Your Answer
+                        {t('lessonContent.quiz.review.yourAnswer')}
                       </Badge>
                     )}
                     {isSelectedByUser && isCorrect && (
                       <Badge
-                        variant="success"
-                        className="text-xs ml-auto shrink-0 px-1.5 py-0.5"
+                        variant='success'
+                        className='text-xs ml-auto shrink-0 px-1.5 py-0.5'
                       >
-                        Your Correct Answer
+                        {t('lessonContent.quiz.review.yourCorrectAnswer')}
                       </Badge>
                     )}
                     {!isSelectedByUser && isCorrect && (
                       <Badge
-                        variant="success"
-                        className="text-xs ml-auto shrink-0 px-1.5 py-0.5"
+                        variant='success'
+                        className='text-xs ml-auto shrink-0 px-1.5 py-0.5'
                       >
-                        Correct Answer
+                        {t('lessonContent.quiz.review.correctAnswer')}
                       </Badge>
                     )}
                   </div>
@@ -430,43 +442,43 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-6 pt-4 border-t border-dashed"
+              className='mt-6 pt-4 border-t border-dashed'
             >
               <Alert
-                variant="default"
-                className="bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700"
+                variant='default'
+                className='bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700'
               >
-                <Lightbulb className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <AlertTitle className="font-semibold text-blue-700 dark:text-blue-300">
-                  Explanation
+                <Lightbulb className='h-5 w-5 text-blue-600 dark:text-blue-400' />
+                <AlertTitle className='font-semibold text-blue-700 dark:text-blue-300'>
+                  {t('lessonContent.explanation')}
                 </AlertTitle>
-                <AlertDescription className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none text-blue-600 dark:text-blue-200">
+                <AlertDescription className='text-sm whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none text-blue-600 dark:text-blue-200'>
                   {reviewedQuestion.explanation}
                 </AlertDescription>
               </Alert>
             </motion.div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 border-t">
+        <CardFooter className='flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 border-t'>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={() => navigateQuestion('prev')}
             disabled={currentQuestionIndex === 0}
           >
-            Previous
+            {t('lessonContentWrapper.prev')}
           </Button>
           {currentQuestionIndex === quizResult.details.length - 1 ? (
             <Button
-              size="sm"
+              size='sm'
               onClick={() => setViewMode('results')}
-              className="bg-primary hover:bg-primary/90"
+              className='bg-primary hover:bg-primary/90'
             >
-              Back to Results Summary
+              {t('lessonContent.quiz.review.backToSummary')}
             </Button>
           ) : (
-            <Button size="sm" onClick={() => navigateQuestion('next')}>
-              Next Question
+            <Button size='sm' onClick={() => navigateQuestion('next')}>
+              {t('lessonContent.quiz.review.nextQuestion')}
             </Button>
           )}
         </CardFooter>
@@ -478,25 +490,28 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   if (viewMode === 'playing' && currentQuestionForPlaying) {
     const currentQ = currentQuestionForPlaying;
     return (
-      <Card className="shadow-xl animate-fadeInWipe">
+      <Card className='shadow-xl animate-fadeInWipe'>
         {' '}
         {/* Sử dụng animation mới */}
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-center mb-2">
-            <CardTitle className="text-xl md:text-2xl">
-              {lessonName || 'Test Your Knowledge'}
+        <CardHeader className='pb-4'>
+          <div className='flex justify-between items-center mb-2'>
+            <CardTitle className='text-xl md:text-2xl'>
+              {lessonName || t('lessonContent.quiz.playing.defaultTitle')}
             </CardTitle>
-            <Badge variant="outline" className="text-sm font-mono px-2 py-1">
-              Question {currentQuestionIndex + 1} of {questions.length}
+            <Badge variant='outline' className='text-sm font-mono px-2 py-1'>
+              {t('lessonContent.quiz.questionProgress', {
+                current: currentQuestionIndex + 1,
+                total: questions.length,
+              })}
             </Badge>
           </div>
           <Progress
             value={((currentQuestionIndex + 1) / questions.length) * 100}
-            className="h-1.5"
+            className='h-1.5'
           />
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          <AnimatePresence mode="wait">
+        <CardContent className='p-6 space-y-6'>
+          <AnimatePresence mode='wait'>
             <motion.div
               key={currentQ.questionId}
               initial={{ opacity: 0, x: 50 }}
@@ -508,9 +523,9 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                 stiffness: 200,
                 damping: 25,
               }}
-              className="min-h-[50px] sm:min-h-[60px]"
+              className='min-h-[50px] sm:min-h-[60px]'
             >
-              <p className="text-base sm:text-lg font-semibold leading-relaxed mb-1">
+              <p className='text-base sm:text-lg font-semibold leading-relaxed mb-1'>
                 {currentQuestionIndex + 1}. {currentQ.questionText}
               </p>
             </motion.div>
@@ -521,7 +536,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
             onValueChange={(value) =>
               handleOptionSelect(currentQ.questionId, parseInt(value))
             }
-            className="space-y-3"
+            className='space-y-3'
           >
             {currentQ.options
               .sort((a, b) => a.optionOrder - b.optionOrder)
@@ -554,9 +569,9 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                     <RadioGroupItem
                       value={option?.optionId?.toString()}
                       id={`option-${option.optionId}`}
-                      className="shrink-0 mt-0.5 border-muted-foreground data-[state=checked]:border-primary"
+                      className='shrink-0 mt-0.5 border-muted-foreground data-[state=checked]:border-primary'
                     />
-                    <span className="text-sm sm:text-base flex-1 leading-normal">
+                    <span className='text-sm sm:text-base flex-1 leading-normal'>
                       {option.optionText}
                     </span>
                   </Label>
@@ -564,13 +579,13 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
               ))}
           </RadioGroup>
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row justify-between items-center p-6 border-t gap-3">
+        <CardFooter className='flex flex-col sm:flex-row justify-between items-center p-6 border-t gap-3'>
           <Button
-            variant="outline"
+            variant='outline'
             onClick={() => navigateQuestion('prev')}
             disabled={currentQuestionIndex === 0 || isSubmittingQuiz}
           >
-            Previous
+            {t('lessonContentWrapper.prev')}
           </Button>
           {currentQuestionIndex === questions.length - 1 ? (
             <Button
@@ -579,13 +594,13 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                 isSubmittingQuiz ||
                 selectedAnswers[currentQ.questionId] === undefined
               }
-              size="lg"
-              className="bg-green-600 hover:bg-green-700 text-white dark:text-white"
+              size='lg'
+              className='bg-green-600 hover:bg-green-700 text-white dark:text-white'
             >
               {isSubmittingQuiz && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}{' '}
-              Submit Quiz
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              )}
+              {t('lessonContent.quiz.playing.submitBtn')}
             </Button>
           ) : (
             <Button
@@ -595,7 +610,7 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
                 selectedAnswers[currentQ.questionId] === undefined
               }
             >
-              Next Question
+              {t('lessonContent.quiz.playing.nextBtn')}
             </Button>
           )}
         </CardFooter>
@@ -604,8 +619,8 @@ const QuizPlayer: React.FC<QuizPlayerProps> = ({
   }
 
   return (
-    <div className="p-8 text-center text-muted-foreground min-h-[400px] flex items-center justify-center bg-card rounded-xl shadow-lg">
-      Quiz content is currently unavailable. Please try refreshing the page.
+    <div className='p-8 text-center text-muted-foreground min-h-[400px] flex items-center justify-center bg-card rounded-xl shadow-lg'>
+      {t('lessonContent.quiz.unavailable')}
     </div>
   );
 };

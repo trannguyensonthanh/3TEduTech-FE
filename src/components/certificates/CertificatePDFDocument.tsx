@@ -9,6 +9,7 @@ import {
   Font,
   Image,
 } from '@react-pdf/renderer';
+import { useTranslation } from 'react-i18next';
 
 interface CertificatePDFProps {
   studentName: string;
@@ -232,18 +233,11 @@ export const CertificatePDFDocument: React.FC<CertificatePDFProps> = ({
   logoUrl = 'https://i.imgur.com/Fv9X0sX.jpeg', // Đảm bảo URL này public hoặc là base64
   signatureImageUrl,
 }) => {
-  console.log('CertificatePDFDocument props:', {
-    studentName,
-    courseName,
-    instructorName,
-    completionDate,
-    dynamicCertificateId,
-    logoUrl,
-    signatureImageUrl,
-  });
+  const { t } = useTranslation();
+
   return (
-    <Document title={`Certificate - ${courseName}`} author="3TEduTech">
-      <Page size="A4" orientation="landscape" style={styles.page}>
+    <Document title={`Certificate - ${courseName}`} author='3TEduTech'>
+      <Page size='A4' orientation='landscape' style={styles.page}>
         {/* Decorative Borders */}
         <View style={styles.borderTopLeft} fixed />
         <View style={styles.borderBottomRight} fixed />
@@ -252,12 +246,8 @@ export const CertificatePDFDocument: React.FC<CertificatePDFProps> = ({
         <View style={styles.sectionHeader}>
           {/* Sử dụng Image component từ @react-pdf/renderer */}
           {logoUrl && <Image style={styles.logo} src={logoUrl} />}
-          {/* Nếu logo là local, bạn cần import: import logoSrc from './logo.png'; và src={logoSrc} */}
-          {/* Tạm thời không hiển thị logo nếu chưa có cách load an toàn */}
-          <Text style={styles.mainTitle}>Certificate of Completion</Text>
-          <Text style={styles.subTitle}>
-            This certificate is proudly presented to
-          </Text>
+          <Text style={styles.mainTitle}>{t('certificate.title')}</Text>
+          <Text style={styles.subTitle}>{t('certificate.presentedTo')}</Text>
         </View>
 
         <View style={styles.studentNameSection}>
@@ -266,7 +256,7 @@ export const CertificatePDFDocument: React.FC<CertificatePDFProps> = ({
 
         <View style={styles.courseInfoSection}>
           <Text style={styles.courseLabel}>
-            For successfully completing the online course
+            {t('certificate.forCompleting')}
           </Text>
           <Text style={styles.courseName}>{courseName}</Text>
         </View>
@@ -280,26 +270,28 @@ export const CertificatePDFDocument: React.FC<CertificatePDFProps> = ({
             )}
             <View style={styles.signatureLine}>
               <Text> </Text>
-              {/* Empty text to ensure line height */}{' '}
             </View>
             <Text style={styles.detailText}>{instructorName}</Text>
-            <Text style={styles.detailLabel}>Instructor</Text>
+            <Text style={styles.detailLabel}>
+              {t('certificate.instructor')}
+            </Text>
           </View>
           <View style={styles.detailBlock}>
             <View style={styles.signatureLine}>
               <Text style={styles.detailText}>{completionDate}</Text>
             </View>
-            <Text style={styles.detailLabel}>Completion Date</Text>
+            <Text style={styles.detailLabel}>
+              {t('certificate.completionDate')}
+            </Text>
           </View>
         </View>
 
         <View style={styles.footerSection}>
           <Text style={styles.certificateIdText}>
-            Certificate ID: {dynamicCertificateId}
+            {t('certificate.certificateId', { id: dynamicCertificateId })}
           </Text>
           <Text style={styles.verifyText}>
-            Verify at: yourdomain.com/verify-certificate?id=
-            {dynamicCertificateId}
+            {t('certificate.verifyAt', { id: dynamicCertificateId })}
           </Text>
         </View>
       </Page>

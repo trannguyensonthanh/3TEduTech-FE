@@ -1,254 +1,224 @@
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+// src/pages/admin/PaymentMethodsManagement.tsx
+import React, { useState } from 'react';
+import {
+  usePaymentMethods,
+  useCreatePaymentMethod,
+  useUpdatePaymentMethod,
+  useDeletePaymentMethod,
+} from '@/hooks/queries/paymentMethod.queries';
+import { TPaymentMethodSchema } from '@/lib/validators/paymentMethodValidator';
+import { PaymentMethod } from '@/services/paymentMethod.service';
+
+// Layouts & Components
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import PaymentMethodsTable, {
-  PaymentMethod,
-} from '@/components/admin/payment-methods/PaymentMethodsTable';
-import PaymentMethodDialog from '@/components/admin/payment-methods/PaymentMethodDialog';
-import DeletePaymentMethodDialog from '@/components/admin/payment-methods/DeletePaymentMethodDialog';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { useToast } from '@/components/ui/use-toast';
+import PaymentMethodsTable from '@/components/admin/payment-methods/PaymentMethodsTable';
+import PaymentMethodDialog from '@/components/admin/payment-methods/PaymentMethodDialog';
+import DeletePaymentMethodDialog from '@/components/admin/payment-methods/DeletePaymentMethodDialog';
+import { Icons } from '@/components/common/Icons';
+import { toast } from 'sonner';
 
-// Mock data for payment methods
-const mockPaymentMethods: PaymentMethod[] = [
-  { id: 'MOMO', name: 'MoMo E-Wallet' },
-  { id: 'VNPAY', name: 'VNPay Payment Gateway' },
-  { id: 'BANK', name: 'Bank Transfer' },
-  { id: 'CRYPTO', name: 'Cryptocurrency' },
-  { id: 'PAYPAL', name: 'PayPal' },
-  { id: 'STRIPE', name: 'Stripe' },
-  { id: 'CASH', name: 'Cash On Delivery' },
-];
+const PaymentMethodsManagement: React.FC = () => {
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
-const PaymentMethodsManagement = () => {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(
     null
   );
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [methodToDelete, setMethodToDelete] = useState<PaymentMethod | null>(
-    null
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
-  const itemsPerPage = 10;
+  const { data, isLoading, isError, error } = usePaymentMethods({
+    page,
+    limit: itemsPerPage,
+  });
 
-  useEffect(() => {
-    // In a real app, fetch payment methods from API
-    // For now, using mock data
-    const fetchPaymentMethods = async () => {
-      try {
-        setIsLoading(true);
-        // Simulating API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setPaymentMethods(mockPaymentMethods);
-        setTotalPages(Math.ceil(mockPaymentMethods.length / itemsPerPage));
-      } catch (error) {
-        console.error('Error fetching payment methods:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load payment methods. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const createMutation = useCreatePaymentMethod({
+    onSuccess: () => {
+      toast.success('Payment method created successfully!');
+      setIsDialogOpen(false);
+    },
+    onError: (err) =>
+      toast.error(err.message || 'Failed to create payment method.'),
+  });
 
-    fetchPaymentMethods();
-  }, [toast]);
+  const updateMutation = useUpdatePaymentMethod({
+    onSuccess: () => {
+      toast.success('Payment method updated successfully!');
+      setIsDialogOpen(false);
+    },
+    onError: (err) =>
+      toast.error(err.message || 'Failed to update payment method.'),
+  });
 
-  const handleAddPaymentMethod = (data: { id: string; name: string }) => {
-    // Check if payment method ID already exists
-    if (
-      paymentMethods.some(
-        (method) => method.id.toUpperCase() === data.id.toUpperCase()
-      )
-    ) {
-      toast({
-        title: 'Error',
-        description: `Payment method with ID ${data.id.toUpperCase()} already exists.`,
-        variant: 'destructive',
-      });
-      return;
-    }
+  const deleteMutation = useDeletePaymentMethod({
+    onSuccess: () => {
+      toast.success('Payment method deleted successfully!');
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (err) =>
+      toast.error(err.message || 'Failed to delete payment method.'),
+  });
 
-    // In a real app, make API call to add payment method
-    const newMethod: PaymentMethod = {
-      id: data.id.toUpperCase(),
-      name: data.name,
-    };
-
-    setPaymentMethods([...paymentMethods, newMethod]);
-    toast({
-      title: 'Success',
-      description: 'Payment method added successfully.',
-    });
-  };
-
-  const handleEditMethod = (method: PaymentMethod) => {
-    setSelectedMethod(method);
-    setIsAddDialogOpen(true);
-  };
-
-  const handleUpdateMethod = (data: { id: string; name: string }) => {
-    if (!selectedMethod) return;
-
-    // In a real app, make API call to update payment method
-    const updatedMethods = paymentMethods.map((method) =>
-      method.id === selectedMethod.id ? { ...method, name: data.name } : method
-    );
-
-    setPaymentMethods(updatedMethods);
+  const handleOpenAddDialog = () => {
     setSelectedMethod(null);
-    toast({
-      title: 'Success',
-      description: 'Payment method updated successfully.',
-    });
+    setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (method: PaymentMethod) => {
-    setMethodToDelete(method);
+  const handleOpenEditDialog = (method: PaymentMethod) => {
+    setSelectedMethod(method);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (method: PaymentMethod) => {
+    setSelectedMethod(method);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteMethod = () => {
-    if (!methodToDelete) return;
-
-    // In a real app, make API call to delete payment method
-    const updatedMethods = paymentMethods.filter(
-      (method) => method.id !== methodToDelete.id
-    );
-    setPaymentMethods(updatedMethods);
-    setMethodToDelete(null);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: 'Success',
-      description: 'Payment method deleted successfully.',
-    });
+  const handleDialogSubmit = (data: TPaymentMethodSchema) => {
+    if (selectedMethod) {
+      // Editing
+      const changedData: Partial<TPaymentMethodSchema> = Object.keys(
+        data
+      ).reduce((acc, key) => {
+        if (data[key] !== selectedMethod[key]) acc[key] = data[key];
+        return acc;
+      }, {});
+      if (Object.keys(changedData).length > 0) {
+        updateMutation.mutate({
+          methodId: selectedMethod.methodId,
+          data: changedData,
+        });
+      } else {
+        setIsDialogOpen(false);
+      }
+    } else {
+      // Creating
+      createMutation.mutate({
+        methodId: data.methodId!,
+        methodName: data.methodName,
+        description: data.description,
+      });
+    }
   };
 
-  // Calculate pagination
-  const paginatedMethods = paymentMethods.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleDeleteConfirm = () => {
+    if (selectedMethod) {
+      deleteMutation.mutate(selectedMethod.methodId);
+    }
+  };
+
+  if (isError) {
+    toast.error(error.message || 'An error occurred while fetching data.');
+  }
+
+  const totalPages = data?.totalPages || 1;
+  const isEditing = !!selectedMethod;
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Payment Methods Management
-          </h1>
-          <Button
-            onClick={() => {
-              setSelectedMethod(null);
-              setIsAddDialogOpen(true);
-            }}
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-4 w-4" /> Add Payment Method
+      <div className='space-y-6'>
+        <div className='flex flex-col sm:flex-row justify-between sm:items-center gap-4'>
+          <div>
+            <h1 className='text-2xl font-bold tracking-tight'>
+              Payment Methods
+            </h1>
+            <p className='text-muted-foreground'>
+              Manage all supported payment methods in the system.
+            </p>
+          </div>
+          <Button onClick={handleOpenAddDialog}>
+            <Icons.plus className='mr-2 h-4 w-4' /> Add Method
           </Button>
         </div>
 
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Supported Payment Methods</CardTitle>
+          <CardHeader>
+            <CardTitle>Supported Methods</CardTitle>
+            <CardDescription>
+              A list of payment methods available for checkout.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="py-10 text-center text-muted-foreground">
-                Loading payment methods...
-              </div>
-            ) : (
-              <>
-                <PaymentMethodsTable
-                  paymentMethods={paginatedMethods}
-                  onEdit={handleEditMethod}
-                  onDelete={handleDeleteClick}
-                />
-                {totalPages > 1 && (
-                  <div className="mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() =>
-                              setCurrentPage((p) => Math.max(1, p - 1))
-                            }
-                            className={
-                              currentPage === 1
-                                ? 'pointer-events-none opacity-50'
-                                : 'cursor-pointer'
-                            }
-                          />
-                        </PaginationItem>
-
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              isActive={currentPage === page}
-                              onClick={() => setCurrentPage(page)}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() =>
-                              setCurrentPage((p) => Math.min(totalPages, p + 1))
-                            }
-                            className={
-                              currentPage === totalPages
-                                ? 'pointer-events-none opacity-50'
-                                : 'cursor-pointer'
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </>
-            )}
+            <PaymentMethodsTable
+              paymentMethods={data?.paymentMethods}
+              isLoading={isLoading}
+              onEdit={handleOpenEditDialog}
+              onDelete={handleOpenDeleteDialog}
+            />
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <div className='flex items-center justify-center'>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <PaginationPrevious
+                      href='#'
+                      onClick={(e) => e.preventDefault()}
+                    />
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <span className='px-4 py-2 text-sm font-medium'>
+                    Page {page} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <PaginationNext
+                      href='#'
+                      onClick={(e) => e.preventDefault()}
+                    />
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       <PaymentMethodDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
         paymentMethod={selectedMethod}
-        onSubmit={selectedMethod ? handleUpdateMethod : handleAddPaymentMethod}
-        isEditing={!!selectedMethod}
+        onSubmit={handleDialogSubmit}
+        isEditing={isEditing}
+        isPending={createMutation.isPending || updateMutation.isPending}
       />
 
       <DeletePaymentMethodDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDeleteMethod}
-        methodName={methodToDelete?.name || ''}
-        methodId={methodToDelete?.id || ''}
+        onConfirm={handleDeleteConfirm}
+        paymentMethod={selectedMethod}
+        isPending={deleteMutation.isPending}
       />
     </AdminLayout>
   );

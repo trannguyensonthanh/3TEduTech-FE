@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/course.service.ts
 
 import { Section } from '@/services/section.service';
@@ -29,6 +28,20 @@ export interface CourseListItem {
   lastUpdated?: IsoDateTimeString; // Thêm từ mock data trước đó, giữ lại nếu API có thể trả về
   // Các trường 'hasAssignments', 'hasCertificate' nếu API trả về
   hasCertificate?: boolean;
+  pricing: PricingDetails;
+}
+
+// Cấu trúc giá mới
+export interface PriceInfo {
+  currency: 'VND' | 'USD' | string;
+  originalPrice: number;
+  discountedPrice: number | null;
+}
+
+export interface PricingDetails {
+  base: PriceInfo;
+  display: PriceInfo;
+  exchangeRateUsed?: number;
 }
 
 export interface Course {
@@ -73,6 +86,7 @@ export interface Course {
   instructorAccountId?: number; // Thêm nếu cần
   totalDuration?: number; // Tổng thời gian của tất cả các bài học trong khóa học
   totalLessons?: number; // Tổng số bài học trong khóa học
+  pricing: PricingDetails;
 }
 
 export interface GetCoursesByCategorySlugParams {
@@ -177,16 +191,8 @@ export interface CourseQueryParams {
 export interface CreateCourseData {
   courseName: string;
   categoryId: number;
-  levelId: number;
-  shortDescription: string;
-  fullDescription: string;
-  requirements?: string;
-  learningOutcomes?: string;
-  thumbnailUrl?: string; // URL ban đầu có thể ko cần nếu upload sau
-  introVideoUrl?: string;
-  originalPrice: number;
-  discountedPrice?: number;
-  language?: string;
+  levelId?: number; // Level có thể không bắt buộc ở bước đầu
+  language: 'vi' | 'en'; // Mặc định là Tiếng Việt
 }
 
 export interface UpdateCourseData {
@@ -387,20 +393,6 @@ export const toggleCourseFeature = async (
 };
 
 /**
- * Đồng bộ hóa toàn bộ curriculum của khóa học với backend.
- * @param courseId ID của khóa học.
- * @param payload Dữ liệu curriculum mới { sections: Section[] }.
- * @returns Promise chứa response từ API.
- */
-export const syncCourseCurriculum = async (
-  courseId: number,
-  payload: SyncCurriculumPayload
-): Promise<SyncCurriculumResponse> => {
-  // Dùng PUT vì mang tính chất thay thế toàn bộ curriculum
-  return apiHelper.put(`/courses/${courseId}/curriculum`, payload);
-};
-
-/**
  * Cập nhật thứ tự hàng loạt cho các Sections của một Course.
  * @param courseId ID của khóa học.
  * @param orderedSections Mảng các object { id: sectionId, order: newOrder }.
@@ -439,12 +431,6 @@ export interface ReviewCourseData {
   adminNotes?: string;
 }
 
-// /** Admin: Lấy danh sách khóa học đang chờ duyệt */
-// export const getPendingCoursesForAdmin = async (
-//   params?: PendingCourseQueryParams
-// ): Promise<PendingCourseListResponse> => {
-//   return apiHelper.get('/courses/reviews/pending-approval', undefined, params);
-// };
 /** Admin: Lấy danh sách các yêu cầu phê duyệt khóa học */
 export const getApprovalRequests = async (
   params?: ApprovalRequestQueryParams

@@ -1,45 +1,34 @@
+// src/components/admin/courses/LessonDetailsDialog.tsx
 import React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, FileText, Play } from 'lucide-react';
-
-interface Lesson {
-  id: number;
-  title: string;
-  duration: string;
-  type: string;
-  isPreview: boolean;
-  videoUrl?: string;
-  content?: string;
-  questions?: Array<{
-    id: number;
-    text: string;
-    explanation: string;
-    options: Array<{
-      id: number;
-      text: string;
-      isCorrect: boolean;
-    }>;
-  }>;
-  resources?: Array<{
-    id: number;
-    title: string;
-    type: string;
-  }>;
-  sectionTitle: string;
-}
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Icons } from '@/components/common/Icons';
+import { Separator } from '@/components/ui/separator';
+import { useLessonVideoUrl } from '@/hooks/queries/lesson.queries';
+import {
+  getYoutubeEmbedUrl,
+  extractYoutubeId,
+  getVimeoEmbedUrl,
+  extractVimeoId,
+} from '@/utils/video.util';
+import { Lesson } from '@/types/common.types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatDurationShort } from '@/utils/formatter.util';
 
 interface LessonDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lesson: Lesson | null;
+  lesson: (Lesson & { sectionTitle?: string }) | null;
 }
 
 const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
@@ -47,129 +36,127 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   onOpenChange,
   lesson,
 }) => {
+  const lessonId = lesson?.lessonId ? Number(lesson.lessonId) : undefined;
+  const isCloudinaryVideo =
+    lesson?.videoSourceType === 'CLOUDINARY' && lesson?.externalVideoId;
+
+  const { data: signedUrlData, isLoading: isLoadingUrl } = useLessonVideoUrl(
+    isCloudinaryVideo ? lessonId : undefined,
+    { enabled: open && !!isCloudinaryVideo }
+  );
+
   if (!lesson) return null;
 
+  let videoEmbedUrl: string | null = null;
+  if (lesson.videoSourceType === 'YOUTUBE') {
+    videoEmbedUrl = getYoutubeEmbedUrl(
+      extractYoutubeId(lesson.externalVideoId || '') || ''
+    );
+  } else if (lesson.videoSourceType === 'VIMEO') {
+    videoEmbedUrl = getVimeoEmbedUrl(
+      extractVimeoId(lesson.externalVideoId || '') || ''
+    );
+  } else if (isCloudinaryVideo) {
+    videoEmbedUrl = signedUrlData?.signedUrl || null;
+  }
+  console.log('lesson', lesson);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className='max-w-2xl max-h-[85vh]'>
         <DialogHeader>
-          <DialogTitle>{lesson.title}</DialogTitle>
+          <DialogTitle className='truncate' title={lesson.lessonName}>
+            {lesson.lessonName}
+          </DialogTitle>
+          <DialogDescription>
+            Lesson details from section: "{lesson.sectionTitle}"
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {lesson.type === 'VIDEO' && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Video Content</h3>
-              <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                {lesson.videoUrl ? (
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src={lesson.videoUrl}
-                    title={lesson.title}
-                    className="rounded-md"
-                    allowFullScreen
-                  ></iframe>
-                ) : (
-                  <div className="text-center">
-                    <Play className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">
-                      No video URL provided
+        <ScrollArea className='max-h-[65vh] p-1 -mx-1'>
+          <div className='px-4 py-2 space-y-4'>
+            {lesson.lessonType === 'VIDEO' && (
+              <div className='space-y-2'>
+                <h4 className='font-semibold'>Video Content</h4>
+                <div className='aspect-video bg-muted rounded-md flex items-center justify-center'>
+                  {isLoadingUrl ? (
+                    <Icons.spinner className='h-8 w-8 animate-spin' />
+                  ) : videoEmbedUrl ? (
+                    <iframe
+                      src={videoEmbedUrl}
+                      title={lesson.lessonName}
+                      className='w-full h-full rounded-md'
+                      allowFullScreen
+                    />
+                  ) : (
+                    <p className='text-sm text-muted-foreground'>
+                      Video preview not available.
                     </p>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4 mr-1" />
-                Duration: {lesson.duration}
-              </div>
-            </div>
-          )}
-
-          {lesson.type === 'TEXT' && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Text Content</h3>
-              <div className="border rounded-md p-4 prose max-w-none">
-                {lesson.content ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: lesson.content }}
-                  ></div>
-                ) : (
-                  <p className="text-muted-foreground">No content provided.</p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {lesson.type === 'QUIZ' && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Quiz Content</h3>
-              {lesson.questions && lesson.questions.length > 0 ? (
-                <div className="space-y-4">
-                  {lesson.questions.map((question, index) => (
-                    <div key={question.id} className="border rounded-md p-4">
-                      <h4 className="font-medium mb-2">
-                        Question {index + 1}: {question.text}
-                      </h4>
-                      <div className="space-y-2 ml-4">
-                        {question.options.map((option) => (
-                          <div key={option.id} className="flex items-center">
-                            <div
-                              className={`h-4 w-4 rounded-full mr-2 ${
-                                option.isCorrect
-                                  ? 'bg-green-500'
-                                  : 'border border-gray-300'
-                              }`}
-                            ></div>
-                            <span>{option.text}</span>
-                            {option.isCorrect && (
-                              <span className="text-green-500 ml-2 text-sm">
-                                (Correct)
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {question.explanation && (
-                        <div className="mt-2 text-sm bg-muted p-2 rounded-md">
-                          <span className="font-medium">Explanation:</span>{' '}
-                          {question.explanation}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  No quiz questions provided.
-                </p>
-              )}
-            </div>
-          )}
-
-          {lesson.resources && lesson.resources.length > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-2">Resources</h3>
-              <div className="space-y-2">
-                {lesson.resources.map((resource) => (
-                  <div
-                    key={resource.id}
-                    className="flex items-center p-2 border rounded-md"
-                  >
-                    <FileText className="h-5 w-5 mr-2 text-muted-foreground" />
-                    <span>{resource.title}</span>
-                    <Badge variant="outline" className="ml-2">
-                      {resource.type.toUpperCase()}
-                    </Badge>
+              </div>
+            )}
+            {lesson.lessonType === 'TEXT' && (
+              <div className='space-y-2'>
+                <h4 className='font-semibold'>Text Content</h4>
+                <div
+                  className='border rounded-md p-4 prose prose-sm dark:prose-invert max-w-none'
+                  dangerouslySetInnerHTML={{
+                    __html: lesson.textContent || '<p>No content.</p>',
+                  }}
+                />
+              </div>
+            )}
+            {lesson.lessonType === 'QUIZ' && (
+              <div className='space-y-2'>
+                <h4 className='font-semibold'>Quiz Questions</h4>
+                {lesson.questions && lesson.questions.length > 0 ? (
+                  <div className='space-y-3'>
+                    {lesson.questions.map((q, index) => (
+                      <div key={q.questionId} className='p-3 border rounded-md'>
+                        <p className='font-medium text-sm'>
+                          Q{index + 1}: {q.questionText}
+                        </p>
+                        <ul className='list-disc pl-5 mt-2 space-y-1'>
+                          {q.options.map((opt) => (
+                            <li
+                              key={opt.optionId}
+                              className={`text-xs ${opt.isCorrectAnswer ? 'text-green-600 font-semibold' : 'text-muted-foreground'}`}
+                            >
+                              {opt.optionText}{' '}
+                              {opt.isCorrectAnswer && (
+                                <Icons.check className='inline-block ml-1 h-4 w-4' />
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className='text-sm text-muted-foreground'>
+                    No questions in this quiz.
+                  </p>
+                )}
+              </div>
+            )}
+            <Separator />
+            <div className='flex justify-between text-sm'>
+              <div>
+                <strong>Duration:</strong>{' '}
+                {formatDurationShort(lesson.videoDurationSeconds || 0)}
+              </div>
+              <div>
+                <strong>Previewable:</strong>{' '}
+                {lesson.isFreePreview ? 'Yes' : 'No'}
               </div>
             </div>
-          )}
-        </div>
-
+          </div>
+        </ScrollArea>
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>Close</Button>
+          <DialogClose asChild>
+            <Button type='button' variant='outline'>
+              Close
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

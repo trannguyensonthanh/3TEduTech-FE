@@ -12,6 +12,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skill } from '@/services/skill.service';
+import { useTranslation } from 'react-i18next';
 
 interface SkillsTableProps {
   skills: Skill[];
@@ -24,17 +25,30 @@ const SkillsTable: React.FC<SkillsTableProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation();
   console.log('SkillsTable rendered with skills:', skills);
   return (
     <Table>
       <TableHeader>
-        <TableRow className="bg-muted/50">
-          <TableHead className="w-12 font-semibold">ID</TableHead>
-          <TableHead className="font-semibold">Skill Name</TableHead>
-          <TableHead className="font-semibold">Description</TableHead>
-          <TableHead className="font-semibold">Created At</TableHead>
-          <TableHead className="font-semibold">Updated At</TableHead>
-          <TableHead className="text-right font-semibold">Actions</TableHead>
+        <TableRow className='bg-muted/50'>
+          <TableHead className='w-12 font-semibold'>
+            {t('skillsTable.headers.id')}
+          </TableHead>
+          <TableHead className='font-semibold'>
+            {t('skillsTable.headers.skillName')}
+          </TableHead>
+          <TableHead className='font-semibold'>
+            {t('skillsTable.headers.description')}
+          </TableHead>
+          <TableHead className='font-semibold'>
+            {t('skillsTable.headers.createdAt')}
+          </TableHead>
+          <TableHead className='font-semibold'>
+            {t('skillsTable.headers.updatedAt')}
+          </TableHead>
+          <TableHead className='text-right font-semibold'>
+            {t('skillsTable.headers.actions')}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -42,51 +56,53 @@ const SkillsTable: React.FC<SkillsTableProps> = ({
           <TableRow>
             <TableCell
               colSpan={6}
-              className="text-center py-8 text-muted-foreground"
+              className='text-center py-8 text-muted-foreground'
             >
-              No skills found.
+              {t('skillsTable.noSkills')}
             </TableCell>
           </TableRow>
         ) : (
           skills.map((skill) => (
             <TableRow
-              key={skill.SkillID}
-              className="hover:bg-muted/30 transition-colors"
+              key={skill.skillId}
+              className='hover:bg-muted/30 transition-colors'
             >
-              <TableCell>{skill.SkillID}</TableCell>
+              <TableCell>{skill.skillId}</TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <Badge
-                    variant="outline"
-                    className="bg-primary/10 text-primary border-primary/20"
+                    variant='outline'
+                    className='bg-primary/10 text-primary border-primary/20'
                   >
-                    {skill.SkillName}
+                    {skill.skillName}
                   </Badge>
                 </div>
               </TableCell>
-              <TableCell className="max-w-md">
-                <div className="truncate">{skill.Description || '—'}</div>
+              <TableCell className='max-w-md'>
+                <div className='truncate'>
+                  {skill.description || t('skillsTable.emptyDescription')}
+                </div>
               </TableCell>
-              <TableCell>{formatDate(skill.CreatedAt)}</TableCell>
-              <TableCell>{formatDate(skill.UpdatedAt)}</TableCell>
-              <TableCell className="text-right space-x-2">
+              <TableCell>{formatDate(skill.createdAt)}</TableCell>
+              <TableCell>{formatDate(skill.updatedAt)}</TableCell>
+              <TableCell className='text-right space-x-2'>
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  variant='ghost'
+                  size='icon'
                   onClick={() => onEdit(skill)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  className='text-blue-600 hover:text-blue-800 hover:bg-blue-50'
                 >
-                  <Edit className="h-4 w-4" />
-                  <span className="sr-only">Edit</span>
+                  <Edit className='h-4 w-4' />
+                  <span className='sr-only'>{t('skillsTable.edit')}</span>
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDelete(skill.SkillID)}
-                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                  variant='ghost'
+                  size='icon'
+                  onClick={() => onDelete(skill.skillId)}
+                  className='text-red-600 hover:text-red-800 hover:bg-red-50'
                 >
-                  <Trash className="h-4 w-4" />
-                  <span className="sr-only">Delete</span>
+                  <Trash className='h-4 w-4' />
+                  <span className='sr-only'>{t('skillsTable.delete')}</span>
                 </Button>
               </TableCell>
             </TableRow>

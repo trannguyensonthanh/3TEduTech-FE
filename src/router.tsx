@@ -1,167 +1,186 @@
+// src/AppRouter.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Import các component bảo vệ và tiện ích
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ScrollToTopHandler from '@/utils/ScrollToTopHandler';
+import IntroHandler from '@/components/auth/IntroHandler'; // Component xử lý logic intro
+
+// --- Import Pages ---
+
+// Public Pages
 import Index from './pages/Index';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetailPage';
 import Instructors from './pages/AllInstructorsPage';
 import InstructorDetail from './pages/InstructorProfilePage';
 import About from './pages/AboutPage';
-import CourseDetail from './pages/CourseDetail';
-import CourseSectionDetail from './pages/CourseSectionDetail';
-// import LessonView from './pages/LessonView';
-import NotFound from './pages/NotFound';
+import Privacy from '@/pages/Privacy';
+import TermsInstructor from '@/pages/TermsInstructor';
+
+// Auth Pages
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import ActivateAccount from './pages/auth/ActivateAccount';
 import SocialLoginCallback from './pages/auth/SocialLoginCallback';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import UsersManagement from './pages/admin/UsersManagement';
-import CoursesManagement from './pages/admin/CoursesManagement';
-import CourseApprovals from './pages/admin/CourseApprovals';
-// import PaymentManagement from './pages/admin/PaymentManagement';
-// import PayoutManagement from './pages/admin/PayoutManagement';
-import CategoriesManagement from './pages/admin/CategoriesManagement';
-import PromotionsManagement from './pages/admin/PromotionsManagement';
-// import AdminSettings from './pages/admin/AdminSettings';
-import InstructorDashboard from './pages/instructor/InstructorDashboard';
-import InstructorCourses from './pages/instructor/InstructorCourses';
-import CourseCreation from './pages/instructor/CourseCreation';
-// import CourseEdit from './pages/instructor/CourseEditt';
-// import InstructorAnalytics from './pages/instructor/InstructorAnalytics';
-import InstructorStudents from './pages/instructor/InstructorStudents';
-import InstructorEarnings from './pages/instructor/InstructorEarnings';
-// import InstructorEarnings_v2 from '@/pages/instructor/InstructorEarnings_v2';
-import InstructorRegister from './pages/instructor/InstructorRegister';
-import InstructorRegisterSuccess from './pages/instructor/InstructorRegisterSuccess';
-import InstructorProfile from './pages/instructor/InstructorProfile';
-// import InstructorSettings from './pages/instructor/InstructorSettings';
-import InstructorCourseApprovals from './pages/instructor/InstructorCourseApprovals';
-// import InstructorQnA from '@/pages/instructor/InstructorQnA';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
+
+// Authenticated User Pages
 import MyCourses from './pages/MyCourses';
 import UserProfile from './pages/UserProfilePage';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import CheckoutReturn from './pages/CheckoutReturn';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCanceled from './pages/PaymentCanceled';
 import OrderHistory from '@/pages/OrderHistory';
 import Certificates from '@/pages/Certificates';
-// import NotificationSettings from '@/pages/user/NotificationSettings';
+import Notifications from '@/pages/user/Notifications';
 import CourseLearningPage from '@/pages/CourseLearningPage';
+
+// Instructor Pages
+import InstructorRegister from './pages/instructor/InstructorRegister';
+import InstructorRegisterSuccess from './pages/instructor/InstructorRegisterSuccess';
+// import InstructorDashboard from './pages/instructor/InstructorDashboard';
+import InstructorCourses from './pages/instructor/InstructorCourses';
+import CourseCreation from './pages/instructor/CourseCreation';
+import CourseEdit from '@/pages/instructor/CourseEdit';
+import InstructorStudents from './pages/instructor/InstructorStudents';
+import InstructorEarnings from './pages/instructor/InstructorEarnings';
+import InstructorProfile from './pages/instructor/InstructorProfile';
+import InstructorCourseApprovals from './pages/instructor/InstructorCourseApprovals';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UsersManagement from './pages/admin/UsersManagement';
+import CoursesManagement from './pages/admin/CoursesManagement';
+import CourseApprovals from './pages/admin/CourseApprovals';
+import CategoriesManagement from './pages/admin/CategoriesManagement';
+import PromotionsManagement from './pages/admin/PromotionsManagement';
 import SkillsManagement from '@/pages/admin/SkillsManagement';
 import LevelsManagement from './pages/admin/LevelsManagement';
 import CurrenciesManagement from './pages/admin/CurrenciesManagement';
 import PaymentMethodsManagement from './pages/admin/PaymentMethodsManagement';
 import ExchangeRatesManagement from './pages/admin/ExchangeRatesManagement';
-import CourseEdit from '@/pages/instructor/CourseEdit';
-import Notifications from '@/pages/user/Notifications';
-import IntroPage from '@/pages/IntroPage';
-import Privacy from '@/pages/Privacy';
-import TermsInstructor from '@/pages/TermsInstructor';
-import ScrollToTopHandler from '@/utils/ScrollToTopHandler';
-const AppRouter = () => {
-  const hasSeenIntro = localStorage.getItem('hasSeenIntro') === 'true';
 
+// Utility Pages
+import IntroPage from '@/pages/IntroPage';
+import NotFound from './pages/NotFound';
+import Unauthorized from './pages/Unauthorized';
+import CryptoPaymentPage from '@/pages/CryptoPaymentPage';
+import AdminSettings from '@/pages/admin/AdminSettings';
+import PayoutManagement from '@/pages/admin/PayoutManagement';
+const AppRouter = () => {
   return (
     <BrowserRouter>
       <ScrollToTopHandler />
       <Routes>
-        <Route
-          path="/"
-          element={!hasSeenIntro ? <Navigate to="/intro" replace /> : <Index />}
-        />
-        <Route path="/intro" element={<IntroPage />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/courses/:slug" element={<CourseDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/my-courses" element={<MyCourses />} />
-        <Route path="/user/notifications" element={<Notifications />} />
-        <Route path="/profile" element={<UserProfile />} />
-        <Route path="/orders" element={<OrderHistory />} />
+        {/* //======= 1. Public Routes (Ai cũng có thể truy cập) =======// */}
+        <Route path='/' element={<IntroHandler />} />
+        <Route path='/intro' element={<IntroPage />} />
+        <Route path='/courses' element={<Courses />} />
+        <Route path='/courses/:slug' element={<CourseDetail />} />
+        <Route path='/categories' element={<Categories />} />
+        <Route path='/categories/:slug' element={<CategoryDetail />} />
+        <Route path='/instructors' element={<Instructors />} />
+        <Route path='/instructors/:idOrSlug' element={<InstructorDetail />} />
+        <Route path='/about' element={<About />} />
+        <Route path='/privacy' element={<Privacy />} />
+        <Route path='/terms-instructor' element={<TermsInstructor />} />
 
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms-instructor" element={<TermsInstructor />} />
-        {/* <Route
-          path="/profile/notifications"
-          element={<NotificationSettings />}
-        /> */}
-        <Route path="/certificates" element={<Certificates />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/categories/:slug" element={<CategoryDetail />} />
-        <Route path="/instructors" element={<Instructors />} />
-        <Route path="/instructors/:idOrSlug" element={<InstructorDetail />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/verify-email" element={<ActivateAccount />} />
-        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-        <Route path="/auth/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/auth/social-success" element={<SocialLoginCallback />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/users" element={<UsersManagement />} />
-        <Route path="/admin/courses" element={<CoursesManagement />} />
-        <Route path="/admin/course-approvals" element={<CourseApprovals />} />
-        {/* <Route path="/admin/payments" element={<PaymentManagement />} /> */}
-        {/* <Route path="/admin/payouts" element={<PayoutManagement />} /> */}
-        <Route path="/admin/categories" element={<CategoriesManagement />} />
-        <Route path="/admin/promotions" element={<PromotionsManagement />} />
-        <Route path="/admin/skills" element={<SkillsManagement />} />
-        <Route path="/admin/levels" element={<LevelsManagement />} />
-        <Route path="/admin/currencies" element={<CurrenciesManagement />} />
+        {/* Auth-related public routes */}
+        <Route path='/instructor/register' element={<InstructorRegister />} />
         <Route
-          path="/admin/payment-methods"
-          element={<PaymentMethodsManagement />}
-        />
-        <Route
-          path="/admin/exchange-rates"
-          element={<ExchangeRatesManagement />}
-        />
-        {/* <Route path="/admin/settings" element={<AdminSettings />} /> */}
-        <Route path="/instructor" element={<InstructorDashboard />} />
-        <Route path="/instructor/courses" element={<InstructorCourses />} />
-        <Route path="/instructor/courses/create" element={<CourseCreation />} />
-        <Route
-          path="/instructor/courses/:courseSlug/edit"
-          element={<CourseEdit />}
-        />
-        {/* <Route path="/instructor/analytics" element={<InstructorAnalytics />} /> */}
-        <Route path="/instructor/students" element={<InstructorStudents />} />
-        <Route path="/instructor/earnings" element={<InstructorEarnings />} />
-        {/* <Route
-          path="/instructor/earnings_v2"
-          element={<InstructorEarnings_v2 />}
-        /> */}
-        <Route path="/instructor/register" element={<InstructorRegister />} />
-        <Route
-          path="/instructor/register/success"
+          path='/instructor/register/success'
           element={<InstructorRegisterSuccess />}
         />
-        <Route
-          path="/instructor/course-approvals"
-          element={<InstructorCourseApprovals />}
-        />
-        <Route path="/instructor/profile" element={<InstructorProfile />} />
-        {/* <Route path="/instructor/settings" element={<InstructorSettings />} /> */}
-        {/* <Route path="/instructor/qna" element={<InstructorQnA />} /> */}
-        <Route path="/payment/result" element={<CheckoutReturn />} />
-        <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/payment-canceled" element={<PaymentCanceled />} />
-        <Route
-          path="/learn/:courseSlug/sections/:sectionId/lessons/:lessonId"
-          element={<CourseLearningPage />}
-        />
-        <Route
-          path="/courses/:courseId/sections/:sectionId"
-          element={<CourseSectionDetail />}
-        />
-        {/* <Route
-          path="/courses/:courseId/sections/:sectionId/lessons/:lessonId"
-          element={<LessonView />}
-        /> */}
-        {/* <Route
-          path="/learn/:courseSlug/lessons/:lessonId"
-          element={<CourseLearningPage />}
-        /> */}
-        <Route path="*" element={<NotFound />} />
+        <Route path='/verify-email' element={<ActivateAccount />} />
+        <Route path='/auth/forgot-password' element={<ForgotPassword />} />
+        <Route path='/auth/reset-password/:token' element={<ResetPassword />} />
+        <Route path='/auth/social-success' element={<SocialLoginCallback />} />
+
+        {/* Payment callback routes (public) */}
+        <Route path='/payment/result' element={<CheckoutReturn />} />
+        <Route path='/payment-success' element={<PaymentSuccess />} />
+        <Route path='/payment-canceled' element={<PaymentCanceled />} />
+
+        {/* //======= 2. Authenticated User Routes (Cần đăng nhập, mọi vai trò) =======// */}
+        <Route element={<ProtectedRoute />}>
+          <Route path='/my-courses' element={<MyCourses />} />
+          <Route path='/profile' element={<UserProfile />} />
+          <Route path='/user/notifications' element={<Notifications />} />
+          <Route path='/orders' element={<OrderHistory />} />
+          <Route path='/certificates' element={<Certificates />} />
+          <Route path='/cart' element={<Cart />} />
+          <Route path='/checkout' element={<Checkout />} />
+          <Route path='/payment/crypto' element={<CryptoPaymentPage />} />
+          <Route
+            path='/learn/:courseSlug/sections/:sectionId/lessons/:lessonId'
+            element={<CourseLearningPage />}
+          />
+        </Route>
+
+        {/* //======= 3. Instructor Routes (Chỉ Instructor) =======// */}
+        <Route element={<ProtectedRoute allowedRoles={['GV', 'AD', 'SA']} />}>
+          {/* Dùng /instructor làm route layout hoặc redirect */}
+          <Route
+            path='/instructor'
+            element={<Navigate to='/instructor/earnings' replace />}
+          />
+          {/* <Route
+            path='/instructor/dashboard'
+            element={<InstructorDashboard />}
+          /> */}
+          <Route path='/instructor/courses' element={<InstructorCourses />} />
+          <Route
+            path='/instructor/courses/create'
+            element={<CourseCreation />}
+          />
+          <Route
+            path='/instructor/courses/:courseSlug/edit'
+            element={<CourseEdit />}
+          />
+          <Route path='/instructor/students' element={<InstructorStudents />} />
+          <Route path='/instructor/earnings' element={<InstructorEarnings />} />
+          <Route path='/instructor/profile' element={<InstructorProfile />} />
+          <Route
+            path='/instructor/course-approvals'
+            element={<InstructorCourseApprovals />}
+          />
+        </Route>
+
+        {/* //======= 4. Admin Routes (Chỉ Admin và Super Admin) =======// */}
+        <Route element={<ProtectedRoute allowedRoles={['SA', 'AD']} />}>
+          {/* Dùng /admin làm route layout hoặc redirect */}
+          <Route
+            path='/admin'
+            element={<Navigate to='/admin/dashboard' replace />}
+          />
+          <Route path='/admin/dashboard' element={<AdminDashboard />} />
+          <Route path='/admin/users' element={<UsersManagement />} />
+          <Route path='/admin/courses' element={<CoursesManagement />} />
+          <Route path='/admin/course-approvals' element={<CourseApprovals />} />
+          <Route path='/admin/categories' element={<CategoriesManagement />} />
+          <Route path='/admin/promotions' element={<PromotionsManagement />} />
+          <Route path='/admin/skills' element={<SkillsManagement />} />
+          <Route path='/admin/levels' element={<LevelsManagement />} />
+          <Route path='/admin/currencies' element={<CurrenciesManagement />} />
+          <Route
+            path='/admin/payment-methods'
+            element={<PaymentMethodsManagement />}
+          />
+          <Route
+            path='/admin/exchange-rates'
+            element={<ExchangeRatesManagement />}
+          />
+          <Route path='/admin/settings' element={<AdminSettings />} />
+          <Route path='/admin/payouts' element={<PayoutManagement />} />
+        </Route>
+
+        {/* //======= 5. Utility and Fallback Routes =======// */}
+        <Route path='/unauthorized' element={<Unauthorized />} />
+        <Route path='*' element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

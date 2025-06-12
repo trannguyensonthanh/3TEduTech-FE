@@ -103,7 +103,7 @@ const CoursesPage: React.FC = () => {
 
   // --- Fetch dữ liệu cho Filters ---
   const { data: categoriesData, isLoading: isLoadingCategories } =
-    useCategories({ limit: 0 }) || {}; // limit 0 để lấy tất cả
+    useCategories({ limit: 100 }) || {}; // limit 0 để lấy tất cả
   const { data: levelsData, isLoading: isLoadingLevels } = useLevels() || {};
   const { data: languagesData, isLoading: isLoadingLanguages } =
     useLanguages({ isActive: true }) || {}; // Chỉ lấy ngôn ngữ active
@@ -238,52 +238,52 @@ const CoursesPage: React.FC = () => {
   return (
     <Layout>
       {/* Header Section */}
-      <div className="bg-gradient-to-b from-slate-100 via-slate-50 to-background dark:from-slate-900 dark:via-slate-800/70 dark:to-background border-b dark:border-slate-700/50">
+      <div className='bg-gradient-to-b from-slate-100 via-slate-50 to-background dark:from-slate-900 dark:via-slate-800/70 dark:to-background border-b dark:border-slate-700/50'>
         <motion.div
           variants={headerVariants}
-          initial="hidden"
-          animate="visible"
-          className="container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-12 text-center"
+          initial='hidden'
+          animate='visible'
+          className='container mx-auto px-4 pt-10 pb-8 md:pt-16 md:pb-12 text-center'
         >
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-4 tracking-tight">
+          <h1 className='text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-50 mb-4 tracking-tight'>
             Explore Our Courses
           </h1>
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto">
+          <p className='text-lg md:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto'>
             Find your next learning adventure. Filter by category, level, price,
             and more to discover the perfect course.
           </p>
         </motion.div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 md:py-10">
-        <div className="flex flex-col lg:flex-row gap-x-8 gap-y-6">
+      <div className='container mx-auto px-4 py-8 md:py-10'>
+        <div className='flex flex-col lg:flex-row gap-x-8 gap-y-6'>
           {/* Filters Sidebar */}
-          <div className="lg:w-1/4 xl:w-1/5 lg:sticky lg:top-24 self-start max-h-[calc(100vh-120px)] lg:overflow-y-auto custom-scrollbar">
+          <div className='lg:w-1/4 xl:w-1/5 lg:sticky lg:top-24 self-start max-h-[calc(100vh-120px)] lg:overflow-y-auto custom-scrollbar'>
             {' '}
             {/* Sticky và scroll cho sidebar */}
             {/* Mobile Filter Button */}
-            <div className="lg:hidden mb-6">
+            <div className='lg:hidden mb-6'>
               <Sheet
                 open={showMobileFilters}
                 onOpenChange={setShowMobileFilters}
               >
                 <SheetTrigger asChild>
                   <Button
-                    variant="outline"
-                    className="w-full h-12 text-base flex items-center justify-center gap-2 shadow-sm"
+                    variant='outline'
+                    className='w-full h-12 text-base flex items-center justify-center gap-2 shadow-sm'
                   >
-                    <Icons.filter className="h-5 w-5" /> Show Filters & Sort
+                    <Icons.filter className='h-5 w-5' /> Show Filters & Sort
                   </Button>
                 </SheetTrigger>
                 <SheetContent
-                  side="left"
-                  className="w-[320px] sm:w-[350px] p-0 flex flex-col"
+                  side='left'
+                  className='w-[320px] sm:w-[350px] p-0 flex flex-col'
                 >
-                  <SheetHeader className="p-5 pb-3 border-b dark:border-slate-700">
-                    <SheetTitle className="text-xl">Filters & Sort</SheetTitle>
+                  <SheetHeader className='p-5 pb-3 border-b dark:border-slate-700'>
+                    <SheetTitle className='text-xl'>Filters & Sort</SheetTitle>
                   </SheetHeader>
-                  <ScrollArea className="flex-grow">
-                    <div className="p-5">
+                  <ScrollArea className='flex-grow'>
+                    <div className='p-5'>
                       <CourseFiltersSidebar
                         filters={activeFilters}
                         onFilterChange={handleFilterChange}
@@ -295,10 +295,10 @@ const CoursesPage: React.FC = () => {
                       />
                     </div>
                   </ScrollArea>
-                  <div className="p-4 border-t dark:border-slate-700">
+                  <div className='p-4 border-t dark:border-slate-700'>
                     <SheetClose asChild>
                       <Button
-                        className="w-full h-11 text-base"
+                        className='w-full h-11 text-base'
                         onClick={() => setShowMobileFilters(false)}
                       >
                         Apply & View Courses
@@ -309,7 +309,7 @@ const CoursesPage: React.FC = () => {
               </Sheet>
             </div>
             {/* Desktop Filter Sidebar */}
-            <div className="hidden lg:block">
+            <div className='hidden lg:block'>
               <CourseFiltersSidebar
                 filters={activeFilters}
                 onFilterChange={handleFilterChange}
@@ -323,23 +323,23 @@ const CoursesPage: React.FC = () => {
           </div>
 
           {/* Main Content Area */}
-          <div className="w-full lg:flex-1 min-w-0">
+          <div className='w-full lg:flex-1 min-w-0'>
             {' '}
             {/* min-w-0 quan trọng cho flex item */}
             {/* Search and Sort Controls */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6 md:mb-8 items-center">
-              <div className="relative flex-grow w-full">
-                <Icons.search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+            <div className='flex flex-col md:flex-row gap-4 mb-6 md:mb-8 items-center'>
+              <div className='relative flex-grow w-full'>
+                <Icons.search className='absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none' />
                 <Input
-                  type="search"
+                  type='search'
                   placeholder="Search courses, e.g., 'Python', 'Web Design'..."
-                  className="pl-11 h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 focus-visible:ring-primary"
+                  className='pl-11 h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 focus-visible:ring-primary'
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {(isLoadingCoursesInitial || isFetchingCourses) &&
                   debouncedSearchTerm && (
-                    <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 className='absolute right-3.5 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground' />
                   )}
               </div>
 
@@ -347,17 +347,17 @@ const CoursesPage: React.FC = () => {
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value as SortByValue)}
               >
-                <SelectTrigger className="w-full md:w-[240px] h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 focus:ring-primary">
-                  <SelectValue placeholder="Sort by..." />
+                <SelectTrigger className='w-full md:w-[240px] h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 focus:ring-primary'>
+                  <SelectValue placeholder='Sort by...' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel className="px-3 py-1.5">Sort By</SelectLabel>
+                    <SelectLabel className='px-3 py-1.5'>Sort By</SelectLabel>
                     {SORT_OPTIONS.map((opt) => (
                       <SelectItem
                         key={opt.value}
                         value={opt.value}
-                        className="text-base h-10"
+                        className='text-base h-10'
                       >
                         {opt.label}
                       </SelectItem>
@@ -368,48 +368,48 @@ const CoursesPage: React.FC = () => {
             </div>
             {/* Results Count and Status */}
             {(isLoadingCoursesInitial || isFetchingCourses) && !courseData && (
-              <div className="text-sm text-muted-foreground mb-4 flex items-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading
+              <div className='text-sm text-muted-foreground mb-4 flex items-center'>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' /> Loading
                 courses...
               </div>
             )}
             {!isLoadingCoursesInitial && !isFetchingCourses && !isError && (
-              <div className="mb-5 text-sm text-muted-foreground">
+              <div className='mb-5 text-sm text-muted-foreground'>
                 Showing{' '}
-                <span className="font-semibold text-foreground">
+                <span className='font-semibold text-foreground'>
                   {courses.length}
                 </span>{' '}
                 of{' '}
-                <span className="font-semibold text-foreground">
+                <span className='font-semibold text-foreground'>
                   {totalItems}
                 </span>{' '}
                 courses.
                 {isFetchingCourses && (
-                  <Loader2 className="inline ml-2 h-4 w-4 animate-spin" />
+                  <Loader2 className='inline ml-2 h-4 w-4 animate-spin' />
                 )}
               </div>
             )}
             {/* Course Grid or Skeletons or Error Message */}
             {isLoadingCoursesInitial && !courseData ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6'>
                 {[...Array(ITEMS_PER_PAGE)].map((_, index) => (
                   <Card
                     key={`course-skeleton-${index}`}
-                    className="flex flex-col rounded-xl overflow-hidden"
+                    className='flex flex-col rounded-xl overflow-hidden'
                   >
-                    <Skeleton className="aspect-video w-full" />
-                    <CardHeader className="p-4 pb-2">
-                      <Skeleton className="h-4 w-1/3 mb-1.5" />
-                      <Skeleton className="h-5 w-full mb-1" />
-                      <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className='aspect-video w-full' />
+                    <CardHeader className='p-4 pb-2'>
+                      <Skeleton className='h-4 w-1/3 mb-1.5' />
+                      <Skeleton className='h-5 w-full mb-1' />
+                      <Skeleton className='h-3.5 w-3/4' />
                     </CardHeader>
-                    <CardContent className="p-4 pt-1 flex-grow">
-                      <Skeleton className="h-3 w-full mb-2" />
-                      <Skeleton className="h-3 w-1/2" />
+                    <CardContent className='p-4 pt-1 flex-grow'>
+                      <Skeleton className='h-3 w-full mb-2' />
+                      <Skeleton className='h-3 w-1/2' />
                     </CardContent>
-                    <CardFooter className="p-4 pt-2 border-t mt-auto dark:border-slate-700">
-                      <Skeleton className="h-7 w-1/3" />
-                      <Skeleton className="h-5 w-1/4 ml-auto" />
+                    <CardFooter className='p-4 pt-2 border-t mt-auto dark:border-slate-700'>
+                      <Skeleton className='h-7 w-1/3' />
+                      <Skeleton className='h-5 w-1/4 ml-auto' />
                     </CardFooter>
                   </Card>
                 ))}
@@ -418,17 +418,17 @@ const CoursesPage: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center py-16 bg-destructive/10 dark:bg-destructive/20 p-8 rounded-lg border border-destructive/30"
+                className='text-center py-16 bg-destructive/10 dark:bg-destructive/20 p-8 rounded-lg border border-destructive/30'
               >
-                <Icons.alertTriangle className="mx-auto h-16 w-16 mb-6 text-destructive" />
-                <h3 className="text-2xl font-semibold mb-3 text-destructive-foreground dark:text-destructive">
+                <Icons.alertTriangle className='mx-auto h-16 w-16 mb-6 text-destructive' />
+                <h3 className='text-2xl font-semibold mb-3 text-destructive-foreground dark:text-destructive'>
                   Failed to Load Courses
                 </h3>
-                <p className="text-destructive/80 dark:text-destructive/90 mb-6">
+                <p className='text-destructive/80 dark:text-destructive/90 mb-6'>
                   {error?.message || 'An unexpected error occurred.'}
                 </p>
                 <Button
-                  variant="destructive"
+                  variant='destructive'
                   onClick={() => window.location.reload()}
                 >
                   Try Again
@@ -437,9 +437,9 @@ const CoursesPage: React.FC = () => {
             ) : courses.length > 0 ? (
               <motion.div
                 variants={listContainerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6"
+                initial='hidden'
+                animate='visible'
+                className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6'
               >
                 {courses.map((course) => (
                   <CourseCardv2 key={course.courseId} course={course} />
@@ -450,13 +450,13 @@ const CoursesPage: React.FC = () => {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-center py-20 col-span-full bg-slate-50 dark:bg-slate-800/30 p-8 rounded-lg border-2 border-dashed dark:border-slate-700"
+                  className='text-center py-20 col-span-full bg-slate-50 dark:bg-slate-800/30 p-8 rounded-lg border-2 border-dashed dark:border-slate-700'
                 >
-                  <Icons.packageOpen className="mx-auto h-20 w-20 text-muted-foreground opacity-60 mb-6" />
-                  <h3 className="text-2xl font-semibold text-foreground">
+                  <Icons.packageOpen className='mx-auto h-20 w-20 text-muted-foreground opacity-60 mb-6' />
+                  <h3 className='text-2xl font-semibold text-foreground'>
                     No Courses Found
                   </h3>
-                  <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+                  <p className='mt-2 text-muted-foreground max-w-md mx-auto'>
                     We couldn't find any courses matching your current criteria.
                     Try adjusting your search or filters, or check back later
                     for new additions!
@@ -470,14 +470,14 @@ const CoursesPage: React.FC = () => {
                         v !== MAX_COURSE_PRICE
                     )) && (
                     <Button
-                      variant="outline"
-                      className="mt-6"
+                      variant='outline'
+                      className='mt-6'
                       onClick={() => {
                         setSearchTerm('');
                         handleResetFilters();
                       }}
                     >
-                      <Icons.listRestart className="mr-2 h-4 w-4" /> Clear All
+                      <Icons.listRestart className='mr-2 h-4 w-4' /> Clear All
                       Filters & Search
                     </Button>
                   )}
@@ -486,7 +486,7 @@ const CoursesPage: React.FC = () => {
             )}
             {/* Pagination */}
             {!isError && totalItems > 0 && totalPages > 1 && (
-              <div className="flex justify-center mt-10 md:mt-12">
+              <div className='flex justify-center mt-10 md:mt-12'>
                 <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}

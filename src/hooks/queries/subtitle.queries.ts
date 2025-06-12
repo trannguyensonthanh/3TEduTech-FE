@@ -87,7 +87,6 @@ export const useAddSubtitleByUpload = (
       lessonId: number;
       file: File;
       languageCode: string;
-      languageName: string;
       isDefault?: boolean;
     }
   >
@@ -100,18 +99,11 @@ export const useAddSubtitleByUpload = (
       lessonId: number;
       file: File;
       languageCode: string;
-      languageName: string;
       isDefault?: boolean;
     }
   >({
-    mutationFn: ({ lessonId, file, languageCode, languageName, isDefault }) =>
-      addSubtitleByUpload(
-        lessonId,
-        file,
-        languageCode,
-        languageName,
-        isDefault
-      ),
+    mutationFn: ({ lessonId, file, languageCode, isDefault }) =>
+      addSubtitleByUpload(lessonId, file, languageCode, isDefault),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: subtitleKeys.listByLesson(variables.lessonId),

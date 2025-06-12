@@ -7,6 +7,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import { useTranslation } from 'react-i18next';
 
 interface PaginationComponentProps {
   currentPage: number;
@@ -19,6 +20,7 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
   totalPages,
   setCurrentPage,
 }) => {
+  const { t } = useTranslation();
   return (
     <Pagination>
       <PaginationContent>
@@ -28,15 +30,18 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
             className={
               currentPage === 1 ? 'pointer-events-none opacity-50' : ''
             }
-          />
+            aria-label={t('pagination.previous', 'Previous')}
+          >
+            {t('pagination.previous', 'Previous')}
+          </PaginationPrevious>
         </PaginationItem>
         {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
           const pageNumber =
             currentPage <= 3
               ? i + 1
               : currentPage >= totalPages - 2
-              ? totalPages - 4 + i
-              : currentPage - 2 + i;
+                ? totalPages - 4 + i
+                : currentPage - 2 + i;
 
           if (pageNumber <= 0 || pageNumber > totalPages) return null;
 
@@ -59,7 +64,10 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
             className={
               currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
             }
-          />
+            aria-label={t('pagination.next', 'Next')}
+          >
+            {t('pagination.next', 'Next')}
+          </PaginationNext>
         </PaginationItem>
       </PaginationContent>
     </Pagination>

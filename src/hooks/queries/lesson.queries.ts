@@ -28,10 +28,10 @@ import {
   UpdateQuestionData,
   updateQuizQuestion,
   deleteQuizQuestion,
+  Lesson,
 } from '@/services/lesson.service'; // Đảm bảo service export đủ
 import { courseKeys } from './course.queries'; // Cần để invalidate course detail
 import { toast } from '@/hooks/use-toast'; // Import toast nếu muốn dùng trong
-import { Lesson } from '@/types/common.types';
 import { QuizQuestion } from '@/services/quiz.service';
 // Query Key Factory
 const lessonKeys = {
@@ -66,12 +66,12 @@ export const useLessonDetail = (
 export const useLessonVideoUrl = (
   lessonId: number | undefined,
   options?: Omit<
-    UseQueryOptions<{ signedUrl: string }, Error>,
+    UseQueryOptions<{ signedUrl: string; publicEmbedUrl?: string }, Error>,
     'queryKey' | 'queryFn'
   >
 ) => {
   const queryKey = lessonKeys.videoUrl(lessonId);
-  return useQuery<{ signedUrl: string }, Error>({
+  return useQuery<{ signedUrl: string; publicEmbedUrl?: string }, Error>({
     queryKey: queryKey,
     queryFn: () => getLessonVideoSignedUrl(lessonId!),
     enabled: !!lessonId, // Chỉ fetch khi có lessonId

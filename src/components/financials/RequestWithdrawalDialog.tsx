@@ -1,12 +1,13 @@
-// src/components/financials/RequestWithdrawalDialog.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { toast } from 'sonner';
+import { AnimatePresence, motion } from 'framer-motion';
+
+// UI
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; // Cho notes
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -17,354 +18,366 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SelectGroup,
-  SelectLabel,
 } from '@/components/ui/select';
-import { Icons } from '@/components/common/Icons'; // DollarSign, Wallet, Spinner, Send
-import { useRequestWithdrawal } from '@/hooks/queries/financials.queries'; // Hook tạo request
-import { RequestWithdrawalFormData } from '@/services/financials.service'; // Type cho form data
-import { useMyPayoutMethods } from '@/hooks/queries/instructor.queries'; // Lấy payout methods
-import { useToast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
-import { InstructorPayoutMethodItem } from '@/services/instructor.service';
+import { Icons } from '@/components/common/Icons';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
-interface RequestWithdrawalDialogProps {
+// Logic
+import {
+  withdrawalSchema,
+  TWithdrawalSchema,
+} from '@/lib/validators/withdrawalValidator';
+import {
+  useRequestWithdrawal,
+  useMyAvailableBalance,
+} from '@/hooks/queries/financials.queries';
+import { useMyPayoutMethods } from '@/hooks/queries/instructor.queries';
+import { InstructorPayoutMethodItem } from '@/services/instructor.service';
+import { useSettings } from '@/contexts/SettingsContext';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+export interface RequestWithdrawalDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   currentBalance: number;
-  currencySymbol?: string;
-  onSuccess?: () => void; // Callback khi request thành công
+  currencySymbol: string;
+  onSuccess?: () => void;
 }
 
-const requestWithdrawalSchema = z.object({
-  amount: z
-    .number()
-    .min(10, { message: 'Minimum withdrawal amount is $10.' }) // Ví dụ min amount
-    .max(10000, { message: 'Maximum withdrawal amount is $10,000.' }), // Ví dụ max amount
-  instructorPayoutMethodId: z
-    .string()
-    .min(1, { message: 'Please select a payout method.' })
-    .transform(Number), // Chuyển string từ Select về number
-  notes: z.string().max(500, 'Notes cannot exceed 500 characters.').optional(),
-});
-
-type WithdrawalFormValues = z.infer<typeof requestWithdrawalSchema>;
+const getDisplayDetailShort = (method: InstructorPayoutMethodItem): string => {
+  if (method.methodId === 'PAYPAL' || method.methodId === 'STRIPE')
+    return method.details?.email || method.details?.accountId || 'N/A';
+  if (method.methodId === 'MOMO')
+    return `MoMo: ${method.details?.phoneNumber || 'N/A'}`;
+  if (method.details?.bankName && method.details?.accountNumberLast4)
+    return `${method.details.bankName} (...${method.details.accountNumberLast4})`;
+  return method.methodName;
+};
 
 export const RequestWithdrawalDialog: React.FC<
   RequestWithdrawalDialogProps
-> = ({
-  isOpen,
-  onOpenChange,
-  currentBalance,
-  currencySymbol = '$',
-  onSuccess,
-}) => {
-  const { toast } = useToast();
+> = ({ isOpen, onOpenChange, onSuccess }) => {
+  const { data: balanceData, isLoading: isLoadingBalance } =
+    useMyAvailableBalance({ enabled: isOpen });
   const { data: payoutMethods = [], isLoading: isLoadingMethods } =
     useMyPayoutMethods({ enabled: isOpen });
+  const { formatPrice } = useSettings();
 
-  const form = useForm<WithdrawalFormValues>({
-    resolver: zodResolver(requestWithdrawalSchema),
-    defaultValues: {
-      amount: undefined, // Để placeholder hiển thị
-      instructorPayoutMethodId: undefined,
-      notes: '',
-    },
+  const { mutate: requestWithdrawal, isPending } = useRequestWithdrawal();
+
+  const form = useForm<TWithdrawalSchema>({
+    resolver: zodResolver(withdrawalSchema),
+    mode: 'onChange',
   });
+
   const {
-    register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     reset,
-    formState: { errors, isDirty },
+    setError,
+    clearErrors,
   } = form;
+  const selectedPayoutCurrency = watch('payoutCurrency');
+  const amountToWithdraw = watch('amount');
+
+  const selectedPayoutOption = useMemo(
+    () =>
+      balanceData?.payoutOptions.find(
+        (opt) => opt.currencyId === selectedPayoutCurrency
+      ),
+    [selectedPayoutCurrency, balanceData]
+  );
+
+  const filteredPayoutMethods = useMemo(() => {
+    if (!selectedPayoutCurrency) return [];
+    const methodsForCurrency =
+      selectedPayoutCurrency === 'USD'
+        ? ['PAYPAL', 'STRIPE']
+        : ['MOMO', 'VNPAY'];
+    return payoutMethods.filter((m) => methodsForCurrency.includes(m.methodId));
+  }, [selectedPayoutCurrency, payoutMethods]);
 
   useEffect(() => {
-    // Reset form khi dialog đóng/mở hoặc balance thay đổi
     if (isOpen) {
-      const defaultMethod = payoutMethods.find((m) => m.isPrimary);
+      // Mặc định chọn option đầu tiên có thể rút tiền
+      const defaultOption = balanceData?.payoutOptions.find(
+        (opt) => opt.maxWithdrawal > 0
+      );
       reset({
+        payoutCurrency: defaultOption?.currencyId as 'VND' | 'USD',
         amount: undefined,
-        instructorPayoutMethodId: defaultMethod?.payoutMethodId,
+        instructorPayoutMethodId: undefined,
         notes: '',
       });
     }
-  }, [isOpen, reset, payoutMethods]);
+  }, [isOpen, balanceData, reset]);
 
   useEffect(() => {
-    // Cập nhật max cho amount validation khi currentBalance thay đổi
-    requestWithdrawalSchema.shape.amount._def.checks.forEach((check) => {
-      if (check.kind === 'max') {
-        check.value = currentBalance;
-        check.message = `Amount cannot exceed your current balance of ${currencySymbol}${currentBalance.toFixed(
-          2
-        )}.`;
-      }
-    });
-  }, [currentBalance, currencySymbol]);
+    // Tự động chọn Payout Method đầu tiên khi thay đổi currency
+    setValue(
+      'instructorPayoutMethodId',
+      filteredPayoutMethods[0]?.payoutMethodId
+    );
+    clearErrors('amount'); // Xóa lỗi amount khi đổi currency
+  }, [selectedPayoutCurrency, filteredPayoutMethods, setValue, clearErrors]);
 
-  const requestWithdrawalMutation = useRequestWithdrawal({
-    onSuccess: (data) => {
-      toast({
-        title: 'Withdrawal Requested',
-        description:
-          'Your withdrawal request has been submitted for processing.',
-      });
-      onSuccess?.();
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      toast({
-        variant: 'destructive',
-        title: 'Request Failed',
-        description:
-          error.message || 'Could not submit your withdrawal request.',
-      });
-    },
-  });
+  const onSubmit: SubmitHandler<TWithdrawalSchema> = (data) => {
+    if (!selectedPayoutOption) return;
 
-  const onSubmit: SubmitHandler<WithdrawalFormValues> = (data) => {
-    if (data.amount > currentBalance) {
-      form.setError('amount', {
-        type: 'manual',
-        message: `Amount cannot exceed your current balance of ${currencySymbol}${currentBalance.toFixed(
-          2
-        )}.`,
+    // Validation động
+    if (data.amount < selectedPayoutOption.minWithdrawal) {
+      setError('amount', {
+        message: `Minimum withdrawal is ${formatPrice(selectedPayoutOption.minWithdrawal)}.`,
       });
       return;
     }
-    const submissionData: RequestWithdrawalFormData = {
-      amount: data.amount,
-      instructorPayoutMethodId: data.instructorPayoutMethodId,
-      notes: data.notes || undefined,
-    };
-    requestWithdrawalMutation.mutate(submissionData);
+    if (data.amount > selectedPayoutOption.maxWithdrawal) {
+      setError('amount', {
+        message: `Amount exceeds your available balance (${formatPrice(selectedPayoutOption.maxWithdrawal)}).`,
+      });
+      return;
+    }
+
+    requestWithdrawal(
+      {
+        requestedAmount: data.amount,
+        requestedCurrencyId: data.payoutCurrency,
+        instructorPayoutMethodId: data.instructorPayoutMethodId,
+        notes: data.notes,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Withdrawal request submitted successfully!');
+          onSuccess?.();
+          onOpenChange(false);
+        },
+        onError: (err) =>
+          toast.error((err as Error).message || 'Failed to submit request.'),
+      }
+    );
   };
 
-  const getDisplayDetailShort = (
-    method: InstructorPayoutMethodItem
-  ): string => {
-    if (method.methodId === 'PAYPAL')
-      return `PayPal: ${method.details?.email || 'N/A'}`;
-    if (method.methodId === 'BANK_TRANSFER')
-      return `${method.details?.bankName || 'Bank'} (...${
-        method.details?.accountNumberLast4 || '****'
-      })`;
-    return method.methodName;
-  };
-
+  const amountInBaseCurrency =
+    amountToWithdraw && selectedPayoutOption?.exchangeRate
+      ? amountToWithdraw * selectedPayoutOption.exchangeRate
+      : amountToWithdraw || 0;
+  console.log('amountInBaseCurrency', balanceData);
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) reset();
-        onOpenChange(open);
-      }}
-    >
-      <DialogContent className="sm:max-w-md dark:bg-slate-800/80 backdrop-blur-sm">
-        <DialogHeader className="pb-4 border-b dark:border-slate-700">
-          <DialogTitle className="text-2xl font-semibold flex items-center">
-            <Icons.wallet className="mr-3 h-6 w-6 text-green-500 dark:text-green-400" />
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className='sm:max-w-md'>
+        <DialogHeader>
+          <DialogTitle className='text-2xl font-semibold flex items-center'>
+            <Icons.wallet className='mr-3 h-6 w-6 text-green-500' />
             Request Payout
           </DialogTitle>
           <DialogDescription>
-            Withdraw funds from your available balance. Minimum withdrawal:{' '}
-            {currencySymbol}10.00.
+            Withdraw your earnings. Funds will be sent to your selected payout
+            method after processing.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="py-4 space-y-6">
-          <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50">
-            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              Available Balance
-            </p>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-              {currencySymbol}
-              {currentBalance.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="withdrawal-amount">
-              Amount to Withdraw <span className="text-destructive">*</span>
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 h-full flex items-center text-muted-foreground text-sm">
-                {currencySymbol}
-              </span>
-              <Controller
-                name="amount"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    id="withdrawal-amount"
-                    type="number"
-                    placeholder="0.00"
-                    value={field.value === undefined ? '' : field.value} // Handle undefined for placeholder
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ''
-                          ? undefined
-                          : parseFloat(e.target.value)
-                      )
-                    }
-                    className={cn(
-                      'pl-7 h-12 text-lg',
-                      errors.amount && 'border-destructive'
-                    )}
-                    min="10" // HTML5 min
-                    step="0.01"
-                    disabled={requestWithdrawalMutation.isPending}
-                  />
-                )}
-              />
-            </div>
-            {errors.amount && (
-              <p className="text-xs text-destructive mt-1">
-                {errors.amount.message}
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className='space-y-6 pt-2'>
+            <div className='p-4 rounded-lg bg-primary/10 text-center'>
+              <p className='text-sm font-medium text-primary'>
+                Available to Withdraw
               </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="payout-method">
-              Withdraw to <span className="text-destructive">*</span>
-            </Label>
-            <Controller
-              name="instructorPayoutMethodId"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  onValueChange={(value) => field.onChange(Number(value))} // Ensure value is number
-                  value={field.value?.toString() || ''}
-                  disabled={
-                    isLoadingMethods || requestWithdrawalMutation.isPending
-                  }
-                >
-                  <SelectTrigger
-                    id="payout-method"
-                    className={cn(
-                      'h-11 text-sm',
-                      errors.instructorPayoutMethodId && 'border-destructive'
-                    )}
-                  >
-                    <SelectValue
-                      placeholder={
-                        isLoadingMethods
-                          ? 'Loading methods...'
-                          : 'Select payout method'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingMethods ? (
-                      <SelectItem value="loading" disabled>
-                        Loading...
-                      </SelectItem>
-                    ) : payoutMethods.length > 0 ? (
-                      payoutMethods.map((method) => (
-                        <SelectItem
-                          key={method.payoutMethodId}
-                          value={method.payoutMethodId.toString()}
-                        >
-                          <div className="flex items-center">
-                            {method.methodId === 'PAYPAL' ? (
-                              <Icons.paypal className="mr-2 h-4 w-4 text-blue-500" />
-                            ) : (
-                              <Icons.landmark className="mr-2 h-4 w-4 text-green-500" />
-                            )}
-                            {getDisplayDetailShort(method)}{' '}
-                            {method.isPrimary && '(Primary)'}
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-methods" disabled>
-                        No payout methods configured.
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.instructorPayoutMethodId && (
-              <p className="text-xs text-destructive mt-1">
-                {errors.instructorPayoutMethodId.message}
-              </p>
-            )}
-            {payoutMethods.length === 0 && !isLoadingMethods && (
-              <p className="text-xs text-muted-foreground mt-1">
-                You need to{' '}
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="p-0 h-auto"
-                  onClick={() => {
-                    onOpenChange(
-                      false
-                    ); /* TODO: Open ManagePayoutMethodsDialog */
-                  }}
-                >
-                  add a payout method
-                </Button>{' '}
-                first.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="withdrawal-notes">Notes (Optional)</Label>
-            <Textarea
-              id="withdrawal-notes"
-              {...register('notes')}
-              placeholder="Any specific instructions for this withdrawal?"
-              rows={3}
-              disabled={requestWithdrawalMutation.isPending}
-            />
-            {errors.notes && (
-              <p className="text-xs text-destructive mt-1">
-                {errors.notes.message}
-              </p>
-            )}
-          </div>
-
-          <DialogFooter className="pt-6">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 px-6 text-base"
-                disabled={requestWithdrawalMutation.isPending}
-              >
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button
-              type="submit"
-              className="h-11 px-6 text-base"
-              disabled={
-                requestWithdrawalMutation.isPending ||
-                !isDirty ||
-                payoutMethods.length === 0
-              }
-            >
-              {requestWithdrawalMutation.isPending ? (
-                <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+              {isLoadingBalance ? (
+                <Skeleton className='h-8 w-32 mx-auto mt-1' />
               ) : (
-                <Icons.send className="mr-2 h-5 w-5" />
+                <p className='text-3xl font-bold text-primary'>
+                  {formatPrice(balanceData?.baseBalance.amount || 0)}
+                </p>
               )}
-              Submit Request
-            </Button>
-          </DialogFooter>
-        </form>
+            </div>
+
+            <FormField
+              control={control}
+              name='payoutCurrency'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>1. Payout Currency</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder='Select currency...' />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {balanceData?.payoutOptions.map((opt) => (
+                        <SelectItem
+                          key={opt.currencyId}
+                          value={opt.currencyId}
+                          disabled={opt.maxWithdrawal <= 0}
+                        >
+                          Withdraw as {opt.currencyId} (Max:{' '}
+                          {formatPrice(opt.maxWithdrawal)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <AnimatePresence>
+              {selectedPayoutOption && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className='space-y-6 overflow-hidden'
+                >
+                  {selectedPayoutOption.exchangeRate && (
+                    <Alert variant='default'>
+                      <Icons.info className='h-4 w-4' />
+                      <AlertDescription className='text-xs'>
+                        Applied exchange rate:{' '}
+                        {formatPrice(selectedPayoutOption.exchangeRate)} per 1{' '}
+                        {selectedPayoutOption.currencyId}. Source:{' '}
+                        {selectedPayoutOption.rateSource || 'System'}.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <FormField
+                    control={control}
+                    name='amount'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          2. Amount to Withdraw ({selectedPayoutCurrency})
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type='number'
+                            placeholder='0.00'
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        {amountToWithdraw > 0 && (
+                          <FormDescription className='text-xs'>
+                            This is equivalent to ~
+                            {formatPrice(amountInBaseCurrency)} from your
+                            balance.
+                          </FormDescription>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name='instructorPayoutMethodId'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>3. Payout to</FormLabel>
+                        <Select
+                          onValueChange={(value) =>
+                            field.onChange(Number(value))
+                          }
+                          value={field.value?.toString()}
+                          disabled={isLoadingMethods}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  isLoadingMethods
+                                    ? 'Loading...'
+                                    : 'Select a method...'
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {filteredPayoutMethods.length > 0 ? (
+                              filteredPayoutMethods.map((method) => (
+                                <SelectItem
+                                  key={method.payoutMethodId}
+                                  value={method.payoutMethodId.toString()}
+                                >
+                                  <div className='flex items-center gap-2'>
+                                    {getDisplayDetailShort(method)}{' '}
+                                    {method.isPrimary && (
+                                      <Badge variant='secondary'>Primary</Badge>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value='none' disabled>
+                                No compatible methods found for{' '}
+                                {selectedPayoutCurrency}.
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name='notes'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>4. Notes (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder='Any specific instructions?'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <DialogFooter className='pt-4 border-t'>
+              <DialogClose asChild>
+                <Button type='button' variant='outline' disabled={isPending}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                type='submit'
+                disabled={isPending || !selectedPayoutOption}
+              >
+                {isPending && (
+                  <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+                )}
+                Submit Request
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

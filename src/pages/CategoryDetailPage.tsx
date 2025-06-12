@@ -85,8 +85,8 @@ const CategoryDetailPage = () => {
         isFreeStr === 'true'
           ? true
           : isFreeStr === 'false'
-          ? undefined
-          : undefined,
+            ? undefined
+            : undefined,
       isFeatured:
         isFeaturedStr === '1' ? 1 : isFeaturedStr === '0' ? 0 : undefined,
     };
@@ -245,8 +245,8 @@ const CategoryDetailPage = () => {
   if (isLoadingCategory) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-10 min-h-[calc(100vh-200px)] flex items-center justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <div className='container mx-auto px-4 py-10 min-h-[calc(100vh-200px)] flex items-center justify-center'>
+          <Loader2 className='h-12 w-12 animate-spin text-primary' />
         </div>
       </Layout>
     );
@@ -255,18 +255,18 @@ const CategoryDetailPage = () => {
   if (categoryError || !category) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-10">
-          <div className="text-center py-16 bg-destructive/10 p-8 rounded-lg">
-            <Icons.alertTriangle className="h-16 w-16 mx-auto mb-6 text-destructive" />
-            <h3 className="text-2xl font-semibold mb-3 text-destructive">
+        <div className='container mx-auto px-4 py-10'>
+          <div className='text-center py-16 bg-destructive/10 p-8 rounded-lg'>
+            <Icons.alertTriangle className='h-16 w-16 mx-auto mb-6 text-destructive' />
+            <h3 className='text-2xl font-semibold mb-3 text-destructive'>
               Category Not Found
             </h3>
-            <p className="text-muted-foreground mb-6">
+            <p className='text-muted-foreground mb-6'>
               The category "{slug}" you're looking for doesn't exist or has been
               removed.
             </p>
-            <Button variant="outline" asChild>
-              <Link to="/categories">Browse All Categories</Link>
+            <Button variant='outline' asChild>
+              <Link to='/categories'>Browse All Categories</Link>
             </Button>
           </div>
         </div>
@@ -285,31 +285,31 @@ const CategoryDetailPage = () => {
       {/* Category Header Section */}
       {category && (
         <>
-          <div className="relative pt-10 pb-8 md:pt-16 md:pb-12 bg-gradient-to-b from-slate-100 to-background dark:from-slate-900 dark:to-background">
-            <div className="absolute inset-0 opacity-30 dark:opacity-20 overflow-hidden">
+          <div className='relative pt-10 pb-8 md:pt-16 md:pb-12 bg-gradient-to-b from-slate-100 to-background dark:from-slate-900 dark:to-background'>
+            <div className='absolute inset-0 opacity-30 dark:opacity-20 overflow-hidden'>
               <img
                 src={categoryImage}
                 alt={`${category.categoryName} background`}
-                className="w-full h-full object-cover blur-md scale-110"
+                className='w-full h-full object-cover blur-md scale-110'
               />
             </div>
-            <div className="container mx-auto px-4 relative z-10">
-              <Breadcrumb className="mb-6">
+            <div className='container mx-auto px-4 relative z-10'>
+              <Breadcrumb className='mb-6'>
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to="/">Home</Link>
+                      <Link to='/'>Home</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to="/categories">Categories</Link>
+                      <Link to='/categories'>Categories</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="font-semibold">
+                    <BreadcrumbPage className='font-semibold'>
                       {category.categoryName}
                     </BreadcrumbPage>
                   </BreadcrumbItem>
@@ -318,9 +318,9 @@ const CategoryDetailPage = () => {
 
               <motion.h1
                 variants={headerVariants}
-                initial="hidden"
-                animate="visible"
-                className="text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-100 mb-3 tracking-tight"
+                initial='hidden'
+                animate='visible'
+                className='text-4xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-100 mb-3 tracking-tight'
               >
                 {category.categoryName} Courses
               </motion.h1>
@@ -334,14 +334,14 @@ const CategoryDetailPage = () => {
                       transition: { delay: 0.2, duration: 0.5 },
                     },
                   }}
-                  initial="hidden"
-                  animate="visible"
-                  className="text-lg text-slate-600 dark:text-slate-400 max-w-3xl mb-1"
+                  initial='hidden'
+                  animate='visible'
+                  className='text-lg text-slate-600 dark:text-slate-400 max-w-3xl mb-1'
                 >
                   {category.description}
                 </motion.p>
               )}
-              <p className="text-sm text-muted-foreground">
+              <p className='text-sm text-muted-foreground'>
                 {totalCoursesInCategory > 0
                   ? `${totalCoursesInCategory} courses available`
                   : 'No courses yet in this category.'}
@@ -349,10 +349,10 @@ const CategoryDetailPage = () => {
             </div>
           </div>
 
-          <div className="container mx-auto px-4 py-8 md:py-10">
-            <div className="max-w-screen-xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-10">
+          <div className='container mx-auto px-4 py-8 md:py-10'>
+            <div className='max-w-screen-xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-10'>
               {/* Filter Sidebar - Desktop */}
-              <div className="hidden lg:block lg:w-72 xl:w-80 flex-shrink-0 sticky top-24 h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar pr-4 -mr-4">
+              <div className='hidden lg:block lg:w-72 xl:w-80 flex-shrink-0 sticky top-24 h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar pr-4 -mr-4'>
                 {' '}
                 {/* top-24 là chiều cao navbar + padding */}
                 <CourseFiltersSidebar
@@ -367,42 +367,42 @@ const CategoryDetailPage = () => {
               </div>
 
               {/* Main Content: Search, Courses Grid, Pagination */}
-              <div className="flex-1 min-w-0">
+              <div className='flex-1 min-w-0'>
                 {' '}
                 {/* min-w-0 để grid không bị tràn */}
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-6 md:mb-8 gap-4">
-                  <div className="relative w-full sm:flex-grow">
-                    <Icons.search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className='flex flex-col sm:flex-row justify-between items-center mb-6 md:mb-8 gap-4'>
+                  <div className='relative w-full sm:flex-grow'>
+                    <Icons.search className='absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground' />
                     <Input
-                      type="search"
+                      type='search'
                       placeholder={`Search within ${category.categoryName}...`}
-                      className="pl-11 h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700"
+                      className='pl-11 h-12 text-base rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700'
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                   {/* Filter Button - Mobile */}
-                  <div className="lg:hidden w-full sm:w-auto">
+                  <div className='lg:hidden w-full sm:w-auto'>
                     <Sheet>
                       <SheetTrigger asChild>
                         <Button
-                          variant="outline"
-                          className="w-full sm:w-auto h-12 text-base flex items-center justify-center gap-2"
+                          variant='outline'
+                          className='w-full sm:w-auto h-12 text-base flex items-center justify-center gap-2'
                         >
-                          <Icons.filter className="h-5 w-5" /> Filters & Sort
+                          <Icons.filter className='h-5 w-5' /> Filters & Sort
                         </Button>
                       </SheetTrigger>
                       <SheetContent
-                        side="left"
-                        className="w-[320px] sm:w-[360px] p-0 flex flex-col"
+                        side='left'
+                        className='w-[320px] sm:w-[360px] p-0 flex flex-col'
                       >
-                        <SheetHeader className="p-6 pb-4 border-b">
-                          <SheetTitle className="text-xl">
+                        <SheetHeader className='p-6 pb-4 border-b'>
+                          <SheetTitle className='text-xl'>
                             Filters & Sort
                           </SheetTitle>
                         </SheetHeader>
-                        <ScrollArea className="flex-grow">
-                          <div className="p-5">
+                        <ScrollArea className='flex-grow'>
+                          <div className='p-5'>
                             <CourseFiltersSidebar
                               filters={activeSubFilters} // Truyền sub-filters
                               onFilterChange={handleSubFilterChange} // Dùng hàm cho sub-filters
@@ -415,9 +415,9 @@ const CategoryDetailPage = () => {
                             />
                           </div>
                         </ScrollArea>
-                        <div className="p-4 border-t">
+                        <div className='p-4 border-t'>
                           <SheetClose asChild>
-                            <Button className="w-full">Apply Filters</Button>
+                            <Button className='w-full'>Apply Filters</Button>
                           </SheetClose>
                         </div>
                       </SheetContent>
@@ -428,24 +428,24 @@ const CategoryDetailPage = () => {
                 {isLoadingCourses && (
                   <motion.div
                     variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"
+                    initial='hidden'
+                    animate='visible'
+                    className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8'
                   >
                     {[...Array(ITEMS_PER_PAGE_CATEGORY_DETAIL)].map(
                       (_, index) => (
                         <Card
                           key={index}
-                          className="overflow-hidden rounded-xl border dark:border-slate-700"
+                          className='overflow-hidden rounded-xl border dark:border-slate-700'
                         >
-                          <Skeleton className="w-full aspect-[16/10]" />
-                          <CardContent className="p-5 space-y-3">
-                            <Skeleton className="h-5 w-2/3 mb-1" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-3/4" />
-                            <div className="flex justify-between items-center mt-2">
-                              <Skeleton className="h-4 w-1/4" />
-                              <Skeleton className="h-8 w-1/3" />
+                          <Skeleton className='w-full aspect-[16/10]' />
+                          <CardContent className='p-5 space-y-3'>
+                            <Skeleton className='h-5 w-2/3 mb-1' />
+                            <Skeleton className='h-4 w-full' />
+                            <Skeleton className='h-4 w-3/4' />
+                            <div className='flex justify-between items-center mt-2'>
+                              <Skeleton className='h-4 w-1/4' />
+                              <Skeleton className='h-8 w-1/3' />
                             </div>
                           </CardContent>
                         </Card>
@@ -454,12 +454,12 @@ const CategoryDetailPage = () => {
                   </motion.div>
                 )}
                 {coursesError && (
-                  <div className="text-center py-16 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-8 rounded-lg">
-                    <Icons.alertTriangle className="h-16 w-16 mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold mb-3 text-destructive">
+                  <div className='text-center py-16 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-8 rounded-lg'>
+                    <Icons.alertTriangle className='h-16 w-16 mx-auto mb-6' />
+                    <h3 className='text-2xl font-semibold mb-3 text-destructive'>
                       Failed to Load Courses
                     </h3>
-                    <p className="text-red-700 dark:text-red-300">
+                    <p className='text-red-700 dark:text-red-300'>
                       There was an issue fetching courses for this category.
                       Please try again.
                     </p>
@@ -468,9 +468,9 @@ const CategoryDetailPage = () => {
                 {!isLoadingCourses && !coursesError && courses.length > 0 && (
                   <motion.div
                     variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"
+                    initial='hidden'
+                    animate='visible'
+                    className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8'
                   >
                     {courses.map((course) => (
                       <CourseCard key={course.courseId} course={course} />
@@ -481,16 +481,16 @@ const CategoryDetailPage = () => {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 p-8 rounded-lg"
+                    className='text-center py-16 bg-slate-50 dark:bg-slate-800/30 p-8 rounded-lg'
                   >
-                    <Icons.packageOpen className="h-20 w-20 text-muted-foreground mx-auto mb-6 opacity-70" />
-                    <h3 className="text-2xl font-semibold text-foreground mb-3">
+                    <Icons.packageOpen className='h-20 w-20 text-muted-foreground mx-auto mb-6 opacity-70' />
+                    <h3 className='text-2xl font-semibold text-foreground mb-3'>
                       {debouncedSearchTerm ||
                       Object.keys(activeSubFilters).length > 0
                         ? 'No Matching Courses Found'
                         : 'No Courses Yet'}
                     </h3>
-                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    <p className='text-muted-foreground mb-6 max-w-md mx-auto'>
                       {debouncedSearchTerm ||
                       Object.keys(activeSubFilters).length > 0
                         ? `We couldn't find any courses matching your criteria in "${category.categoryName}". Try adjusting your search or filters.`
@@ -499,7 +499,7 @@ const CategoryDetailPage = () => {
                     {(debouncedSearchTerm ||
                       Object.keys(activeSubFilters).length > 0) && (
                       <Button
-                        variant="outline"
+                        variant='outline'
                         onClick={() => {
                           setSearchTerm('');
                           setActiveSubFilters({

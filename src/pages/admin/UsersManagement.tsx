@@ -94,7 +94,7 @@ const UsersManagement = () => {
   const itemsPerPage = 5;
   const { data: fetchedUsers, isLoading } = useAdminGetUsers({
     page: currentPage,
-    search: searchTerm,
+    searchTerm: searchTerm,
     role: selectedRole,
     status: selectedStatus,
     limit: itemsPerPage,
@@ -224,11 +224,11 @@ const UsersManagement = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">User Management</h1>
+      <div className='space-y-4'>
+        <div className='flex items-center justify-between'>
+          <h1 className='text-3xl font-bold'>User Management</h1>
           <Button onClick={() => setAddUserDialogOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" /> Add New User
+            <UserPlus className='mr-2 h-4 w-4' /> Add New User
           </Button>
         </div>
 
