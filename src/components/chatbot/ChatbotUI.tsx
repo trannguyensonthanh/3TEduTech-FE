@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useChatbot, ChatMessage } from '@/hooks/useChatbot'; // <-- IMPORT HOOK MỚI
 import ReactMarkdown from 'react-markdown'; // Cần cài đặt: npm install react-markdown
 import remarkGfm from 'remark-gfm'; // Cần cài đặt: npm install remark-gfm (để hỗ trợ table, strikethrough...)
+import { queryMasterAI } from '@/services/ai.service';
 
 const ChatbotUI: React.FC = () => {
   const { t } = useTranslation();
@@ -20,9 +21,24 @@ const ChatbotUI: React.FC = () => {
     id: 'init-bot-msg',
     text: t('chatbot.greeting', { lesson: 'your learning' }),
     sender: 'bot',
+    suggestedQuestions: [
+      'Bạn có thể hỏi gì?',
+      'Bạn có thể giúp tôi với bài tập này không?',
+      'Tôi cần giải thích về một khái niệm',
+      'Bạn có thể tóm tắt nội dung bài học không?',
+      'Bạn có thể gợi ý các tài liệu học tập không?',
+      'Bạn có thể giúp tôi với câu hỏi này?',
+      'Bạn có thể giải thích thuật ngữ này không?',
+      'Bạn có thể giúp tôi tìm kiếm thông tin không?',
+    ],
+    voice: '', // Dữ liệu audio base64 nếu có
   };
 
-  const { messages, isTyping, addUserMessage } = useChatbot([initialMessage]);
+  const { messages, isTyping, addUserMessage } = useChatbot({
+    initialMessages: [initialMessage],
+    queryFn: queryMasterAI, // Hàm query từ AI service
+    queryContext: {}, // Context bổ sung nếu cần
+  });
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

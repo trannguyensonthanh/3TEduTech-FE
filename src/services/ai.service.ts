@@ -95,9 +95,10 @@ export const queryMasterAI = async (
 export const queryCourseAI = async (
   payload: CourseQueryPayload
 ): Promise<QueryResponse> => {
+  console.log('Sending course query to AI:', payload);
   if (!COURSE_AI_API_KEY)
     throw new Error('Course AI API Key is not configured.');
-
+  console.log('Sending course query to AI:', payload);
   const body = {
     query: `duythai(${payload.courseName}) ${payload.query}`, // Ghép context và câu hỏi
     chat_history: payload.chat_history || [],
