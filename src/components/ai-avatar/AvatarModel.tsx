@@ -95,9 +95,6 @@ export const AvatarModel: React.FC<AvatarModelProps> = ({
     // Bỏ activeAction khỏi dependency array để tránh vòng lặp không cần thiết khi setActiveAction
   }, [animationName, actions, mixer]); // Chỉ phụ thuộc vào animationName, actions, mixer
 
-  // ----- Bỏ useEffect clone scene -----
-  // useEffect(() => { ... clone logic ... }, [scene]);
-
   // ----- THAY ĐỔI QUAN TRỌNG: Render bằng primitive -----
   // Áp dụng transform trực tiếp lên primitive nếu cần
   // Hoặc giữ lại group chỉ để transform

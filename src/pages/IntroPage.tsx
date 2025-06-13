@@ -9,7 +9,7 @@ import React, {
   useCallback,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Canvas, useThree, invalidate } from '@react-three/fiber'; // Bỏ useFrame nếu không dùng trực tiếp ở đây
+import { Canvas, useThree, invalidate } from '@react-three/fiber';
 import {
   OrbitControls,
   Stars,
@@ -17,8 +17,8 @@ import {
   useProgress,
   Preload,
   useFont,
-  PointMaterial, // Thêm lại PointMaterial
-  Points, // Thêm lại Points
+  PointMaterial,
+  Points,
 } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/common/Icons';
@@ -94,10 +94,10 @@ const Loader: React.FC = React.memo(() => {
   return (
     <Html
       center
-      wrapperClass="loader-wrapper fixed inset-0 flex items-center justify-center z-50"
+      wrapperClass='loader-wrapper fixed inset-0 flex items-center justify-center z-50'
     >
       {' '}
-      <div className="text-center p-6 bg-black/75 rounded-2xl backdrop-blur-xl shadow-2xl">
+      <div className='text-center p-6 bg-black/75 rounded-2xl backdrop-blur-xl shadow-2xl'>
         {' '}
         <Icons.spinner
           className={`h-16 w-16 animate-spin ${PALETTE.loaderSpinner} mx-auto`}
@@ -255,7 +255,7 @@ const IntroSlogan: React.FC<{
             {' '}
             {title}{' '}
             <animated.meshStandardMaterial
-              attach="material"
+              attach='material'
               color={PALETTE.sloganTitleColor}
               emissive={PALETTE.sloganTitleColor}
               emissiveIntensity={springProps.opacity.to((o) => o * 0.95)}
@@ -281,7 +281,7 @@ const IntroSlogan: React.FC<{
               {' '}
               {slogan}{' '}
               <animated.meshStandardMaterial
-                attach="material"
+                attach='material'
                 color={PALETTE.sloganSubtitleColor}
                 emissive={PALETTE.sloganSubtitleColor}
                 emissiveIntensity={springProps.opacity.to((o) => o * 0.75)}
@@ -551,10 +551,10 @@ const IntroPage = () => {
               finalTreeHeight={FINAL_TRUNK_HEIGHT}
               currentTreeScale={treeAppearSpring.scale.get()}
             />
-            <color attach="background" args={[PALETTE.background3D]} />
+            <color attach='background' args={[PALETTE.background3D]} />
             <ambientLight intensity={PALETTE.ambientLight} />
             <animated.pointLight
-              name="mainPointLight"
+              name='mainPointLight'
               position={[8.5, FINAL_TRUNK_HEIGHT * 0.98, 8.5]}
               color={PALETTE.mainLightColor}
               intensity={lightSpring.intensity.to(
@@ -567,7 +567,7 @@ const IntroPage = () => {
               shadow-bias={-0.0022}
             />
             <animated.directionalLight
-              name="fillLight"
+              name='fillLight'
               position={[-12.5, FINAL_TRUNK_HEIGHT * 1.35, -9.5]}
               color={PALETTE.fillLightColor}
               intensity={treeShineSpring.mainLightIntensityFactor.to(
@@ -575,7 +575,7 @@ const IntroPage = () => {
               )}
             />
             <pointLight
-              name="rimLight"
+              name='rimLight'
               position={[-7.5, FINAL_TRUNK_HEIGHT * 0.68, -13.5]}
               intensity={2.1}
               color={PALETTE.rimLightColor}
@@ -626,7 +626,7 @@ const IntroPage = () => {
                     <pointLight
                       position={[-10, -5, 2]} // Tọa độ tương đối với gốc cây
                       intensity={Math.random() * 0.5 + 0.3} // Cường độ ngẫu nhiên nhẹ
-                      color="#FFEECC"
+                      color='#FFEECC'
                       distance={3}
                       decay={2}
                     />
@@ -682,7 +682,7 @@ const IntroPage = () => {
               <Preload all />{' '}
             </Suspense>
             <mesh
-              name="floor"
+              name='floor'
               rotation={[-Math.PI / 2, 0, 0]}
               position={[0, TRUNK_BASE_Y_POSITION - 0.12, 0]}
               receiveShadow
@@ -716,12 +716,12 @@ const IntroPage = () => {
               <FXAA />
             </EffectComposer>
           </Canvas>
-          <div className="absolute bottom-8 sm:bottom-10 right-8 sm:right-10 z-20">
+          <div className='absolute bottom-8 sm:bottom-10 right-8 sm:right-10 z-20'>
             {' '}
             <Button
               onClick={handleSkipIntro}
-              variant="outline"
-              size="lg"
+              variant='outline'
+              size='lg'
               disabled={isFadingOut || introState === 'exiting'}
               className={cn(
                 `${PALETTE.buttonText} hover:${PALETTE.buttonHoverText} font-medium tracking-wider`,
@@ -732,25 +732,25 @@ const IntroPage = () => {
             >
               {' '}
               Vào Trang Chủ{' '}
-              <Icons.arrowRight className="ml-3 h-[19px] w-[19px] sm:h-[21px] sm:w-[21px] transition-transform duration-300 group-hover:translate-x-2" />{' '}
+              <Icons.arrowRight className='ml-3 h-[19px] w-[19px] sm:h-[21px] sm:w-[21px] transition-transform duration-300 group-hover:translate-x-2' />{' '}
             </Button>{' '}
           </div>
-          <div className="absolute top-8 sm:top-10 left-8 sm:left-10 z-20">
+          <div className='absolute top-8 sm:top-10 left-8 sm:left-10 z-20'>
             {' '}
             <img
-              src="/images/logo/3telogo.jpeg "
-              alt="3TEduTech Logo"
-              className="h-11 sm:h-12 opacity-90 hover:opacity-100 transition-opacity duration-300 filter drop-shadow-lg"
+              src='/images/logo/3telogo.jpeg '
+              alt='3TEduTech Logo'
+              className='h-11 sm:h-12 opacity-90 hover:opacity-100 transition-opacity duration-300 filter drop-shadow-lg'
             />{' '}
           </div>
           {showSkipHint && introState === 'idle' && (
-            <div className="absolute bottom-36 sm:bottom-40 right-8 sm:right-10 z-20 text-right">
+            <div className='absolute bottom-36 sm:bottom-40 right-8 sm:right-10 z-20 text-right'>
               {' '}
               <p
                 className={`text-xs sm:text-sm ${PALETTE.skipHintText} opacity-75 animate-[pulse_3.5s_cubic-bezier(0.4,0,0.6,1)_infinite]`}
               >
                 {' '}
-                Click vào khối tinh thể để bắt đầu, <br className="sm:hidden" />{' '}
+                Click vào khối tinh thể để bắt đầu, <br className='sm:hidden' />{' '}
                 hoặc vào trang chủ.{' '}
               </p>{' '}
             </div>
