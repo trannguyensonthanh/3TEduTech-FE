@@ -11,6 +11,7 @@ export interface Subtitle {
   subtitleUrl: string;
   isDefault: boolean;
   uploadedAt?: IsoDateTimeString; // Có thể không cần ở FE nếu chỉ thêm/xóa
+  languageName?: string; // Tên ngôn ngữ, có thể không cần nếu chỉ dùng mã
 }
 
 export interface AddSubtitleData {

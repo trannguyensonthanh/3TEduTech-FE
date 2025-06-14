@@ -113,7 +113,10 @@ const ApprovalsTable: React.FC<ApprovalsTableProps> = ({
               const { variant: statusVariant, Icon: StatusIcon } =
                 getStatusBadgeProps(approval.status);
               const isPending = approval.status === 'PENDING';
-
+              console.log(
+                `Rendering approval request: ${approval.requestId}, Status: ${approval.status}`,
+                approval
+              );
               return (
                 <TableRow key={approval.requestId}>
                   <TableCell

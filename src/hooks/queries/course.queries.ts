@@ -40,7 +40,14 @@ import {
   GetCoursesByCategorySlugParams,
   getCoursesByCategorySlug,
   GetCoursesByInstructorParams,
-  getCoursesByInstructorId, // *** Import kiểu dữ liệu mới ***
+  // getCoursesByInstructorId,
+  CancelUpdateSessionResponse,
+  CreateUpdateSessionResponse,
+  createCourseUpdateSession,
+  cancelCourseUpdateSession,
+  getPendingApprovalRequestByCourseId,
+  InstructorCourseParams,
+  getMyInstructorCourses, // *** Import kiểu dữ liệu mới ***
 } from '@/services/course.service'; // Điều chỉnh đường dẫn nếu cần
 
 // Query Key Factory
@@ -77,6 +84,8 @@ export const courseKeys = {
       'list',
       params || {},
     ] as const,
+  myCourses: (params?: InstructorCourseParams) =>
+    ['myCourses', params || {}] as const,
 };
 
 // --- Queries ---
@@ -537,38 +546,86 @@ export const useCoursesByCategorySlug = (
 };
 
 /**
- * Hook để lấy danh sách khóa học theo ID của giảng viên.
+ * Hook dành cho giảng viên để lấy danh sách khóa học của chính mình.
+ * API sẽ tự động xác định instructorId từ token.
  */
-export const useCoursesByInstructorId = (
-  instructorId: number | string | undefined,
-  params?: GetCoursesByInstructorParams,
+export const useMyInstructorCourses = (
+  params?: InstructorCourseParams,
   options?: Omit<
-    UseQueryOptions<
-      CourseListResponse,
-      Error,
-      CourseListResponse,
-      (string | number | GetCoursesByInstructorParams | undefined)[]
-    >,
+    UseQueryOptions<CourseListResponse, Error>,
     'queryKey' | 'queryFn'
   >
 ) => {
-  const queryKey = courseKeys.byInstructorId(instructorId, params);
-  return useQuery<
-    CourseListResponse,
-    Error,
-    CourseListResponse,
-    (string | number | GetCoursesByInstructorParams | undefined)[]
-  >({
-    queryKey: [...queryKey],
-    queryFn: () => {
-      if (!instructorId) {
-        return Promise.reject(new Error('Instructor ID is required'));
-      }
-      return getCoursesByInstructorId(instructorId, params);
+  const queryKey = courseKeys.myCourses(params);
+
+  return useQuery<CourseListResponse, Error>({
+    queryKey,
+    queryFn: () => getMyInstructorCourses(params),
+    placeholderData: (previousData) => previousData, // Giữ data cũ khi phân trang/filter
+    staleTime: 1000 * 60, // Cache 1 phút
+    ...options,
+  });
+};
+
+/** Hook để tạo một phiên làm việc cập nhật cho khóa học đã publish */
+export const useCreateCourseUpdateSession = (
+  options?: UseMutationOptions<CreateUpdateSessionResponse, Error, number>
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<CreateUpdateSessionResponse, Error, number>({
+    mutationFn: createCourseUpdateSession,
+    onSuccess: (data, originalCourseId) => {
+      // Invalidate cả khóa gốc và bản sao mới
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.detailById(originalCourseId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: courseKeys.detailById(data.updateCourse.courseId),
+      });
+      queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
     },
-    enabled: !!instructorId, // Chỉ fetch khi instructorId có giá trị
-    staleTime: 1000 * 60 * 5, // Cache trong 5 phút
-    // keepPreviousData: true, // Cân nhắc sử dụng nếu muốn giữ dữ liệu cũ khi params thay đổi
+    ...options,
+  });
+};
+
+/** Hook để hủy một phiên làm việc cập nhật */
+export const useCancelCourseUpdateSession = (
+  options?: UseMutationOptions<CancelUpdateSessionResponse, Error, number>
+) => {
+  const queryClient = useQueryClient();
+  return useMutation<CancelUpdateSessionResponse, Error, number>({
+    mutationFn: cancelCourseUpdateSession,
+    onSuccess: (data, updateCourseId) => {
+      // Xóa cache của bản sao đã bị hủy
+      queryClient.removeQueries({
+        queryKey: courseKeys.detailById(updateCourseId),
+      });
+      // Invalidate cache của khóa học gốc và danh sách
+      queryClient.invalidateQueries({ queryKey: courseKeys.details() });
+      queryClient.invalidateQueries({ queryKey: courseKeys.lists() });
+    },
+    ...options,
+  });
+};
+
+/** Lấy yêu cầu phê duyệt đang chờ xử lý của một khóa học */
+
+export const usePendingApprovalRequestByCourseId = (
+  courseId: number | undefined,
+  options?: Omit<
+    UseQueryOptions<ApprovalRequestListItem | null, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  return useQuery<ApprovalRequestListItem | null, Error>({
+    queryKey: ['pendingApprovalRequest', courseId],
+    queryFn: () => {
+      if (!courseId) {
+        return Promise.reject(new Error('Course ID is required'));
+      }
+      return getPendingApprovalRequestByCourseId(courseId);
+    },
+    enabled: !!courseId,
     ...options,
   });
 };

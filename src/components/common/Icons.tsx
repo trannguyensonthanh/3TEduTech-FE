@@ -139,6 +139,7 @@ import {
   Captions,
   Reply,
   SendHorizonal,
+  Bell,
 } from 'lucide-react';
 import { Laptop as Google } from 'lucide-react';
 
@@ -148,6 +149,8 @@ export type Icon = React.ForwardRefExoticComponent<
 >;
 
 export const Icons = {
+  logo: Zap, // Hoặc logo khác nếu bạn có
+  bell: Bell, // Thêm icon Bell
   reply: Reply, // Thêm icon Reply
   captions: Captions, // Thêm icon Captions
   paperclip: Paperclip, // Thêm icon Paperclip
@@ -160,7 +163,6 @@ export const Icons = {
   userCheck: UserCheck, // Hoặc User
   ai: BrainCircuit, // Hoặc Sparkles
   graduationCap: GraduationCap,
-  logo: Zap,
   close: X,
   spinner: Loader2,
   chevronLeft: ChevronLeft,

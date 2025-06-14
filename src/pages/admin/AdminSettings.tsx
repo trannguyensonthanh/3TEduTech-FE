@@ -60,9 +60,11 @@ const AdminSettings: React.FC = () => {
     }
   }, [settingsData, form]);
 
-  const handleSaveChanges = (formData: TSettingsForm) => {
-    // Chỉ gửi những trường đã thay đổi
+  // Hàm xử lý lưu thay đổi settings
+  const handleSaveChanges = async (formData: TSettingsForm) => {
+    // 1. Xác định các trường đã thay đổi (dirtyFields)
     const dirtyFields = form.formState.dirtyFields;
+    // 2. Tạo mảng các setting đã thay đổi
     const changedSettings = Object.keys(dirtyFields).map((key) => {
       const settingKey = key as keyof TSettingsForm;
       return {
@@ -76,29 +78,32 @@ const AdminSettings: React.FC = () => {
       return;
     }
 
-    const updatePromises = changedSettings.map(
-      (setting) =>
-        new Promise((resolve, reject) => {
-          updateSetting(
-            { settingKey: setting.key, data: { value: setting.value } },
-            {
-              onSuccess: resolve,
-              onError: reject,
-            }
-          );
-        })
+    // 3. Tuần tự gửi từng setting thay đổi lên server
+    toast.promise(
+      (async () => {
+        for (const setting of changedSettings) {
+          await new Promise((resolve, reject) => {
+            updateSetting(
+              { settingKey: setting.key, data: { value: setting.value } },
+              {
+                onSuccess: resolve,
+                onError: reject,
+              }
+            );
+          });
+        }
+      })(),
+      {
+        loading: 'Saving settings...',
+        success: () => {
+          // Reset dirty state sau khi lưu thành công
+          form.reset(formData, { keepValues: true });
+          return `${changedSettings.length} setting(s) updated successfully!`;
+        },
+        error: (err: any) =>
+          err.message || 'An error occurred while saving settings.',
+      }
     );
-
-    toast.promise(Promise.all(updatePromises), {
-      loading: 'Saving settings...',
-      success: () => {
-        // Reset dirty state sau khi lưu thành công
-        form.reset(formData, { keepValues: true });
-        return `${changedSettings.length} setting(s) updated successfully!`;
-      },
-      error: (err: any) =>
-        err.message || 'An error occurred while saving settings.',
-    });
   };
 
   if (isLoading) {

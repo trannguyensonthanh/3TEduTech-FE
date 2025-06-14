@@ -26,6 +26,7 @@ import { useCourseNavigation } from '@/hooks/useCourseNavigation';
 import { CourseLearningData } from '@/types/common.types';
 import { AlertTriangle, InfoIcon, XCircle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const VIDEO_PROGRESS_UPDATE_DEBOUNCE_TIME = 15000;
 
@@ -55,7 +56,7 @@ const CourseLearningPage: React.FC = () => {
   const [activeLessonId, setActiveLessonId] = useState<number | string | null>(
     null
   );
-
+  const { formatPrice } = useSettings(); // Assuming you have a formatPrice function in your auth context
   // --- Logic Điều hướng và Tiến độ được đóng gói trong custom hook ---
   const allLessonsFlat = useMemo(() => {
     if (!course?.sections) return [];
@@ -186,7 +187,7 @@ const CourseLearningPage: React.FC = () => {
             <p className='mt-2 text-muted-foreground'>
               Please{' '}
               <Link
-                to={`/login?redirect=${location.pathname}${location.search}`}
+                to={`/`}
                 className='text-primary hover:underline font-semibold'
               >
                 log in
@@ -221,7 +222,8 @@ const CourseLearningPage: React.FC = () => {
   const canAccessCourse =
     course.isEnrolled ||
     user.role === 'SA' ||
-    (course.originalPrice === 0 && course.discountedPrice === 0);
+    (course.pricing.display.originalPrice === 0 &&
+      course.pricing.display.discountedPrice === 0);
   if (!canAccessCourse) {
     // Không có quyền truy cập
     return (

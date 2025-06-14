@@ -19,7 +19,7 @@ import { Card } from '@/components/ui/card';
 import { CourseQueryParams } from '@/services/course.service';
 import { InstructorReviewQueryParams } from '@/services/review.service';
 import { useCourseReviewsByInstructor } from '@/hooks/queries/review.queries';
-import { useCoursesByInstructorId } from '@/hooks/queries/course.queries';
+import { useMyInstructorCourses } from '@/hooks/queries/course.queries';
 import { Badge } from '@/components/ui/badge';
 import PaginationControls from '@/components/admin/PaginationControls';
 
@@ -78,7 +78,7 @@ const InstructorProfilePage = () => {
     data: coursesData,
     isLoading: isLoadingCourses,
     isFetching: isFetchingCourses,
-  } = useCoursesByInstructorId(instructorId, courseQueryParams, {
+  } = useMyInstructorCourses(courseQueryParams, {
     enabled: !!instructorId,
   });
 

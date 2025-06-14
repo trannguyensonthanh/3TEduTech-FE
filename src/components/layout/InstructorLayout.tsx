@@ -60,12 +60,12 @@ const InstructorLayout = ({
 }: InstructorLayoutProps) => {
   const { t } = useTranslation();
   const navigationItems = [
-    // {
-    //   name: t('instructorLayout.navigation.dashboard'),
-    //   icon: LayoutDashboard,
-    //   href: '/instructor',
-    //   notifications: 0,
-    // },
+    {
+      name: t('instructorLayout.navigation.dashboard'),
+      icon: LayoutDashboard,
+      href: '/instructor',
+      notifications: 0,
+    },
     {
       name: t('instructorLayout.navigation.earnings'),
       icon: DollarSign,

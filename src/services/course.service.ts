@@ -55,8 +55,8 @@ export interface Course {
   thumbnailUrl?: string | null;
   thumbnailPublicId?: string | null; // Thêm nếu cần quản lý xóa
   introVideoUrl?: string | null;
-  originalPrice?: number;
-  discountedPrice?: number;
+  // originalPrice?: number;
+  // discountedPrice?: number;
   instructorId?: number;
   categoryId?: number;
   levelId?: number;
@@ -66,6 +66,7 @@ export interface Course {
   isFeatured?: 0 | 1 | null;
   createdAt?: string; // ISO Date string
   updatedAt?: string; // ISO Date string
+  liveCourseId?: number; // ID của khóa học đang live (nếu có)
 
   // Thông tin join (từ API response)
   categoryName?: string;
@@ -257,7 +258,7 @@ export interface ApprovalRequestListItem {
   requestId: number;
   status: string; // ApprovalStatus Enum
   requestType: string; // ApprovalRequestType Enum
-  requestDate: string; // CreatedAt của request
+  requestDate: IsoDateTimeString; // CreatedAt của request
   reviewedAt?: string | null;
   instructorNotes?: string | null;
   adminNotes?: string | null;
@@ -330,6 +331,16 @@ export const updateCourse = async (
 export const deleteCourse = async (courseId: number): Promise<void> => {
   await apiHelper.delete(`/courses/${courseId}`);
 };
+
+export interface CreateUpdateSessionResponse {
+  message: string;
+  updateCourse: Course; // Trả về thông tin của bản sao
+}
+
+export interface CancelUpdateSessionResponse {
+  message: string;
+  originalCourseSlug: string; // Để frontend redirect lại
+}
 
 /** Instructor/Admin: Upload/Cập nhật thumbnail */
 export const updateCourseThumbnail = async (
@@ -457,14 +468,41 @@ export const getCoursesByCategorySlug = async (
   );
 };
 
-/** Lấy danh sách khóa học theo instructorId */
-export const getCoursesByInstructorId = async (
-  instructorId: number | string,
-  params?: GetCoursesByInstructorParams
+export interface InstructorCourseParams {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  statusId?: string | null;
+  categoryId?: number | null;
+  levelId?: number | null;
+  sortBy?: string;
+}
+
+/** Lấy danh sách khóa học của giảng viên đang đăng nhập */
+export const getMyInstructorCourses = async (
+  params?: InstructorCourseParams
 ): Promise<CourseListResponse> => {
-  return apiHelper.get(
-    `/courses/by-instructor/${instructorId}`,
-    undefined,
-    params
-  );
+  // Gọi endpoint mới, không cần truyền instructorId trên URL
+  return apiHelper.get('/instructors/my-courses', undefined, params);
+};
+
+/** Tạo một phiên bản cập nhật cho khóa học đã publish */
+export const createCourseUpdateSession = async (
+  courseId: number
+): Promise<CreateUpdateSessionResponse> => {
+  return apiHelper.post(`/courses/${courseId}/create-update-session`);
+};
+
+/** Hủy phiên bản cập nhật đang thực hiện */
+export const cancelCourseUpdateSession = async (
+  updateCourseId: number
+): Promise<CancelUpdateSessionResponse> => {
+  return apiHelper.post(`/courses/${updateCourseId}/cancel-update`);
+};
+
+/** Lấy yêu cầu phê duyệt đang chờ xử lý của một khóa học */
+export const getPendingApprovalRequestByCourseId = async (
+  courseId: number
+): Promise<ApprovalRequestListItem | null> => {
+  return apiHelper.get(`/courses/${courseId}/pending-approval-request`);
 };

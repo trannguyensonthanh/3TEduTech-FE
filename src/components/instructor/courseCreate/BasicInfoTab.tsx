@@ -1,5 +1,5 @@
 // src/components/instructor/courseCreate/BasicInfoTab.tsx
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import {
   Form,
@@ -65,8 +65,23 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
       shouldValidate: true,
     });
     form.setValue('slug', generateSlug(title), { shouldDirty: true });
+    form.setValue('shortDescription', shortDescription, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
+
   const [shortDescriptionKey, setShortDescriptionKey] = useState(1);
+
+  // Force re-render of TiptapEditor when form is reset (e.g. after reload)
+  useEffect(() => {
+    setShortDescriptionKey((prev) => prev + 1);
+  }, [
+    form.formState.isSubmitted,
+    form.formState.isSubmitSuccessful,
+    courseName,
+  ]);
+
   return (
     <div className='space-y-6'>
       <FormField
@@ -252,6 +267,31 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           )}
         />
       </div>
+      <FormField
+        control={control}
+        name='isFeatured'
+        render={({ field }) => (
+          <FormItem className='flex flex-row items-center space-x-3 space-y-0 pt-2'>
+            <FormControl>
+              <input
+                type='checkbox'
+                id='isFeatured'
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+                className='h-4 w-4 accent-primary rounded border-gray-300 focus:ring-primary'
+              />
+            </FormControl>
+            <FormLabel htmlFor='isFeatured' className='mb-0'>
+              Featured Course
+            </FormLabel>
+            <FormDescription>
+              Đánh dấu khoá học này là nổi bật để ưu tiên hiển thị trên trang
+              chủ.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 };

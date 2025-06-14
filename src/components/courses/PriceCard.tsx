@@ -45,7 +45,7 @@ const PriceCard: React.FC<PriceCardProps> = ({ course, className }) => {
   const handleAddToCart = () => {
     if (!userData) {
       toast.error('Please log in to add courses to your cart.');
-      navigate('/login', { state: { from: location.pathname } });
+      navigate('/', { state: { from: location.pathname } });
       return;
     }
     addCourseToCart(course.courseId, {
@@ -61,7 +61,7 @@ const PriceCard: React.FC<PriceCardProps> = ({ course, className }) => {
   const handleBuyNow = () => {
     if (!userData) {
       toast.error('Please log in to enroll in the course.');
-      navigate('/login', { state: { from: location.pathname } });
+      navigate('/', { state: { from: location.pathname } });
       return;
     }
     if (!isAddedToCart) {

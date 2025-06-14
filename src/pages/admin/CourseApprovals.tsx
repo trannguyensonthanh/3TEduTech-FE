@@ -12,6 +12,7 @@ import {
 import {
   useReviewCourseApproval,
   useCourseDetailBySlug,
+  usePendingApprovalRequestByCourseId,
 } from '@/hooks/queries/course.queries'; // Import hook query/mutation
 import { useToast } from '@/hooks/use-toast';
 import FullScreenLoader from '@/components/common/FullScreenLoader';
@@ -44,6 +45,16 @@ const CourseApprovalsPage: React.FC = () => {
   } = useCourseDetailBySlug(selectedSlug ?? undefined, {
     enabled: !!selectedSlug, // Chỉ fetch khi có slug
   });
+
+  const { data: pendingApproval, isLoading: isApprovalLoading } =
+    usePendingApprovalRequestByCourseId(courseDetails?.courseId);
+
+  const chitietCourseId = {
+    ...courseDetails,
+    requestId: pendingApproval?.requestId,
+    requestDate: pendingApproval?.requestDate,
+    instructorNotes: pendingApproval?.instructorNotes,
+  };
 
   // Mutation để Approve/Reject
   const { mutate: reviewCourseMutate, isPending: isReviewing } =
@@ -157,26 +168,26 @@ const CourseApprovalsPage: React.FC = () => {
   // --- Render ---
   return (
     <AdminLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className='container mx-auto px-4 py-8'>
         {selectedSlug ? (
           // Hiển thị chi tiết khóa học
           isLoadingDetail ? (
             <FullScreenLoader />
           ) : isDetailError ? (
-            <div className="text-center text-destructive">
+            <div className='text-center text-destructive'>
               Error loading course details:{' '}
               {detailError?.message || 'Unknown error'}
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={handleBackToList}
-                className="ml-4"
+                className='ml-4'
               >
                 Back to List
               </Button>
             </div>
           ) : courseDetails ? (
             <CourseDetailView
-              courseDetails={courseDetails} // Dữ liệu chi tiết fetch được
+              courseDetails={chitietCourseId} // Dữ liệu chi tiết fetch được
               // expandedSections và toggleSectionExpand cần state riêng nếu muốn giữ trạng thái expand
               // expandedSections={[]}
               // toggleSectionExpand={() => {}}
@@ -191,7 +202,7 @@ const CourseApprovalsPage: React.FC = () => {
               isProcessing={isReviewing} // Thêm cờ loading cho nút Approve/Reject
             />
           ) : (
-            <div className="text-center text-muted-foreground">
+            <div className='text-center text-muted-foreground'>
               Course details not found.
             </div>
           )

@@ -275,7 +275,10 @@ const QuizQuestionDialog: React.FC<QuizQuestionDialogProps> = ({
           {/* Thêm ScrollArea */}
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleDialogSubmit)}
+              onSubmit={(e) => {
+                e.stopPropagation();
+                form.handleSubmit(handleDialogSubmit)(e);
+              }}
               className='space-y-5 py-2 pr-2'
             >
               <FormField

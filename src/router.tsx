@@ -71,6 +71,7 @@ import Unauthorized from './pages/Unauthorized';
 import CryptoPaymentPage from '@/pages/CryptoPaymentPage';
 import AdminSettings from '@/pages/admin/AdminSettings';
 import PayoutManagement from '@/pages/admin/PayoutManagement';
+import InstructorDashboard from '@/pages/instructor/InstructorDashboard';
 const AppRouter = () => {
   return (
     <BrowserRouter>
@@ -126,12 +127,12 @@ const AppRouter = () => {
           {/* Dùng /instructor làm route layout hoặc redirect */}
           <Route
             path='/instructor'
-            element={<Navigate to='/instructor/earnings' replace />}
+            element={<Navigate to='/instructor/dashboard' replace />}
           />
-          {/* <Route
+          <Route
             path='/instructor/dashboard'
             element={<InstructorDashboard />}
-          /> */}
+          />
           <Route path='/instructor/courses' element={<InstructorCourses />} />
           <Route
             path='/instructor/courses/create'

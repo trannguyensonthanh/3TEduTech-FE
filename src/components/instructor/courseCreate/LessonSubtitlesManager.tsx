@@ -225,6 +225,7 @@ export const LessonSubtitlesManager: React.FC<LessonSubtitlesManagerProps> = ({
                 </div>
               </div>
               <Button
+                type='button'
                 variant='ghost'
                 size='icon'
                 className='h-7 w-7'

@@ -203,6 +203,38 @@ export interface UpdatePayoutMethodDetailsData {
   [key: string]: any; // Cho phép object bất kỳ, backend sẽ validate
 }
 
+// --- Interfaces cho Dashboard ---
+export interface DashboardStat {
+  totalStudents: number;
+  totalCourses: number;
+  totalLifetimeEarnings: number;
+  availableBalance: number;
+  currencyId: string;
+}
+
+export interface RecentEnrollment {
+  studentAccountId: number;
+  studentName: string;
+  studentAvatarUrl: string | null;
+  courseId: number;
+  courseName: string;
+  enrolledAt: string; // ISO String
+}
+
+export interface TopPerformingCourse {
+  courseId: number;
+  courseName: string;
+  courseSlug: string;
+  recentEnrollments: number;
+  recentRevenue: number;
+}
+
+export interface InstructorDashboardData {
+  stats: DashboardStat;
+  recentEnrollments: RecentEnrollment[];
+  topPerformingCourses: TopPerformingCourse[];
+}
+
 /** Lấy profile đầy đủ của instructor đang đăng nhập */
 export const getMyInstructorProfile = async (): Promise<InstructorProfile> => {
   return apiHelper.get('/instructors/me/profile');
@@ -344,3 +376,9 @@ export const deleteMyPayoutMethod = async (
 ): Promise<void> => {
   await apiHelper.delete(`/instructors/me/payout-methods/${payoutMethodId}`);
 };
+
+/** Instructor: Lấy dữ liệu tổng hợp cho Dashboard */
+export const getMyDashboardOverview =
+  async (): Promise<InstructorDashboardData> => {
+    return apiHelper.get('/instructors/me/dashboard-overview');
+  };

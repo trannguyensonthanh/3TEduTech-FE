@@ -21,9 +21,27 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import CurriculumSectionAdminView from './CurriculumSectionAdminView'; // Component con để hiển thị section
-import { AdminCourseView, Lesson, CourseStatusId } from '@/types/common.types'; // Import types
+import {
+  Lesson,
+  CourseStatusId,
+  IsoDateTimeString,
+} from '@/types/common.types'; // Import types
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { Course } from '@/services/course.service';
+import { useSettings } from '@/contexts/SettingsContext';
+
+export interface AdminCourseView extends Course {
+  // được dùng trong code này
+  requestId?: number;
+  requestDate?: IsoDateTimeString; // When the course was submitted for review
+  instructorNotes?: string | null;
+  // Inherits all fields from Course
+  // AdminCourseView in the file also had categoryName, levelName, instructorName, etc.
+  // These can be derived from the joined objects in Course (category, level, instructor)
+  // Or, if the API flattens them, they can be added here directly.
+  // For now, relying on Course structure.
+}
 
 interface CourseDetailViewProps {
   courseDetails: AdminCourseView; // Sử dụng type AdminCourseView đầy đủ
@@ -54,7 +72,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
   // State quản lý section nào đang mở trong component này
   const [expandedSections, setExpandedSections] = useState<number[]>([]);
   const { t } = useTranslation();
-
+  const { formatPrice } = useSettings();
   const toggleSectionExpand = (sectionId: number) => {
     setExpandedSections((prev) =>
       prev.includes(sectionId)
@@ -64,7 +82,8 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
   };
 
   const courseUrl = `/courses/${courseDetails.slug}`; // Tạo URL preview
-
+  console.log('Course URL:', courseUrl); // Debug URL
+  console.log('Course Details:', courseDetails); // Debug course details
   return (
     <div className='space-y-6'>
       {/* --- Header Buttons --- */}
@@ -72,32 +91,47 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
         <Button variant='outline' onClick={onBack} disabled={isProcessing}>
           ← {t('courseDetail.backToPending', 'Back to Pending List')}
         </Button>
-        <div className='space-x-2'>
-          <Button
-            variant='destructive'
-            onClick={onReject}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            ) : (
-              <X className='mr-2 h-4 w-4' />
-            )}
-            {t('courseDetail.reject', 'Reject')}
-          </Button>
-          <Button variant='default' onClick={onApprove} disabled={isProcessing}>
-            {isProcessing ? (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            ) : (
-              <Check className='mr-2 h-4 w-4' />
-            )}
-            {t('courseDetail.approve', 'Approve')}
-          </Button>
-        </div>
+        {courseDetails.requestId !== undefined ? (
+          <div className='space-x-2'>
+            <Button
+              variant='destructive'
+              onClick={onReject}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <X className='mr-2 h-4 w-4' />
+              )}
+              {t('courseDetail.reject', 'Reject')}
+            </Button>
+            <Button
+              variant='default'
+              onClick={onApprove}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              ) : (
+                <Check className='mr-2 h-4 w-4' />
+              )}
+              {t('courseDetail.approve', 'Approve')}
+            </Button>
+          </div>
+        ) : (
+          <div className='text-sm text-muted-foreground'>
+            Không có yêu cầu phê duyệt
+          </div>
+        )}
       </div>
-
       {/* --- Main Content Grid --- */}
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 items-start'>
+      <div
+        className={`grid grid-cols-1 ${
+          courseDetails.requestId === undefined
+            ? 'lg:grid-cols-2'
+            : 'lg:grid-cols-3'
+        } gap-6 items-start`}
+      >
         {/* --- Left Column: Course Info & Curriculum --- */}
         <div className='lg:col-span-2 space-y-6'>
           <Card>
@@ -116,13 +150,13 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
               </div>
               <CardDescription>
                 {t('courseDetail.by', {
-                  instructor: courseDetails.instructor.fullName,
+                  instructor: courseDetails?.instructorName,
                   defaultValue: 'By {{instructor}}',
                 })}{' '}
                 <span className='mx-1'>|</span>{' '}
                 {t('courseDetail.submitted', 'Submitted')}:{' '}
                 {new Date(
-                  courseDetails.submittedAt || Date.now()
+                  courseDetails.createdAt || Date.now()
                 ).toLocaleDateString()}
                 <Badge variant='secondary' className='ml-2'>
                   {t(
@@ -130,11 +164,11 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                     courseDetails.statusId
                   )}
                 </Badge>
-                {courseDetails.approvalRequestId && (
+                {courseDetails.requestId && (
                   <span className='ml-2 text-xs text-muted-foreground'>
                     (
                     {t('courseDetail.requestId', {
-                      id: courseDetails.approvalRequestId,
+                      id: courseDetails.requestId,
                       defaultValue: 'Request ID: {{id}}',
                     })}
                     )
@@ -175,13 +209,13 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                   <span className='font-medium text-muted-foreground block'>
                     {t('courseDetail.category', 'Category')}:
                   </span>{' '}
-                  {courseDetails.category.categoryName}
+                  {courseDetails.categoryName}
                 </div>
                 <div>
                   <span className='font-medium text-muted-foreground block'>
                     {t('courseDetail.level', 'Level')}:
                   </span>{' '}
-                  {courseDetails.level.levelName}
+                  {courseDetails.levelName}
                 </div>
                 <div>
                   <span className='font-medium text-muted-foreground block'>
@@ -193,14 +227,14 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                   <span className='font-medium text-muted-foreground block'>
                     {t('courseDetail.price', 'Price')}:
                   </span>{' '}
-                  ${courseDetails.originalPrice.toFixed(2)}
+                  {formatPrice(courseDetails.pricing.display.originalPrice)}
                 </div>
                 <div>
                   <span className='font-medium text-muted-foreground block'>
                     {t('courseDetail.discount', 'Discount')}:
                   </span>{' '}
-                  {courseDetails.discountedPrice
-                    ? `$${courseDetails.discountedPrice.toFixed(2)}`
+                  {courseDetails.pricing.display.discountedPrice
+                    ? formatPrice(courseDetails.pricing.display.discountedPrice)
                     : t('courseDetail.none', 'None')}
                 </div>
               </div>
@@ -302,82 +336,83 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
         </div>
 
         {/* --- Right Column: Review Decision --- */}
-        <div className='lg:col-span-1 sticky top-4'>
-          {' '}
-          {/* Sticky để ô review luôn hiển thị */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {t('courseDetail.reviewDecision', 'Review Decision')}
-              </CardTitle>
-              <CardDescription>
-                {t(
-                  'courseDetail.reviewDesc',
-                  'Provide feedback and approve or reject the submission.'
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div>
-                <Label htmlFor='adminNotes' className='font-medium'>
-                  {t('courseDetail.adminNotes', 'Admin Notes / Feedback')}
-                </Label>
-                <Textarea
-                  id='adminNotes'
-                  placeholder={t(
-                    'courseDetail.adminNotesPlaceholder',
-                    'Enter feedback for the instructor (required if rejecting)...'
-                  )}
-                  className='min-h-[180px] mt-1'
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                />
-                <p className='text-xs text-muted-foreground mt-1'>
+        {courseDetails.requestId !== undefined && (
+          <div className='lg:col-span-1 sticky top-4'>
+            {/* Sticky để ô review luôn hiển thị */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {t('courseDetail.reviewDecision', 'Review Decision')}
+                </CardTitle>
+                <CardDescription>
                   {t(
-                    'courseDetail.adminNotesHint',
-                    'These notes will be sent to the instructor.'
+                    'courseDetail.reviewDesc',
+                    'Provide feedback and approve or reject the submission.'
                   )}
-                </p>
-              </div>
-              <div className='pt-4 space-y-2 border-t'>
-                <Button
-                  variant='default'
-                  className='w-full'
-                  onClick={onApprove}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  ) : (
-                    <Check className='mr-2 h-4 w-4' />
-                  )}{' '}
-                  {t('courseDetail.approveCourse', 'Approve Course')}
-                </Button>
-                <Button
-                  variant='destructive'
-                  className='w-full'
-                  onClick={onReject}
-                  disabled={isProcessing || !adminNotes.trim()}
-                  title={
-                    !adminNotes.trim()
-                      ? t(
-                          'courseDetail.notesRequired',
-                          'Notes are required to reject'
-                        )
-                      : ''
-                  }
-                >
-                  {isProcessing ? (
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  ) : (
-                    <X className='mr-2 h-4 w-4' />
-                  )}{' '}
-                  {t('courseDetail.rejectCourse', 'Reject Course')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className='space-y-4'>
+                <div>
+                  <Label htmlFor='adminNotes' className='font-medium'>
+                    {t('courseDetail.adminNotes', 'Admin Notes / Feedback')}
+                  </Label>
+                  <Textarea
+                    id='adminNotes'
+                    placeholder={t(
+                      'courseDetail.adminNotesPlaceholder',
+                      'Enter feedback for the instructor (required if rejecting)...'
+                    )}
+                    className='min-h-[180px] mt-1'
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                  />
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    {t(
+                      'courseDetail.adminNotesHint',
+                      'These notes will be sent to the instructor.'
+                    )}
+                  </p>
+                </div>
+                <div className='pt-4 space-y-2 border-t'>
+                  <Button
+                    variant='default'
+                    className='w-full'
+                    onClick={onApprove}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    ) : (
+                      <Check className='mr-2 h-4 w-4' />
+                    )}{' '}
+                    {t('courseDetail.approveCourse', 'Approve Course')}
+                  </Button>
+                  <Button
+                    variant='destructive'
+                    className='w-full'
+                    onClick={onReject}
+                    disabled={isProcessing || !adminNotes.trim()}
+                    title={
+                      !adminNotes.trim()
+                        ? t(
+                            'courseDetail.notesRequired',
+                            'Notes are required to reject'
+                          )
+                        : ''
+                    }
+                  >
+                    {isProcessing ? (
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    ) : (
+                      <X className='mr-2 h-4 w-4' />
+                    )}{' '}
+                    {t('courseDetail.rejectCourse', 'Reject Course')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

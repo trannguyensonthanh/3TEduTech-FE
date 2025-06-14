@@ -17,7 +17,7 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
 
   // 1. Kiểm tra nếu chưa đăng nhập
   if (!isAuthenticated) {
-    return <Navigate to='/login' state={{ from: location }} replace />;
+    return <Navigate to='/' state={{ from: location }} replace />;
   }
 
   // 2. Kiểm tra nếu route yêu cầu vai trò cụ thể

@@ -52,7 +52,7 @@ const CourseDetailsDialog: React.FC<CourseDetailsDialogProps> = ({
           Failed to load course details.
         </div>
       );
-
+    console.log('Course Details:', course);
     return (
       <div className='space-y-4'>
         {/* Course Info */}

@@ -68,6 +68,9 @@ const ApprovalsListContainer: React.FC<ApprovalsListContainerProps> = ({
   const totalItems = approvalData?.total || 0;
   const totalPages =
     approvalData?.totalPages || Math.ceil(totalItems / itemsPerPage);
+  const isPending = approvals?.some(
+    (approval) => approval.status === 'PENDING'
+  );
 
   // Reset về trang 1 khi search term hoặc tab thay đổi
   useEffect(() => {

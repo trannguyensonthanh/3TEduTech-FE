@@ -869,7 +869,7 @@ const CourseDetailPage: React.FC = () => {
                 )}
                 {!userData && (
                   <p className='mb-6 text-sm text-muted-foreground'>
-                    <Link to='/login' className='text-primary hover:underline'>
+                    <Link to='/' className='text-primary hover:underline'>
                       Log in
                     </Link>
                     to leave a review.

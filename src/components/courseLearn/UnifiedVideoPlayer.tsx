@@ -38,7 +38,6 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
 }) => {
   const plyrInstanceRef = useRef<APITypes | null>(null);
   const lessonId = Number(lesson.lessonId);
-
   const {
     data: videoUrlData,
     isLoading: isLoadingUrl,
@@ -49,59 +48,58 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
     { enabled: !!lessonId }
   );
 
-  // *** LOGIC QUAN TRỌNG: Xây dựng source cho Plyr dựa trên videoSourceType ***
-  const videoSource = useMemo<Plyr.SourceInfo | null>(() => {
-    const tracks =
+  // Build tracks only for Cloudinary
+  const tracks = useMemo(() => {
+    if (lesson.videoSourceType !== 'CLOUDINARY') return undefined;
+    return (
       subtitlesData?.subtitles.map((sub) => ({
         kind: 'captions' as const,
-        label: sub.languageCode.toUpperCase(),
+        label: sub.languageName || sub.languageCode.toUpperCase(),
         srcLang: sub.languageCode,
         src: sub.subtitleUrl,
         default: sub.isDefault,
-      })) || [];
-
+      })) || []
+    );
+  }, [subtitlesData, lesson.videoSourceType]);
+  console.log('tracks:', tracks);
+  const videoSource = useMemo<Plyr.SourceInfo | null>(() => {
     switch (lesson.videoSourceType) {
       case 'CLOUDINARY':
         if (!videoUrlData?.signedUrl) return null;
         return {
           type: 'video',
           title: lesson.lessonName,
-          sources: [{ src: videoUrlData.signedUrl, type: 'video/mp4' }], // Giả sử là MP4
+          sources: [{ src: videoUrlData.signedUrl, type: 'video/mp4' }],
           poster: lesson.thumbnailUrl || undefined,
           tracks,
+          crossorigin: true,
         };
-
       case 'YOUTUBE':
-        console.log('lesson', lesson);
         if (!lesson.externalVideoId) return null;
         return {
           type: 'video',
           sources: [
             {
-              src: videoUrlData?.publicEmbedUrl, // Chỉ cần ID hoặc URL đầy đủ
+              src: videoUrlData?.publicEmbedUrl,
               provider: 'youtube',
             },
           ],
-          tracks, // Plyr cũng hỗ trợ phụ đề cho YouTube
         };
-
       case 'VIMEO':
         if (!lesson.externalVideoId) return null;
         return {
           type: 'video',
           sources: [
             {
-              src: videoUrlData?.publicEmbedUrl, // Chỉ cần ID hoặc URL đầy đủ
+              src: videoUrlData?.publicEmbedUrl,
               provider: 'vimeo',
             },
           ],
-          tracks,
         };
-
       default:
         return null;
     }
-  }, [videoUrlData, subtitlesData, lesson]);
+  }, [videoUrlData, tracks, lesson]);
 
   const plyrOptions: Plyr.Options = {
     controls: [
@@ -171,6 +169,7 @@ const SecureVideoPlayer: React.FC<SecureVideoPlayerProps> = ({
   return (
     <div style={{ aspectRatio: '16/9', width: '100%', background: 'black' }}>
       <PlyrWrapper
+        key={lesson.lessonId + '-' + lesson.videoSourceType}
         ref={plyrInstanceRef}
         source={videoSource}
         options={plyrOptions}

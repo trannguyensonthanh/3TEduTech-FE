@@ -95,7 +95,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
         {
           onSuccess: () => {
             toast.success('Section and its lessons deleted.');
-            queryClient.invalidateQueries({
+            queryClient.removeQueries({
               queryKey: courseKeys.detailById(courseId),
             });
           },
@@ -146,6 +146,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                   </div>
                   <div className='flex items-center gap-1'>
                     <Button
+                      type='button'
                       variant='ghost'
                       size='sm'
                       onClick={() => handleEditSection(section)}
@@ -154,6 +155,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                       Edit
                     </Button>
                     <Button
+                      type='button'
                       variant='ghost'
                       size='sm'
                       className='text-destructive hover:text-destructive'
@@ -195,6 +197,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                             </div>
                             <div className='flex items-center gap-1'>
                               <Button
+                                type='button'
                                 variant='ghost'
                                 size='icon'
                                 className='h-7 w-7'
@@ -205,6 +208,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                                 <Icons.edit className='h-4 w-4' />
                               </Button>
                               <Button
+                                type='button'
                                 variant='ghost'
                                 size='icon'
                                 className='h-7 w-7'
@@ -230,6 +234,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
                   </div>
                   <div className='p-3 border-t'>
                     <Button
+                      type='button'
                       variant='outline'
                       className='w-full'
                       size='sm'
@@ -251,7 +256,7 @@ const CurriculumTab: React.FC<CurriculumTabProps> = ({
             </p>
           </div>
         )}
-        <Button className='w-full' onClick={handleAddSection}>
+        <Button type='button' className='w-full' onClick={handleAddSection}>
           <Icons.plus className='h-4 w-4 mr-2' />
           Add New Section
         </Button>

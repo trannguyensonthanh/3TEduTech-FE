@@ -147,7 +147,7 @@ const CheckoutPage: React.FC = () => {
             />
           ),
           description: 'Pay with your MoMo wallet.',
-          disabled: true, // Disable MoMo for now
+          // disabled: true, // Disable MoMo for now
         }
       );
     }

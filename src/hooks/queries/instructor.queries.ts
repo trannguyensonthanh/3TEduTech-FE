@@ -41,6 +41,8 @@ import {
   CreateInstructorPayoutMethodData,
   setMyPrimaryPayoutMethod,
   deleteMyPayoutMethod,
+  InstructorDashboardData,
+  getMyDashboardOverview,
 } from '@/services/instructor.service';
 
 // Query Key Factory
@@ -66,6 +68,8 @@ const instructorKeys = {
     [...instructorKeys.myStudentsLists(), params || {}] as const,
   myPayoutMethods: () =>
     [...instructorKeys.all, 'me', 'payoutMethods'] as const,
+  myDashboardOverview: () =>
+    [...instructorKeys.all, 'me', 'dashboardOverview'] as const,
 };
 
 // --- Queries ---
@@ -114,18 +118,6 @@ export const useMyInstructorProfile = (
     ...options,
   });
 };
-
-// /** Hook Instructor lấy dữ liệu dashboard */
-// export const useMyDashboardData = (
-//   options?: Omit<UseQueryOptions<DashboardData, Error>, 'queryKey' | 'queryFn'>
-// ) => {
-//   return useQuery<DashboardData, Error>({
-//     queryKey: instructorKeys.myDashboard(),
-//     queryFn: getMyDashboardData,
-//     staleTime: 1000 * 60, // Cache 1 phút
-//     ...options,
-//   });
-// };
 
 /** Hook lấy profile công khai của instructor */
 export const useInstructorPublicProfile = (
@@ -473,6 +465,21 @@ export const useDeleteMyPayoutMethod = (
       console.error('Delete payout method failed:', error.message);
       // toast.error(error.message || 'Xóa phương thức thanh toán thất bại.');
     },
+    ...options,
+  });
+};
+
+/** Hook Instructor lấy dữ liệu tổng hợp cho Dashboard */
+export const useMyDashboardOverview = (
+  options?: Omit<
+    UseQueryOptions<InstructorDashboardData, Error>,
+    'queryKey' | 'queryFn'
+  >
+) => {
+  return useQuery<InstructorDashboardData, Error>({
+    queryKey: instructorKeys.myDashboardOverview(),
+    queryFn: getMyDashboardOverview,
+    staleTime: 1000 * 60 * 5, // Dữ liệu dashboard có thể cache 5 phút
     ...options,
   });
 };

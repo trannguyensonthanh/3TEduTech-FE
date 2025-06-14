@@ -59,7 +59,7 @@ const LessonDetailsDialog: React.FC<LessonDetailsDialogProps> = ({
   } else if (isCloudinaryVideo) {
     videoEmbedUrl = signedUrlData?.signedUrl || null;
   }
-  console.log('lesson', lesson);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-w-2xl max-h-[85vh]'>

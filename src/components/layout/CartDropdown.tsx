@@ -79,7 +79,7 @@ const CartDropdown: React.FC = () => {
           <Button
             size='sm'
             onClick={() =>
-              navigate('/login', { state: { from: location.pathname } })
+              navigate('/', { state: { from: location.pathname } })
             }
           >
             {t('cartDropdown.loginBtn')}

@@ -149,6 +149,7 @@ export enum CourseStatusId {
   PUBLISHED = 'PUBLISHED',
   REJECTED = 'REJECTED',
   ARCHIVED = 'ARCHIVED',
+  UPDATING = 'UPDATING', // If you have a status for courses being updated
   // PENDING_APPROVAL = 2, (Example if numeric)
 }
 
@@ -191,19 +192,7 @@ export interface Course {
   status?: CourseStatus;
 }
 
-// Marked Types & Directly Related
-export interface AdminCourseView extends Course {
-  // được dùng trong code này
-  approvalRequestId?: number;
-  submittedAt?: IsoDateTimeString;
-  instructorNotes?: string | null;
-  // Inherits all fields from Course
-  // AdminCourseView in the file also had categoryName, levelName, instructorName, etc.
-  // These can be derived from the joined objects in Course (category, level, instructor)
-  // Or, if the API flattens them, they can be added here directly.
-  // For now, relying on Course structure.
-}
-
+// Marked Types & Directly Relate
 export interface ReviewCourseData {
   // được dùng trong code này
   decision: 'APPROVED' | 'REJECTED';

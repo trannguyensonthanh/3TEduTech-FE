@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useDebounce } from '@/hooks/useDebounce';
 import _ from 'lodash';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { toast } from 'sonner';
 
 // UI Components
@@ -29,7 +30,10 @@ import {
   useUpdateCourse,
   useSubmitCourseForApproval,
   useDeleteCourse,
+  useCreateCourseUpdateSession,
+  useCancelCourseUpdateSession,
   useUpdateCourseThumbnail,
+  courseKeys,
 } from '@/hooks/queries/course.queries';
 import { useCategories } from '@/hooks/queries/category.queries';
 import { useLevels } from '@/hooks/queries/level.queries';
@@ -41,15 +45,20 @@ import {
 import { CourseStatusId } from '@/types/common.types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
+import { CourseEditHeader } from '@/pages/instructor/components/CourseEditHeader';
+import { useQueryClient } from '@tanstack/react-query';
+import TokenService from '@/services/token.service';
+import { LiveNotification } from '@/components/common/LiveNotification';
 
 const CourseEdit: React.FC = () => {
   const { courseSlug } = useParams<{ courseSlug: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('basic');
-
-  // State cho các hành động chính
+  const queryClient = useQueryClient();
+  // Dialog states
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
 
   // State cho media files (không thuộc form)
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -78,15 +87,121 @@ const CourseEdit: React.FC = () => {
   const { mutate: submitForApproval, isPending: isSubmitting } =
     useSubmitCourseForApproval();
   const { mutate: deleteCourse, isPending: isDeleting } = useDeleteCourse();
-
+  const { mutate: createUpdateSession, isPending: isCreatingUpdate } =
+    useCreateCourseUpdateSession();
+  const { mutate: cancelUpdateSession, isPending: isCancellingUpdate } =
+    useCancelCourseUpdateSession();
   const isProcessing =
     isUpdatingCourse || isUploadingThumb || isSubmitting || isDeleting;
-
+  const [liveNotification, setLiveNotification] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: React.ReactNode;
+    actionText?: string;
+    onActionClick?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
   // --- Form Setup ---
   const form = useForm<TCourseEditSchema>({
     resolver: zodResolver(courseEditSchema),
     mode: 'onChange',
   });
+  console.log('CourseEdit component rendered with courseSlug:', course);
+  useEffect(() => {
+    if (!course?.courseId || !TokenService.getLocalAccessToken()) return;
+
+    const ctrl = new AbortController();
+    const API_BASE_URL = 'http://localhost:5000/v1';
+
+    fetchEventSource(`${API_BASE_URL}/events/subscribe`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${TokenService.getLocalAccessToken()}`,
+        Accept: 'text/event-stream',
+      },
+      signal: ctrl.signal,
+      onopen: async (response) => {
+        if (
+          response.ok &&
+          response.headers.get('content-type') === 'text/event-stream'
+        ) {
+          console.log('[SSE] Connection to server opened.');
+        } else {
+          console.error(
+            '[SSE] Failed to connect:',
+            response.status,
+            response.statusText
+          );
+        }
+      },
+      onmessage(event) {
+        // event.event là tên event, event.data là payload
+        if (event.event === 'course_reviewed') {
+          console.log("[SSE] Received 'course_reviewed' event:", event.data);
+          try {
+            const eventData = JSON.parse(event.data);
+            if (Number(eventData.courseId) === Number(course.courseId)) {
+              toast.success('Your course has been reviewed by an admin!', {
+                description: `Status changed to ${eventData.newStatus}. Please review any feedback.`,
+                duration: 10000,
+              });
+
+              // Invalidate query để React Query tự động fetch lại dữ liệu mới nhất
+              queryClient.invalidateQueries({
+                queryKey: courseKeys.detailById(course.courseId),
+              });
+              queryClient.invalidateQueries({
+                queryKey: courseKeys.detailBySlug(course.slug),
+              });
+
+              // Nếu slug thay đổi, cũng invalidate slug mới để cache
+              if (eventData.courseSlug) {
+                queryClient.invalidateQueries({
+                  queryKey: courseKeys.detailBySlug(eventData.courseSlug),
+                });
+              }
+            }
+          } catch (e) {
+            console.error('[SSE] Error parsing event data:', e);
+          }
+        } else if (event.event === 'new_notification') {
+          console.log(
+            "[SSE] Received 'new_notification' event: ----------------------------------------->",
+            event
+          );
+          try {
+            const eventData = JSON.parse(event.data);
+            const notification = eventData.notification.message;
+
+            setLiveNotification({
+              isOpen: true,
+              title: 'New Notification',
+              message: notification,
+              actionText: 'Chuyển hướng về danh sách khóa học',
+              onActionClick: () => navigate('/instructor/courses'),
+            });
+          } catch (e) {
+            console.error('[SSE] Error parsing notification event data:', e);
+          }
+        } else {
+          // Log các event khác nếu cần
+          console.log('[SSE] Received event:', event);
+        }
+      },
+      onerror(err) {
+        console.error('[SSE] EventSource failed:', err);
+        throw err;
+      },
+    });
+
+    return () => {
+      console.log('[SSE] Closing event source connection.');
+      ctrl.abort(); // Hủy kết nối khi component unmount
+    };
+  }, [course?.courseId, course?.slug, queryClient]);
 
   // -- Khởi tạo Form với dữ liệu từ API --
   useEffect(() => {
@@ -108,6 +223,7 @@ const CourseEdit: React.FC = () => {
         originalPrice: course.pricing?.base?.originalPrice,
         discountedPrice: course.pricing?.base?.discountedPrice,
         introVideoUrl: course.introVideoUrl || '',
+        isFeatured: course.isFeatured ?? false,
       };
       form.reset(formData);
     }
@@ -123,10 +239,29 @@ const CourseEdit: React.FC = () => {
           // Bước 1: Lưu thông tin khóa học nếu form có thay đổi
           if (form.formState.isDirty) {
             const { courseId, ...payload } = courseEditSchema.parse(formData);
-            await updateCourse({
-              courseId: Number(course.courseId),
-              data: payload,
-            });
+            await updateCourse(
+              {
+                courseId: Number(course.courseId),
+                data: payload, // payload đã có isFeatured
+              },
+              {
+                onSuccess: (data: any) => {
+                  console.log('Course updated successfully:', data);
+                  // Nếu API trả về slug mới, cập nhật URL
+                  if (data?.slug && data?.slug !== course.slug) {
+                    navigate(`/instructor/courses/${data?.slug}/edit`, {
+                      replace: true,
+                    });
+                  }
+                },
+                onError: (err: any) => {
+                  toast.error(
+                    err?.message ||
+                      'An error occurred while updating the course.'
+                  );
+                },
+              }
+            );
           }
 
           // Bước 2: Upload thumbnail nếu có file mới
@@ -153,6 +288,20 @@ const CourseEdit: React.FC = () => {
       },
       error: (err: any) => err.message || 'An error occurred while saving.',
     });
+  };
+  const handleEditPublishedCourse = () => {
+    if (course && course.statusId === 'PUBLISHED') {
+      createUpdateSession(course.courseId, {
+        onSuccess: (data) => {
+          toast.success(data.message);
+          navigate(`/instructor/courses/${data.updateCourse.slug}/edit`);
+        },
+        onError: (err) =>
+          toast.error(
+            (err as Error).message || 'Could not create update session.'
+          ),
+      });
+    }
   };
 
   // --- Action Handlers ---
@@ -183,7 +332,21 @@ const CourseEdit: React.FC = () => {
         toast.error((err as Error).message || 'Could not delete course.'),
     });
   };
-
+  const confirmCancelUpdate = () => {
+    if (course?.courseId) {
+      cancelUpdateSession(course.courseId, {
+        onSuccess: (data) => {
+          toast.success(data.message);
+          navigate(`/instructor/courses/${data.originalCourseSlug}/edit`);
+          setIsCancelConfirmOpen(false);
+        },
+        onError: (err) =>
+          toast.error((err as Error).message || 'Could not cancel update.'),
+      });
+    }
+  };
+  const isProcessingAction =
+    isSubmitting || isDeleting || isCreatingUpdate || isCancellingUpdate;
   // --- Render Logic ---
   const isLoadingPage = isLoading || catLoading || levelLoading || langLoading;
   if (isLoadingPage && !course) {
@@ -211,7 +374,10 @@ const CourseEdit: React.FC = () => {
   }
 
   const currentStatus = course.statusId as CourseStatusId;
-  const canEdit = ![CourseStatusId.PENDING].includes(currentStatus);
+  // Nếu là PUBLISHED thì không cho edit
+  const canEdit =
+    currentStatus !== CourseStatusId.PUBLISHED &&
+    ![CourseStatusId.PENDING].includes(currentStatus);
   const canSubmit = [CourseStatusId.DRAFT, CourseStatusId.REJECTED].includes(
     currentStatus
   );
@@ -224,54 +390,16 @@ const CourseEdit: React.FC = () => {
           onSubmit={form.handleSubmit(handleSaveChanges)}
           className='p-4 md:p-8 space-y-6'
         >
-          <header className='flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4'>
-            <div>
-              <h1 className='text-2xl font-bold tracking-tight'>Edit Course</h1>
-              <div className='flex items-center gap-2 mt-1'>
-                <p
-                  className='text-muted-foreground truncate'
-                  title={course.courseName}
-                >
-                  {course.courseName}
-                </p>
-                <Badge
-                  variant={
-                    currentStatus === 'PUBLISHED' ? 'success' : 'outline'
-                  }
-                >
-                  {currentStatus}
-                </Badge>
-              </div>
-            </div>
-            <div className='flex items-center gap-2'>
-              <Button
-                type='submit'
-                size='sm'
-                disabled={!hasUnsavedChanges || isProcessing}
-              >
-                {isProcessing ? (
-                  <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
-                ) : (
-                  <Icons.save className='mr-2 h-4 w-4' />
-                )}
-                Save Changes
-              </Button>
-
-              <Button
-                type='button'
-                size='sm'
-                onClick={() => setIsSubmitConfirmOpen(true)}
-                disabled={!canSubmit || isSubmitting || hasUnsavedChanges}
-              >
-                {isSubmitting ? (
-                  <Icons.spinner className='h-4 w-4 animate-spin' />
-                ) : (
-                  <Icons.send className='h-4 w-4' />
-                )}{' '}
-                <span className='ml-2'>Submit</span>
-              </Button>
-            </div>
-          </header>
+          <CourseEditHeader
+            course={course}
+            isDirty={hasUnsavedChanges}
+            saveStatus={hasUnsavedChanges ? 'idle' : 'saved'}
+            onSaveChanges={() => form.handleSubmit(handleSaveChanges)()}
+            onSubmitForApproval={() => setIsSubmitConfirmOpen(true)}
+            onCancelUpdate={() => setIsCancelConfirmOpen(true)}
+            onDelete={() => setIsDeleteConfirmOpen(true)}
+            isProcessingAction={isProcessing}
+          />
 
           {hasUnsavedChanges && (
             <Alert
@@ -283,6 +411,23 @@ const CourseEdit: React.FC = () => {
               <AlertDescription>
                 Don't forget to save your work before submitting for approval or
                 leaving the page.
+              </AlertDescription>
+            </Alert>
+          )}
+          {course.statusId === 'PUBLISHED' && (
+            <Alert>
+              <Icons.lock className='h-4 w-4' />
+              <AlertTitle>This course is live!</AlertTitle>
+              <AlertDescription className='flex justify-between items-center'>
+                To prevent disruption for enrolled students, you need to create
+                a new version to make major changes.
+                <Button
+                  onClick={handleEditPublishedCourse}
+                  disabled={isCreatingUpdate}
+                >
+                  {isCreatingUpdate ? <Icons.spinner /> : <Icons.edit />} Create
+                  New Version to Edit
+                </Button>
               </AlertDescription>
             </Alert>
           )}
@@ -363,7 +508,7 @@ const CourseEdit: React.FC = () => {
               type='button'
               variant='destructive'
               onClick={() => setIsDeleteConfirmOpen(true)}
-              disabled={isDeleting}
+              disabled={isDeleting || course.statusId === 'PUBLISHED'}
             >
               {isDeleting ? <Icons.spinner /> : <Icons.trash />} Delete Course
             </Button>
@@ -390,6 +535,25 @@ const CourseEdit: React.FC = () => {
         description={`This will permanently delete "${course.courseName}" and all of its content, including enrollments and data. This action cannot be undone.`}
         confirmText='Yes, Delete This Course'
         confirmVariant='destructive'
+      />
+      <ConfirmationDialog
+        open={isCancelConfirmOpen}
+        onOpenChange={setIsCancelConfirmOpen}
+        onConfirm={confirmCancelUpdate}
+        isConfirming={isCancellingUpdate}
+        title='Cancel Update?'
+        description='All changes in this update session will be discarded. The live version of your course will remain unchanged.'
+        confirmText='Yes, Cancel'
+      />
+      <LiveNotification
+        isOpen={liveNotification.isOpen}
+        onClose={() =>
+          setLiveNotification((prev) => ({ ...prev, isOpen: false }))
+        }
+        title={liveNotification.title}
+        message={liveNotification.message}
+        actionText={liveNotification.actionText}
+        onActionClick={liveNotification.onActionClick}
       />
     </InstructorLayout>
   );

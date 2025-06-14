@@ -32,6 +32,8 @@ import {
 } from '@/utils/video.util';
 import { Lesson } from '@/types/common.types';
 import { Label } from '@/components/ui/label';
+import Plyr from 'plyr-react';
+import 'plyr-react/plyr.css';
 
 interface LessonVideoManagerProps {
   lesson: Lesson | null; // Dữ liệu lesson gốc khi edit
@@ -100,7 +102,66 @@ export const LessonVideoManager: React.FC<LessonVideoManagerProps> = ({
   };
 
   const videoSourceType = form.watch('videoSourceType');
+  const externalVideoInput = form.watch('externalVideoInput');
 
+  // Chuẩn bị source cho Plyr preview
+  const getPlyrSource = () => {
+    console.log(
+      'getPlyrSource called with videoSourceType:',
+      videoSourceType,
+      lesson
+    );
+    if (videoPreview && videoSourceType === 'CLOUDINARY') {
+      return {
+        type: 'video' as const,
+        sources: [{ src: videoPreview, type: 'video/mp4' }],
+      };
+    }
+    if (
+      (videoSourceType === 'YOUTUBE' && lesson?.externalVideoId) ||
+      externalVideoInput
+    ) {
+      return {
+        type: 'video' as const,
+        sources: [
+          {
+            src: lesson.externalVideoId || externalVideoInput,
+            provider: 'youtube' as const,
+          },
+        ],
+      };
+    }
+    if (
+      (videoSourceType === 'VIMEO' && lesson?.externalVideoId) ||
+      externalVideoInput
+    ) {
+      return {
+        type: 'video' as const,
+        sources: [
+          {
+            src: lesson.externalVideoId || externalVideoInput,
+            provider: 'vimeo' as const,
+          },
+        ],
+      };
+    }
+    return null;
+  };
+  const plyrSource = getPlyrSource();
+  const plyrOptions = {
+    controls: [
+      'play-large',
+      'play',
+      'progress',
+      'current-time',
+      'duration',
+      'mute',
+      'volume',
+      'fullscreen',
+    ],
+    autoplay: false,
+  };
+  console.log('Plyr Source:', plyrSource);
   return (
     <div className='space-y-4'>
       <FormField
@@ -211,14 +272,8 @@ export const LessonVideoManager: React.FC<LessonVideoManagerProps> = ({
             <div className='w-full h-full flex items-center justify-center'>
               <Icons.spinner className='h-8 w-8 animate-spin' />
             </div>
-          ) : videoPreview ? (
-            <iframe
-              src={videoPreview}
-              title='Video Preview'
-              className='w-full h-full'
-              allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-              allowFullScreen
-            />
+          ) : plyrSource ? (
+            <Plyr source={plyrSource} options={plyrOptions} />
           ) : (
             <div className='w-full h-full flex items-center justify-center text-muted-foreground'>
               Video preview will appear here.

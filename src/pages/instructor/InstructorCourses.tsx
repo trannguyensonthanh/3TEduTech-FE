@@ -5,7 +5,7 @@ import InstructorLayout from '@/components/layout/InstructorLayout';
 import { Button } from '@/components/ui/button';
 import PaginationControls from '@/components/admin/PaginationControls';
 import { useInstructorCourseFilters } from '@/hooks/useCourseFilters';
-import { useCoursesByInstructorId } from '@/hooks/queries/course.queries';
+import { useMyInstructorCourses } from '@/hooks/queries/course.queries';
 import { useAuth } from '@/contexts/AuthContext';
 import { Icons } from '@/components/common/Icons';
 import CourseFilterBar from './components/CourseFilterBar';
@@ -24,11 +24,12 @@ const InstructorCourses: React.FC = () => {
     clearFilters,
   } = useInstructorCourseFilters(instructorId);
 
-  const { data, isLoading, isError, error } = useCoursesByInstructorId(
-    instructorId,
+  const { data, isLoading, isError, error } = useMyInstructorCourses(
     queryParams,
     { enabled: !!instructorId } // Chỉ fetch khi đã có instructorId
   );
+
+  console.log('InstructorCourses data:', data);
 
   const courses = data?.courses;
   const totalPages = data?.totalPages || 1;

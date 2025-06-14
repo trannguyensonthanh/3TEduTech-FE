@@ -140,6 +140,8 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
   }, [open, isEditing, initialData, form]);
 
   const handleFormSubmit = async (data: LessonMetadataFormData) => {
+    let payload;
+    console.log('Form data:', data);
     let externalVideoInput: string | null = null;
     if (data.lessonType === 'VIDEO') {
       if (data.videoSourceType === 'YOUTUBE') {
@@ -150,22 +152,75 @@ const LessonDialog: React.FC<LessonDialogProps> = ({
       data.textContent = null; // Không cần text content cho video lessons
     }
 
-    const payload = {
+    payload = {
       lessonName: data.lessonName,
       description: data.description,
       lessonType: data.lessonType,
       isFreePreview: data.isFreePreview,
-      videoSourceType: data.videoSourceType,
-      externalVideoInput: externalVideoInput || data.externalVideoInput,
-      textContent: data.textContent,
+      videoSourceType:
+        data.lessonType === 'VIDEO' ? data.videoSourceType : null,
+      externalVideoInput: data.externalVideoInput || null,
+      textContent: data.textContent || null,
     };
+    // Remove fields not allowed for QUIZ type
+    if (data.lessonType === 'QUIZ') {
+      payload = {
+        lessonName: data.lessonName,
+        description: data.description,
+        lessonType: data.lessonType,
+        isFreePreview: data.isFreePreview,
+        textContent: null,
+      };
+    }
+
+    if (data.lessonType === 'TEXT') {
+      payload = {
+        lessonName: data.lessonName,
+        description: data.description,
+        lessonType: data.lessonType,
+        isFreePreview: data.isFreePreview,
+        textContent: data.textContent || null,
+      };
+    }
 
     const promise = isEditing
-      ? updateLesson({
-          lessonId: Number(initialData!.lessonId as string | number),
-          data: payload,
-        })
-      : createLesson({ courseId, sectionId: Number(sectionId), data: payload });
+      ? updateLesson(
+          {
+            lessonId: Number(initialData!.lessonId as string | number),
+            data: payload,
+          },
+          {
+            onSuccess: (savedLesson) => {
+              queryClient.invalidateQueries({
+                queryKey: courseKeys.detailById(courseId),
+              });
+              onClose();
+              toast.success(
+                `Lesson "${savedLesson.lessonName}" updated successfully!`
+              );
+            },
+            onError: (err: any) => {
+              toast.error(err.message || 'Failed to update lesson.');
+            },
+          }
+        )
+      : createLesson(
+          { courseId, sectionId: Number(sectionId), data: payload },
+          {
+            onSuccess: (savedLesson) => {
+              queryClient.invalidateQueries({
+                queryKey: courseKeys.detailById(courseId),
+              });
+              onClose();
+              toast.success(
+                `Lesson "${savedLesson.lessonName}" created successfully!`
+              );
+            },
+            onError: (err: any) => {
+              toast.error(err.message || 'Failed to create lesson.');
+            },
+          }
+        );
 
     toast.promise(promise, {
       loading: 'Saving lesson...',
