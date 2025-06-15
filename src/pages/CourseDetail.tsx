@@ -72,6 +72,7 @@ import { useInstructorPublicProfile } from '@/hooks/queries/instructor.queries';
 import { Review } from '@/services/review.service';
 import { Section } from '@/services/section.service';
 import PriceCard from '@/components/courses/PriceCard';
+import he from 'he';
 
 interface CurriculumSectionItemProps {
   section: Section;
@@ -567,7 +568,9 @@ const CourseDetailPage: React.FC = () => {
               {course.shortDescription && (
                 <div
                   className='text-lg text-gray-300 mb-5 max-w-3xl'
-                  dangerouslySetInnerHTML={{ __html: course.shortDescription }}
+                  dangerouslySetInnerHTML={{
+                    __html: he.decode(course.shortDescription),
+                  }}
                 />
               )}
               <div className='flex flex-wrap items-center gap-x-5 gap-y-2 mb-5 text-sm'>
@@ -682,7 +685,11 @@ const CourseDetailPage: React.FC = () => {
                       ).map((outcome: string, index: number) => (
                         <div key={index} className='flex items-start text-sm'>
                           <CheckCircle className='h-4 w-4 text-green-500 mr-2.5 mt-0.5 shrink-0' />{' '}
-                          <span dangerouslySetInnerHTML={{ __html: outcome }} />
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: he.decode(outcome),
+                            }}
+                          />
                         </div>
                       ))}
                     </div>
@@ -695,7 +702,9 @@ const CourseDetailPage: React.FC = () => {
                     </h2>
                     <div
                       className='prose prose-sm dark:prose-invert max-w-none leading-relaxed'
-                      dangerouslySetInnerHTML={{ __html: course.requirements }}
+                      dangerouslySetInnerHTML={{
+                        __html: he.decode(course.requirements),
+                      }}
                     />
                   </section>
                 )}
@@ -707,7 +716,7 @@ const CourseDetailPage: React.FC = () => {
                     <div
                       className='prose prose-sm dark:prose-invert max-w-none leading-relaxed'
                       dangerouslySetInnerHTML={{
-                        __html: course.fullDescription,
+                        __html: he.decode(course.fullDescription),
                       }}
                     />
                   </section>
@@ -811,9 +820,12 @@ const CourseDetailPage: React.FC = () => {
                         )}
                       </div>
                       {instructorProfile?.bio && (
-                        <p className='text-sm text-muted-foreground leading-relaxed line-clamp-5'>
-                          {instructorProfile?.bio}
-                        </p>
+                        <div
+                          className='text-sm text-muted-foreground leading-relaxed line-clamp-5'
+                          dangerouslySetInnerHTML={{
+                            __html: instructorProfile.bio,
+                          }}
+                        />
                       )}
                     </div>
                   </div>
@@ -821,7 +833,7 @@ const CourseDetailPage: React.FC = () => {
                     <div
                       className='mt-6 pt-4 border-t prose prose-sm dark:prose-invert max-w-none'
                       dangerouslySetInnerHTML={{
-                        __html: instructorProfile?.aboutMe,
+                        __html: he.decode(instructorProfile.aboutMe),
                       }}
                     />
                   )}

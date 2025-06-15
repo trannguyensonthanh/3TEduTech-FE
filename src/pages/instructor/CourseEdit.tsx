@@ -211,21 +211,37 @@ const CourseEdit: React.FC = () => {
         slug: course.slug,
         courseName: course.courseName,
         shortDescription: course.shortDescription || '',
-        fullDescription: course.fullDescription || '',
-        requirements: course.requirements || '',
-        learningOutcomes: course.learningOutcomes || '',
+        fullDescription: course.fullDescription ?? '',
+        requirements: course.requirements ?? '',
+        learningOutcomes: course.learningOutcomes ?? '',
         categoryId: course.categoryId || undefined,
         levelId: course.levelId || undefined,
         language:
           course.language === 'vi' || course.language === 'en'
             ? (course.language as 'vi' | 'en')
             : 'en',
-        originalPrice: course.pricing?.base?.originalPrice,
-        discountedPrice: course.pricing?.base?.discountedPrice,
+        originalPrice:
+          course.pricing?.base?.originalPrice !== undefined &&
+          course.pricing?.base?.originalPrice !== null
+            ? course.pricing.base.originalPrice
+            : 0,
+        discountedPrice:
+          course.pricing?.base?.discountedPrice !== undefined &&
+          course.pricing?.base?.discountedPrice !== null
+            ? course.pricing.base.discountedPrice
+            : null,
         introVideoUrl: course.introVideoUrl || '',
         isFeatured: course.isFeatured ?? false,
       };
-      form.reset(formData);
+      // Nếu là lần đầu load (form chưa dirty), reset toàn bộ form để đồng bộ dữ liệu backend
+      if (!form.formState.isDirty) {
+        form.reset(formData, { keepDirty: false });
+      } else {
+        // Nếu đã có thay đổi, chỉ setValue từng trường để không mất dữ liệu đang nhập
+        Object.entries(formData).forEach(([key, value]) => {
+          form.setValue(key as any, value, { shouldDirty: false });
+        });
+      }
     }
   }, [course, form]);
 

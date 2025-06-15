@@ -23,17 +23,17 @@ const profileTabs = [
   {
     value: 'profile',
     label: 'Edit Profile',
-    icon: <Icons.userEdit className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />,
+    icon: <Icons.userEdit className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />,
   },
   {
     value: 'security',
     label: 'Account Security',
-    icon: <Icons.lockKeyhole className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />,
+    icon: <Icons.lockKeyhole className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />,
   },
   {
     value: 'preferences',
     label: 'Preferences',
-    icon: <Icons.settings2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />,
+    icon: <Icons.settings2 className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />,
   },
   // Thêm các tab khác nếu cần trong tương lai
   // { value: "notifications", label: "Notifications", icon: <Icons.bellRing className="mr-2 h-5 w-5" /> },
@@ -99,7 +99,7 @@ const UserProfilePage = () => {
   console.log('User Profile:', isFetchingProfile);
 
   // Ưu tiên userProfile từ API, fallback về authContextUser nếu API chưa load
-  const displayUser = userProfile || authContextUser;
+  const displayUser = userProfile;
 
   // Đồng bộ activeTab với URL query params
   useEffect(() => {
@@ -160,8 +160,8 @@ const UserProfilePage = () => {
   if (isLoadingProfileInitial && !userProfile) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 min-h-[calc(100vh-12rem)] flex items-center justify-center">
-          <Icons.spinner className="h-16 w-16 animate-spin text-primary" />
+        <div className='container mx-auto px-4 py-12 min-h-[calc(100vh-12rem)] flex items-center justify-center'>
+          <Icons.spinner className='h-16 w-16 animate-spin text-primary' />
         </div>
       </Layout>
     );
@@ -170,12 +170,12 @@ const UserProfilePage = () => {
   if (profileError || !displayUser) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-12 text-center">
-          <Icons.alertTriangle className="h-16 w-16 mx-auto mb-6 text-destructive" />
-          <h2 className="text-2xl font-semibold mb-3 text-destructive-foreground dark:text-destructive">
+        <div className='container mx-auto px-4 py-12 text-center'>
+          <Icons.alertTriangle className='h-16 w-16 mx-auto mb-6 text-destructive' />
+          <h2 className='text-2xl font-semibold mb-3 text-destructive-foreground dark:text-destructive'>
             Could Not Load Your Profile
           </h2>
-          <p className="text-muted-foreground mb-6">
+          <p className='text-muted-foreground mb-6'>
             There was an issue fetching your profile data. Please try refreshing
             the page or contact support if the problem persists.
           </p>
@@ -184,42 +184,42 @@ const UserProfilePage = () => {
       </Layout>
     );
   }
-
+  console.log('Display User:', displayUser);
   return (
     <Layout>
       <motion.div
         variants={pageContainerVariants}
-        initial="hidden"
-        animate="visible"
+        initial='hidden'
+        animate='visible'
       >
         {/* Page Header */}
-        <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-border/60 dark:border-slate-700/60">
+        <div className='bg-slate-50 dark:bg-slate-900/50 border-b border-border/60 dark:border-slate-700/60'>
           <motion.div
             variants={sectionVariants}
-            className="container mx-auto px-4 pt-8 pb-6 md:pt-12 md:pb-10"
+            className='container mx-auto px-4 pt-8 pb-6 md:pt-12 md:pb-10'
           >
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+            <h1 className='text-3xl md:text-4xl font-bold text-foreground tracking-tight'>
               Account Settings
             </h1>
-            <p className="mt-1.5 text-muted-foreground text-base md:text-lg">
+            <p className='mt-1.5 text-muted-foreground text-base md:text-lg'>
               Manage your profile information, security settings, and
               application preferences.
             </p>
           </motion.div>
         </div>
 
-        <div className="container mx-auto px-4 py-8 md:py-10">
-          <div className="grid md:grid-cols-12 gap-8 lg:gap-10 items-start">
+        <div className='container mx-auto px-4 py-8 md:py-10'>
+          <div className='grid md:grid-cols-12 gap-8 lg:gap-10 items-start'>
             {/* Sidebar */}
             <motion.aside
               variants={sidebarVariants}
-              className="md:col-span-4 lg:col-span-3 md:sticky md:top-24" // top-24 (1.5rem * 4 (navbar h-16) + 1.5rem (padding-top của container này))
+              className='md:col-span-4 lg:col-span-3 md:sticky md:top-24' // top-24 (1.5rem * 4 (navbar h-16) + 1.5rem (padding-top của container này))
             >
-              <Card className="shadow-xl dark:bg-slate-800/40 border dark:border-slate-700/50">
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center space-y-4">
-                    <div className="relative group">
-                      <Avatar className="h-28 w-28 md:h-32 md:w-32 border-4 border-background dark:border-slate-800 shadow-lg">
+              <Card className='shadow-xl dark:bg-slate-800/40 border dark:border-slate-700/50'>
+                <CardContent className='p-6'>
+                  <div className='flex flex-col items-center space-y-4'>
+                    <div className='relative group'>
+                      <Avatar className='h-28 w-28 md:h-32 md:w-32 border-4 border-background dark:border-slate-800 shadow-lg'>
                         <AvatarImage
                           src={
                             displayUser.avatarUrl ||
@@ -229,55 +229,55 @@ const UserProfilePage = () => {
                           }
                           alt={displayUser.fullName}
                         />
-                        <AvatarFallback className="text-4xl font-semibold bg-muted">
+                        <AvatarFallback className='text-4xl font-semibold bg-muted'>
                           {getInitials(displayUser.fullName)}
                         </AvatarFallback>
                       </Avatar>
                       <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute bottom-1 right-1 h-9 w-9 rounded-full bg-background/90 hover:bg-accent group-hover:opacity-100 opacity-0 md:opacity-100 transition-opacity shadow-md border"
+                        variant='outline'
+                        size='icon'
+                        className='absolute bottom-1 right-1 h-9 w-9 rounded-full bg-background/90 hover:bg-accent group-hover:opacity-100 opacity-0 md:opacity-100 transition-opacity shadow-md border'
                         onClick={() => {
                           handleTabChange(
                             'profile'
                           ); /* TODO: Scroll to avatar upload section */
                         }}
-                        aria-label="Change profile picture"
+                        aria-label='Change profile picture'
                       >
-                        <Icons.edit className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                        <Icons.edit className='h-4 w-4 text-muted-foreground group-hover:text-primary' />
                       </Button>
                     </div>
 
-                    <div className="text-center">
-                      <h2 className="text-2xl font-bold text-foreground">
+                    <div className='text-center'>
+                      <h2 className='text-2xl font-bold text-foreground'>
                         {displayUser.fullName}
                       </h2>
-                      <p className="text-sm text-primary dark:text-primary/90 font-medium mt-0.5">
+                      <p className='text-sm text-primary dark:text-primary/90 font-medium mt-0.5'>
                         {displayUser.headline ||
                           userRoleDisplay(displayUser.roleId)}
                       </p>
                     </div>
 
-                    <Separator className="my-4 dark:bg-slate-700/60 w-full" />
+                    <Separator className='my-4 dark:bg-slate-700/60 w-full' />
 
-                    <div className="w-full text-sm space-y-3.5 text-left">
-                      <div className="flex items-center text-muted-foreground">
-                        <Icons.mail className="h-4 w-4 mr-3 flex-shrink-0 opacity-80" />
-                        <span className="truncate" title={displayUser.email}>
+                    <div className='w-full text-sm space-y-3.5 text-left'>
+                      <div className='flex items-center text-muted-foreground'>
+                        <Icons.mail className='h-4 w-4 mr-3 flex-shrink-0 opacity-80' />
+                        <span className='truncate' title={displayUser.email}>
                           {displayUser.email}
                         </span>
                       </div>
                       {displayUser.phoneNumber && (
-                        <div className="flex items-center text-muted-foreground">
-                          <Icons.phone className="h-4 w-4 mr-3 flex-shrink-0 opacity-80" />
+                        <div className='flex items-center text-muted-foreground'>
+                          <Icons.phone className='h-4 w-4 mr-3 flex-shrink-0 opacity-80' />
                           <span>{displayUser.phoneNumber}</span>
                         </div>
                       )}
                       {displayUser.location && (
-                        <div className="flex items-center text-muted-foreground">
-                          <Icons.mapPin className="h-4 w-4 mr-3 flex-shrink-0 opacity-80" />
+                        <div className='flex items-center text-muted-foreground'>
+                          <Icons.mapPin className='h-4 w-4 mr-3 flex-shrink-0 opacity-80' />
                           <span
-                            className="truncate"
+                            className='truncate'
                             title={displayUser.location}
                           >
                             {displayUser.location}
@@ -293,20 +293,20 @@ const UserProfilePage = () => {
             {/* Main Content with Tabs */}
             <motion.div
               variants={mainContentVariants}
-              className="md:col-span-8 lg:col-span-9"
+              className='md:col-span-8 lg:col-span-9'
             >
               <Tabs
                 value={activeTab}
                 onValueChange={handleTabChange}
-                className="w-full"
+                className='w-full'
               >
-                <ScrollArea className="w-full pb-1 mb-6 md:mb-8">
-                  <TabsList className="inline-flex h-auto min-w-full sm:min-w-0 sm:w-auto bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg shadow-sm">
+                <ScrollArea className='w-full pb-1 mb-6 md:mb-8'>
+                  <TabsList className='inline-flex h-auto min-w-full sm:min-w-0 sm:w-auto bg-slate-100 dark:bg-slate-800 p-1.5 rounded-lg shadow-sm'>
                     {profileTabs.map((tab) => (
                       <TabsTrigger
                         key={tab.value}
                         value={tab.value}
-                        className="px-3.5 py-2 sm:px-5 sm:py-2.5 text-sm font-medium flex-1 sm:flex-none data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md h-auto leading-normal"
+                        className='px-3.5 py-2 sm:px-5 sm:py-2.5 text-sm font-medium flex-1 sm:flex-none data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md rounded-md h-auto leading-normal'
                       >
                         {React.cloneElement(tab.icon, {
                           className: cn(
@@ -318,10 +318,10 @@ const UserProfilePage = () => {
                       </TabsTrigger>
                     ))}
                   </TabsList>
-                  <ScrollBar orientation="horizontal" />
+                  <ScrollBar orientation='horizontal' />
                 </ScrollArea>
 
-                <AnimatePresence mode="wait" initial={false}>
+                <AnimatePresence mode='wait' initial={false}>
                   <motion.div
                     key={activeTab}
                     initial={{ opacity: 0, x: slideDirection }}
@@ -330,7 +330,7 @@ const UserProfilePage = () => {
                     transition={{ duration: 0.2, ease: 'easeInOut' }}
                   >
                     <TabsContent
-                      value="profile"
+                      value='profile'
                       forceMount={true}
                       className={cn(
                         activeTab !== 'profile' && 'hidden',
@@ -346,7 +346,7 @@ const UserProfilePage = () => {
                     </TabsContent>
 
                     <TabsContent
-                      value="security"
+                      value='security'
                       forceMount={true}
                       className={cn(
                         activeTab !== 'security' && 'hidden',
@@ -357,7 +357,7 @@ const UserProfilePage = () => {
                     </TabsContent>
 
                     <TabsContent
-                      value="preferences"
+                      value='preferences'
                       forceMount={true}
                       className={cn(
                         activeTab !== 'preferences' && 'hidden',

@@ -2,7 +2,7 @@
 import { ChatHistoryPair } from '@/hooks/useChatbot';
 const AI_API_BASE_URL = 'http://localhost:2111'; // Thay bằng URL API thật của bạn
 const MASTER_API_KEY = 'tWrU2bHBL14NHZopuKlS9hcT7Vnj5LcQ';
-const COURSE_AI_API_KEY = 'tWrU2bHBL14NHZopuKlS9hcT7Vnj5LcQ';
+const COURSE_AI_API_KEY = 'AesHdAArx39flWyTKc74c5rP5SsF8Bz7';
 // --- Interfaces for AI Chat ---
 interface QueryPayload {
   query: string;

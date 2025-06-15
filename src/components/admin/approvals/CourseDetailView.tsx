@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { Course } from '@/services/course.service';
 import { useSettings } from '@/contexts/SettingsContext';
+import he from 'he'; // Import he for HTML decoding
 
 export interface AdminCourseView extends Course {
   // được dùng trong code này
@@ -197,7 +198,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                   <div
                     className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
-                      __html: courseDetails.shortDescription,
+                      __html: he.decode(courseDetails.shortDescription),
                     }}
                   ></div>
                 </div>
@@ -248,7 +249,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                   <div
                     className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
-                      __html: courseDetails.fullDescription,
+                      __html: he.decode(courseDetails.fullDescription),
                     }}
                   ></div>
                 </div>
@@ -263,7 +264,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                   <div
                     className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
-                      __html: courseDetails.requirements,
+                      __html: he.decode(courseDetails.requirements),
                     }}
                   ></div>
                 </div>
@@ -278,7 +279,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({
                   <div
                     className='prose prose-sm dark:prose-invert max-w-none'
                     dangerouslySetInnerHTML={{
-                      __html: courseDetails.learningOutcomes,
+                      __html: he.decode(courseDetails.learningOutcomes),
                     }}
                   ></div>
                 </div>

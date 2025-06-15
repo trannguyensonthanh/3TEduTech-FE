@@ -38,7 +38,15 @@ const PricingTab: React.FC = () => {
   const displayPriceVND = discountedPriceVND ?? originalPriceVND;
   const platformFee = displayPriceVND * 0.3;
   const finalRevenue = displayPriceVND - platformFee;
-
+  console.log('PricingTab Data:', {
+    originalPriceVND,
+    discountedPriceVND,
+    displayPriceVND,
+    platformFee,
+    finalRevenue,
+    currency,
+    data,
+  });
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
       <Card>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/instructor/components/GeneralInfoForm.tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,7 +25,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/common/Icons';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useUpdateMyProfile } from '@/hooks/queries/user.queries';
 
@@ -49,6 +50,32 @@ export const GeneralInfoForm = () => {
       location: '',
     },
   });
+
+  const [addresses, setAddresses] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Hàm gọi API Goong Map để gợi ý địa chỉ
+  const onAddressSearch = async (value: string) => {
+    const YOUR_API_KEY = 'EAddPu1fx9SFE8rAE7Ogdp1rheIPEfrhiAB65nif';
+    const apiUrl = `https://rsapi.goong.io/Place/AutoComplete?api_key=${YOUR_API_KEY}&input=${encodeURIComponent(value)}&more_compound=true`;
+    fetch(apiUrl)
+      .then((response) => {
+        if (!response.ok) throw new Error('Network response was not ok.');
+        return response.json();
+      })
+      .then((data) => {
+        const namesArray = data.predictions.map(
+          (item: any) => item.description
+        );
+        setAddresses(namesArray);
+        setShowSuggestions(true);
+      })
+      .catch((error) => {
+        setAddresses([]);
+        setShowSuggestions(false);
+        console.error('Error fetching data:', error);
+      });
+  };
 
   useEffect(() => {
     if (profile) {
@@ -139,15 +166,50 @@ export const GeneralInfoForm = () => {
                 control={form.control}
                 name='location'
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem style={{ position: 'relative' }}>
                     <FormLabel>Location (Optional)</FormLabel>
                     <FormControl>
                       <Input
                         placeholder='e.g. Ho Chi Minh City, Vietnam'
                         {...field}
                         value={field.value ?? ''}
+                        autoComplete='off'
+                        onChange={(e) => {
+                          field.onChange(e);
+                          const value = e.target.value;
+                          if (value && value.length > 2) {
+                            onAddressSearch(value);
+                          } else {
+                            setAddresses([]);
+                            setShowSuggestions(false);
+                          }
+                        }}
+                        onBlur={() =>
+                          setTimeout(() => setShowSuggestions(false), 200)
+                        }
+                        onFocus={(e) => {
+                          if (addresses.length > 0) setShowSuggestions(true);
+                        }}
                       />
                     </FormControl>
+                    {/* Hiển thị gợi ý địa chỉ */}
+                    {showSuggestions && addresses.length > 0 && (
+                      <div className='absolute z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded shadow w-full mt-1 max-h-56 overflow-auto'>
+                        {addresses.map((addr, idx) => (
+                          <div
+                            key={idx}
+                            className='px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 text-sm'
+                            onMouseDown={() => {
+                              field.onChange(addr);
+                              setAddresses([]);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            {addr}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

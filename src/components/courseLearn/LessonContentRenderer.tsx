@@ -46,7 +46,7 @@ const LessonContentRenderer: React.FC<LessonContentRendererProps> = ({
     let subtitleUrl = undefined;
     if (lesson.videoSourceType === 'YOUTUBE' && lesson.externalVideoId) {
       videoSource = {
-        src: lesson.externalVideoId,
+        src: `https://www.youtube.com/watch?v=${lesson.externalVideoId}`,
         type: 'video/youtube',
       };
     } else if (

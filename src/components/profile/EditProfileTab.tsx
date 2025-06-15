@@ -99,6 +99,8 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
   const [coverPreview, setCoverPreview] = useState<string | null>(
     userProfile?.coverImageUrl || null
   );
+  const [addresses, setAddresses] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const {
     register,
@@ -106,6 +108,7 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isDirty, dirtyFields },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -176,10 +179,10 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
           updatedData.gender === 'MALE'
             ? 'MALE'
             : updatedData.gender === 'FEMALE'
-            ? 'FEMALE'
-            : updatedData.gender === 'OTHER'
-            ? 'OTHER'
-            : '',
+              ? 'FEMALE'
+              : updatedData.gender === 'OTHER'
+                ? 'OTHER'
+                : '',
         coverImageUrl: updatedData.coverImageUrl || '',
       } as {
         fullName: string;
@@ -310,54 +313,77 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
   const isLoading =
     updateProfileMutation.isPending || updateAvatarMutation.isPending;
 
+  // Hàm gọi API Goong Map để gợi ý địa chỉ
+  const onAddressSearch = async (value: string) => {
+    const YOUR_API_KEY = 'EAddPu1fx9SFE8rAE7Ogdp1rheIPEfrhiAB65nif';
+    const apiUrl = `https://rsapi.goong.io/Place/AutoComplete?api_key=${YOUR_API_KEY}&input=${encodeURIComponent(value)}&more_compound=true`;
+    fetch(apiUrl)
+      .then((response) => {
+        if (!response.ok) throw new Error('Network response was not ok.');
+        return response.json();
+      })
+      .then((data) => {
+        const namesArray = data.predictions.map(
+          (item: any) => item.description
+        );
+        setAddresses(namesArray);
+        setShowSuggestions(true);
+      })
+      .catch((error) => {
+        setAddresses([]);
+        setShowSuggestions(false);
+        console.error('Error fetching data:', error);
+      });
+  };
+
   if (!userProfile) {
     // Xử lý trường hợp userProfile chưa có (ví dụ, khi đang fetch lần đầu ở component cha)
     return (
-      <Card className="dark:bg-slate-800/30 shadow-md">
+      <Card className='dark:bg-slate-800/30 shadow-md'>
         <CardHeader>
-          <Skeleton className="h-8 w-48" />
+          <Skeleton className='h-8 w-48' />
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className='space-y-6'>
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
+            <Skeleton key={i} className='h-10 w-full' />
           ))}
         </CardContent>
         <CardFooter>
-          <Skeleton className="h-12 w-32" />
+          <Skeleton className='h-12 w-32' />
         </CardFooter>
       </Card>
     );
   }
 
   return (
-    <Card className="dark:bg-slate-800/30 shadow-lg border dark:border-slate-700/60">
-      <CardHeader className="border-b dark:border-slate-700/60 pb-4">
-        <CardTitle className="text-2xl font-semibold">
+    <Card className='dark:bg-slate-800/30 shadow-lg border dark:border-slate-700/60'>
+      <CardHeader className='border-b dark:border-slate-700/60 pb-4'>
+        <CardTitle className='text-2xl font-semibold'>
           Edit Profile Information
         </CardTitle>
-        <CardDescription className="text-sm">
+        <CardDescription className='text-sm'>
           Keep your personal details up to date. This information may be
           displayed publicly.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="p-6 space-y-6 pt-5">
+        <CardContent className='p-6 space-y-6 pt-5'>
           {' '}
           {/* Giảm pt chút */}
           {/* Cover Image Section */}
-          <div className="space-y-2">
-            <Label htmlFor="coverImageUrl" className="text-base font-medium">
+          <div className='space-y-2'>
+            <Label htmlFor='coverImageUrl' className='text-base font-medium'>
               Cover Photo
             </Label>
             <AspectRatio
               ratio={16 / 5}
-              className="bg-muted dark:bg-slate-700/30 rounded-lg overflow-hidden border dark:border-slate-600"
+              className='bg-muted dark:bg-slate-700/30 rounded-lg overflow-hidden border dark:border-slate-600'
             >
               {coverPreview ? (
                 <img
                   src={coverPreview}
-                  alt="Cover preview"
-                  className="w-full h-full object-cover"
+                  alt='Cover preview'
+                  className='w-full h-full object-cover'
                   onError={() => {
                     // Nếu URL lỗi, có thể hiển thị placeholder hoặc thông báo
                     // setCoverPreview(null); // Hoặc một ảnh placeholder
@@ -365,17 +391,17 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
                   }}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                  <Icons.image className="h-12 w-12 mb-2 opacity-50" />{' '}
+                <div className='w-full h-full flex flex-col items-center justify-center text-muted-foreground'>
+                  <Icons.image className='h-12 w-12 mb-2 opacity-50' />{' '}
                   {/* Giả sử có Icons.image */}
-                  <p className="text-sm">No cover image set</p>
+                  <p className='text-sm'>No cover image set</p>
                 </div>
               )}
             </AspectRatio>
             <Input
-              id="coverImageUrl"
+              id='coverImageUrl'
               {...register('coverImageUrl')}
-              placeholder="https://example.com/your-cover-image.jpg (Optional)"
+              placeholder='https://example.com/your-cover-image.jpg (Optional)'
               className={cn(
                 'h-11 mt-2',
                 errors.coverImageUrl &&
@@ -383,50 +409,50 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
               )}
             />
             {errors.coverImageUrl && (
-              <p className="text-xs text-destructive mt-1">
+              <p className='text-xs text-destructive mt-1'>
                 {errors.coverImageUrl.message}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className='text-xs text-muted-foreground'>
               Enter a URL for your cover image. Recommended size: 1600x400px.
             </p>
           </div>
-          <Separator className="my-6 dark:bg-slate-700/60" />
-          <div className="space-y-2 flex-grow">
+          <Separator className='my-6 dark:bg-slate-700/60' />
+          <div className='space-y-2 flex-grow'>
             <Label
-              htmlFor="avatar-upload-input"
-              className="text-base font-medium"
+              htmlFor='avatar-upload-input'
+              className='text-base font-medium'
             >
               Profile Picture
             </Label>
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className='text-xs text-muted-foreground mb-2'>
               Recommended: Square image (e.g., 400x400px). Max 2MB (PNG, JPG,
               GIF).
             </p>
             <input
-              type="file"
-              id="avatar-upload-input"
-              accept="image/png, image/jpeg, image/gif"
+              type='file'
+              id='avatar-upload-input'
+              accept='image/png, image/jpeg, image/gif'
               onChange={handleAvatarChange}
               ref={fileInputRef}
-              className="hidden"
+              className='hidden'
             />
-            <div className="flex flex-wrap gap-2">
+            <div className='flex flex-wrap gap-2'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
-                className="h-9"
+                className='h-9'
               >
-                <Icons.imageUp className="h-4 w-4 mr-2" /> Upload New
+                <Icons.imageUp className='h-4 w-4 mr-2' /> Upload New
               </Button>
               {avatarPreview && avatarPreview !== userProfile.avatarUrl && (
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground hover:text-destructive h-9"
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  className='text-xs text-muted-foreground hover:text-destructive h-9'
                   onClick={() => {
                     setAvatarPreview(userProfile.avatarUrl || null);
                     setAvatarFile(null);
@@ -438,15 +464,15 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
             </div>
           </div>
           {/* Personal Details Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-            <div className="space-y-1.5">
-              <Label htmlFor="fullName">
-                Full Name <span className="text-destructive">*</span>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5'>
+            <div className='space-y-1.5'>
+              <Label htmlFor='fullName'>
+                Full Name <span className='text-destructive'>*</span>
               </Label>
               <Input
-                id="fullName"
+                id='fullName'
                 {...register('fullName')}
-                placeholder="e.g., Jane Doe"
+                placeholder='e.g., Jane Doe'
                 className={cn(
                   'h-11',
                   errors.fullName &&
@@ -454,17 +480,17 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
                 )}
               />
               {errors.fullName && (
-                <p className="text-xs text-destructive mt-1">
+                <p className='text-xs text-destructive mt-1'>
                   {errors.fullName.message}
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="headline">Professional Headline</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='headline'>Professional Headline</Label>
               <Input
-                id="headline"
+                id='headline'
                 {...register('headline')}
-                placeholder="e.g., Software Engineer | AI Enthusiast"
+                placeholder='e.g., Software Engineer | AI Enthusiast'
                 className={cn(
                   'h-11',
                   errors.headline &&
@@ -472,17 +498,17 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
                 )}
               />
               {errors.headline && (
-                <p className="text-xs text-destructive mt-1">
+                <p className='text-xs text-destructive mt-1'>
                   {errors.headline.message}
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="phoneNumber">Phone Number</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='phoneNumber'>Phone Number</Label>
               <Input
-                id="phoneNumber"
+                id='phoneNumber'
                 {...register('phoneNumber')}
-                placeholder="(Optional)"
+                placeholder='(Optional)'
                 className={cn(
                   'h-11',
                   errors.phoneNumber &&
@@ -490,34 +516,67 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
                 )}
               />
               {errors.phoneNumber && (
-                <p className="text-xs text-destructive mt-1">
+                <p className='text-xs text-destructive mt-1'>
                   {errors.phoneNumber.message}
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="location">Location</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='location'>Location</Label>
               <Input
-                id="location"
+                id='location'
                 {...register('location')}
-                placeholder="e.g., San Francisco, CA (Optional)"
+                placeholder='e.g., San Francisco, CA (Optional)'
                 className={cn(
                   'h-11',
                   errors.location &&
                     'border-destructive focus-visible:ring-destructive'
                 )}
+                autoComplete='off'
+                onChange={(e) => {
+                  register('location').onChange(e);
+                  const value = e.target.value;
+                  if (value && value.length > 2) {
+                    onAddressSearch(value);
+                  } else {
+                    setAddresses([]);
+                    setShowSuggestions(false);
+                  }
+                }}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onFocus={(e) => {
+                  if (addresses.length > 0) setShowSuggestions(true);
+                }}
               />
+              {/* Hiển thị gợi ý địa chỉ */}
+              {showSuggestions && addresses.length > 0 && (
+                <div className='absolute z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded shadow w-[32%] mt-1 max-h-56 overflow-auto'>
+                  {addresses.map((addr, idx) => (
+                    <div
+                      key={idx}
+                      className='px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 text-sm'
+                      onMouseDown={() => {
+                        setValue('location', addr, { shouldDirty: true });
+                        setAddresses([]);
+                        setShowSuggestions(false);
+                      }}
+                    >
+                      {addr}
+                    </div>
+                  ))}
+                </div>
+              )}
               {errors.location && (
-                <p className="text-xs text-destructive mt-1">
+                <p className='text-xs text-destructive mt-1'>
                   {errors.location.message}
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="birthDate">Birth Date</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='birthDate'>Birth Date</Label>
               <Input
-                id="birthDate"
-                type="date"
+                id='birthDate'
+                type='date'
                 {...register('birthDate')}
                 className={cn(
                   'h-11 block w-full',
@@ -526,15 +585,15 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
                 )}
               />
               {errors.birthDate && (
-                <p className="text-xs text-destructive mt-1">
+                <p className='text-xs text-destructive mt-1'>
                   {errors.birthDate.message}
                 </p>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="gender">Gender</Label>
+            <div className='space-y-1.5'>
+              <Label htmlFor='gender'>Gender</Label>
               <Controller
-                name="gender"
+                name='gender'
                 control={control}
                 render={({ field }) => (
                   <Select
@@ -542,28 +601,28 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
                     value={field.value || ''}
                   >
                     <SelectTrigger
-                      id="gender"
+                      id='gender'
                       className={cn(
                         'h-11',
                         errors.gender &&
                           'border-destructive focus-visible:ring-destructive'
                       )}
                     >
-                      <SelectValue placeholder="Select gender (Optional)" />
+                      <SelectValue placeholder='Select gender (Optional)' />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MALE">Male</SelectItem>{' '}
+                      <SelectItem value='MALE'>Male</SelectItem>{' '}
                       {/* Value changed to uppercase */}
-                      <SelectItem value="FEMALE">Female</SelectItem>{' '}
+                      <SelectItem value='FEMALE'>Female</SelectItem>{' '}
                       {/* Value changed to uppercase */}
-                      <SelectItem value="OTHER">Other</SelectItem>{' '}
+                      <SelectItem value='OTHER'>Other</SelectItem>{' '}
                       {/* Value changed to uppercase */}
                     </SelectContent>
                   </Select>
                 )}
               />
               {errors.gender && (
-                <p className="text-xs text-destructive mt-1">
+                <p className='text-xs text-destructive mt-1'>
                   {errors.gender.message}
                 </p>
               )}
@@ -600,17 +659,17 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
            </div>
           */}
         </CardContent>
-        <CardFooter className="border-t dark:border-slate-700/60 pt-6">
+        <CardFooter className='border-t dark:border-slate-700/60 pt-6'>
           <Button
-            type="submit"
+            type='submit'
             disabled={isLoading || (!isDirty && !avatarFile)}
-            size="lg"
-            className="h-11 px-6 text-base"
+            size='lg'
+            className='h-11 px-6 text-base'
           >
             {isLoading ? (
-              <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+              <Icons.spinner className='mr-2 h-5 w-5 animate-spin' />
             ) : (
-              <Icons.save className="mr-2 h-5 w-5" />
+              <Icons.save className='mr-2 h-5 w-5' />
             )}
             Save Changes
           </Button>

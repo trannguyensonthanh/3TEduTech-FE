@@ -323,8 +323,6 @@ const CheckoutPage: React.FC = () => {
           error.message || 'An unexpected error occurred during checkout.',
         variant: 'destructive',
       });
-    } finally {
-      setCreatedOrder(false);
     }
   };
 

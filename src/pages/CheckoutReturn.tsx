@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Clock,
 } from 'lucide-react';
+import { useMyOrderDetail } from '@/hooks/queries/order.queries';
 // import { Icons } from '@/components/common/Icons'; // Bỏ nếu không dùng nữa
 
 const CheckoutReturn: React.FC = () => {
@@ -151,7 +152,7 @@ const CheckoutReturn: React.FC = () => {
 
   const handleNavigateToOrder = () => {
     if (orderIdDisplay) {
-      navigate(`/user/orders/${orderIdDisplay}`);
+      navigate(`/courses`);
     } else {
       navigate('/user/orders');
     }
