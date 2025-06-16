@@ -33,8 +33,13 @@ export const updateLastWatchedPosition = async (
   lessonId: number,
   position: number
 ): Promise<LessonProgress> => {
+  const positionNumber = Number(position);
+  console.log('Updating last watched position:', {
+    lessonId,
+    positionNumber,
+  });
   return apiHelper.patch(`/progress/lessons/${lessonId}/position`, {
-    position,
+    position: positionNumber,
   });
 };
 
