@@ -19,7 +19,7 @@ import {
   UserQueryParams,
   updateMyAvatar,
   NotificationPreferences,
-  updateMyNotificationPreferences,
+  // updateMyNotificationPreferences,
   getMyNotificationPreferences,
 } from '@/services/user.service'; // Import các hàm và kiểu dữ liệu
 import { toast } from 'sonner';
@@ -215,31 +215,31 @@ export const useMyNotificationPreferences = (
   });
 };
 
-/** Hook cập nhật cài đặt thông báo email */
-export const useUpdateMyNotificationPreferences = (
-  options?: UseMutationOptions<
-    NotificationPreferences,
-    Error,
-    Partial<NotificationPreferences>
-  >
-) => {
-  const queryClient = useQueryClient();
-  return useMutation<
-    NotificationPreferences,
-    Error,
-    Partial<NotificationPreferences>
-  >({
-    mutationFn: updateMyNotificationPreferences,
-    onSuccess: (updatedPreferences) => {
-      queryClient.setQueryData(
-        userKeys.notificationPreferences(),
-        updatedPreferences
-      );
-      // toast.success("Notification preferences updated!"); // Sẽ xử lý ở component
-    },
-    onError: (error) => {
-      // toast.error(error.message || "Failed to update preferences."); // Sẽ xử lý ở component
-    },
-    ...options,
-  });
-};
+// /** Hook cập nhật cài đặt thông báo email */
+// export const useUpdateMyNotificationPreferences = (
+//   options?: UseMutationOptions<
+//     NotificationPreferences,
+//     Error,
+//     Partial<NotificationPreferences>
+//   >
+// ) => {
+//   const queryClient = useQueryClient();
+//   return useMutation<
+//     NotificationPreferences,
+//     Error,
+//     Partial<NotificationPreferences>
+//   >({
+//     mutationFn: updateMyNotificationPreferences,
+//     onSuccess: (updatedPreferences) => {
+//       queryClient.setQueryData(
+//         userKeys.notificationPreferences(),
+//         updatedPreferences
+//       );
+//       // toast.success("Notification preferences updated!"); // Sẽ xử lý ở component
+//     },
+//     onError: (error) => {
+//       // toast.error(error.message || "Failed to update preferences."); // Sẽ xử lý ở component
+//     },
+//     ...options,
+//   });
+// };

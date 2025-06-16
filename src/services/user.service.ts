@@ -140,9 +140,9 @@ export const getMyNotificationPreferences =
     return apiHelper.get('/users/me/notification-preferences');
   };
 
-/** Cập nhật cài đặt thông báo email của user */
-export const updateMyNotificationPreferences = async (
-  preferences: Partial<NotificationPreferences> // Cho phép cập nhật một phần
-): Promise<NotificationPreferences> => {
-  return apiHelper.put('/users/me/notification-preferences', preferences);
-};
+// /** Cập nhật cài đặt thông báo email của user */
+// export const updateMyNotificationPreferences = async (
+//   preferences: Partial<NotificationPreferences> // Cho phép cập nhật một phần
+// ): Promise<NotificationPreferences> => {
+//   return apiHelper.put('/users/me/notification-preferences', preferences);
+// };

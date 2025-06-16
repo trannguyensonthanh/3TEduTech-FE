@@ -166,35 +166,37 @@ export const EditProfileTab: React.FC<EditProfileTabProps> = ({
         title: 'Profile Updated',
         description: 'Your profile information has been successfully saved.',
       });
-      // Reset form với dữ liệu mới để isDirty = false và cập nhật defaultValues
-      const resetValues = {
-        fullName: updatedData.fullName || '',
-        headline: updatedData.headline || '',
-        phoneNumber: updatedData.phoneNumber || '',
-        location: updatedData.location || '',
-        birthDate: updatedData.birthDate
+      // Ưu tiên setValue từng trường với dữ liệu mới nhất (tránh mất dữ liệu do backend trả về cũ)
+      setValue('fullName', updatedData.fullName || '', { shouldDirty: false });
+      setValue('headline', updatedData.headline || '', { shouldDirty: false });
+      setValue('phoneNumber', updatedData.phoneNumber || '', {
+        shouldDirty: false,
+      });
+      setValue('location', updatedData.location || '', { shouldDirty: false });
+      setValue(
+        'birthDate',
+        updatedData.birthDate
           ? format(parseISO(updatedData.birthDate), 'yyyy-MM-dd')
           : '',
-        gender:
-          updatedData.gender === 'MALE'
-            ? 'MALE'
-            : updatedData.gender === 'FEMALE'
-              ? 'FEMALE'
-              : updatedData.gender === 'OTHER'
-                ? 'OTHER'
-                : '',
-        coverImageUrl: updatedData.coverImageUrl || '',
-      } as {
-        fullName: string;
-        headline: string;
-        phoneNumber: string;
-        location: string;
-        birthDate: string;
-        gender: '' | 'MALE' | 'FEMALE' | 'OTHER';
-        coverImageUrl: string;
-      };
-      reset(resetValues);
+        { shouldDirty: false }
+      );
+      setValue(
+        'gender',
+        updatedData.gender === 'MALE'
+          ? 'MALE'
+          : updatedData.gender === 'FEMALE'
+            ? 'FEMALE'
+            : updatedData.gender === 'OTHER'
+              ? 'OTHER'
+              : '',
+        { shouldDirty: false }
+      );
+      setValue('coverImageUrl', updatedData.coverImageUrl || '', {
+        shouldDirty: false,
+      });
       setCoverPreview(updatedData.coverImageUrl || null);
+      setAvatarPreview(updatedData.avatarUrl || null);
+      setAvatarFile(null);
       onUpdateSuccess?.(); // Gọi callback để refetch profile ở UserProfilePage
     },
     onError: (error) => {

@@ -15,6 +15,7 @@ interface DiscussionPostItemProps {
   currentUserId?: number;
   onReply: (parentPost: Post) => void;
   onDeleteRequest: (postId: number) => void;
+  onEditRequest?: (post: Post) => void;
 }
 
 export const DiscussionPostItem: React.FC<DiscussionPostItemProps> = ({
@@ -23,10 +24,17 @@ export const DiscussionPostItem: React.FC<DiscussionPostItemProps> = ({
   currentUserId,
   onReply,
   onDeleteRequest,
+  onEditRequest,
 }) => {
-  const isAuthor = currentUserId === post.accountId;
+  const isAuthor = currentUserId === Number(post.accountId);
   const isInstructorPost = post.accountId === courseInstructorId;
-
+  console.log('DiscussionPostItem', {
+    post,
+    courseInstructorId,
+    currentUserId,
+    isAuthor,
+    isInstructorPost,
+  });
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -81,14 +89,24 @@ export const DiscussionPostItem: React.FC<DiscussionPostItemProps> = ({
             </Button>
           )}
           {isAuthor && (
-            <Button
-              variant='ghost'
-              size='sm'
-              className='text-xs text-muted-foreground hover:text-destructive'
-              onClick={() => onDeleteRequest(post.postId)}
-            >
-              <Icons.trash size={14} className='mr-1' /> Delete
-            </Button>
+            <>
+              <Button
+                variant='ghost'
+                size='sm'
+                className='text-xs text-muted-foreground hover:text-blue-600'
+                onClick={() => onEditRequest && onEditRequest(post)}
+              >
+                <Icons.edit size={14} className='mr-1' /> Edit
+              </Button>
+              <Button
+                variant='ghost'
+                size='sm'
+                className='text-xs text-muted-foreground hover:text-destructive'
+                onClick={() => onDeleteRequest(post.postId)}
+              >
+                <Icons.trash size={14} className='mr-1' /> Delete
+              </Button>
+            </>
           )}
         </div>
       </div>

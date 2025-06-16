@@ -302,7 +302,7 @@ export interface CourseLearningData {
   slug: string;
   instructorName?: string; // Denormalized for convenience
   instructorAvatar?: string | null;
-  instructorAccountId?: number;
+  instructorId?: number;
   sections: Section[]; // Full curriculum
   isEnrolled: boolean;
   userProgress?: {

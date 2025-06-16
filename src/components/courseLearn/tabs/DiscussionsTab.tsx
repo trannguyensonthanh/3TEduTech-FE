@@ -9,6 +9,7 @@ import {
   useInfiniteDiscussionPosts,
   useCreateDiscussionPost,
   useDeleteDiscussionPost,
+  useUpdateDiscussionPost,
   discussionKeys,
 } from '@/hooks/queries/discussion.queries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -50,6 +51,10 @@ export const DiscussionsTab: React.FC<DiscussionsTabProps> = ({
   const [newThreadText, setNewThreadText] = useState('');
   const [replyingTo, setReplyingTo] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const { mutate: updatePost, isPending: isUpdatingPost } =
+    useUpdateDiscussionPost();
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editText, setEditText] = useState('');
 
   // --- Thread Fetching ---
   const threadQueryParams = useMemo(
@@ -172,6 +177,27 @@ export const DiscussionsTab: React.FC<DiscussionsTabProps> = ({
     );
   };
 
+  const handleEditPost = (post: Post) => {
+    setEditingPost(post);
+    setEditText(post.postText);
+  };
+
+  const handleUpdatePost = () => {
+    if (!editingPost || !editText.trim()) return;
+    updatePost(
+      { postId: editingPost.postId, data: { text: editText } },
+      {
+        onSuccess: () => {
+          toast.success(t('lessonTabs.toast.commentUpdated'));
+          setEditingPost(null);
+          setEditText('');
+          refetchPosts();
+        },
+        onError: (err) => toast.error((err as Error).message),
+      }
+    );
+  };
+
   if (!userData)
     return (
       <p className='p-4 text-center text-muted-foreground'>
@@ -260,8 +286,6 @@ export const DiscussionsTab: React.FC<DiscussionsTabProps> = ({
           <>
             <div className='flex-grow overflow-y-auto'>
               <ScrollArea className='h-[calc(100vh-350px)] pr-2'>
-                {' '}
-                {/* Adjust height as needed */}
                 <h3 className='font-bold text-lg mb-4'>
                   {selectedThread.title}
                 </h3>
@@ -270,16 +294,47 @@ export const DiscussionsTab: React.FC<DiscussionsTabProps> = ({
                     <Icons.spinner className='h-6 w-6 animate-spin mx-auto' />
                   </div>
                 ) : (
-                  allPosts.map((post) => (
-                    <DiscussionPostItem
-                      key={post.postId}
-                      post={post}
-                      courseInstructorId={courseInstructorId}
-                      currentUserId={Number(userData?.id)}
-                      onReply={setReplyingTo}
-                      onDeleteRequest={() => setPostToDelete(post)}
-                    />
-                  ))
+                  allPosts.map((post) =>
+                    editingPost && editingPost.postId === post.postId ? (
+                      <div key={post.postId} className='mb-4'>
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={3}
+                          className='mb-2'
+                        />
+                        <div className='flex gap-2'>
+                          <Button
+                            size='sm'
+                            onClick={handleUpdatePost}
+                            disabled={isUpdatingPost || !editText.trim()}
+                          >
+                            {isUpdatingPost ? (
+                              <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+                            ) : null}
+                            {t('lessonTabs.saveEdit', 'Save')}
+                          </Button>
+                          <Button
+                            size='sm'
+                            variant='ghost'
+                            onClick={() => setEditingPost(null)}
+                          >
+                            {t('lessonTabs.cancelEdit', 'Cancel')}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <DiscussionPostItem
+                        key={post.postId}
+                        post={post}
+                        courseInstructorId={courseInstructorId}
+                        currentUserId={Number(userData?.id)}
+                        onReply={setReplyingTo}
+                        onDeleteRequest={() => setPostToDelete(post)}
+                        onEditRequest={handleEditPost}
+                      />
+                    )
+                  )
                 )}
                 <div ref={postsLoadMoreRef} className='text-center'>
                   {isFetchingNextPosts && (

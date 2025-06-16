@@ -76,6 +76,23 @@ const PromotionDialog: React.FC<PromotionDialogProps> = ({
 
   useEffect(() => {
     if (open && promotion) {
+      // Safely parse and format dates, fallback to today if invalid
+      let startDate = '';
+      let endDate = '';
+      try {
+        startDate = promotion.startDate
+          ? format(new Date(promotion.startDate), 'yyyy-MM-dd')
+          : format(new Date(), 'yyyy-MM-dd');
+      } catch {
+        startDate = format(new Date(), 'yyyy-MM-dd');
+      }
+      try {
+        endDate = promotion.endDate
+          ? format(new Date(promotion.endDate), 'yyyy-MM-dd')
+          : format(new Date(), 'yyyy-MM-dd');
+      } catch {
+        endDate = format(new Date(), 'yyyy-MM-dd');
+      }
       form.reset({
         promotionName: promotion.promotionName ?? '',
         discountCode: promotion.discountCode ?? '',
@@ -84,8 +101,8 @@ const PromotionDialog: React.FC<PromotionDialogProps> = ({
         discountValue: promotion.discountValue ?? 0,
         minOrderValue: promotion.minOrderValue ?? undefined,
         maxDiscountAmount: promotion.maxDiscountAmount ?? undefined,
-        startDate: format(new Date(promotion.startDate), 'yyyy-MM-dd'),
-        endDate: format(new Date(promotion.endDate), 'yyyy-MM-dd'),
+        startDate,
+        endDate,
         maxUsageLimit: promotion.maxUsageLimit ?? undefined,
         status: (promotion.status === 'ACTIVE' ||
         promotion.status === 'INACTIVE'

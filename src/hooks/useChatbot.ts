@@ -56,7 +56,7 @@ export const useChatbot = ({
             const updatedMessages = [...prev];
             updatedMessages[lastMessageIndex] = {
               ...updatedMessages[lastMessageIndex],
-              suggestedQuestions: ['đẹp trai hơn thái đk ?'], // data.suggested_questions
+              suggestedQuestions: data.suggested_questions, // data.suggested_questions
             };
 
             return updatedMessages;
@@ -76,7 +76,7 @@ export const useChatbot = ({
         sender: 'bot',
         sources: data.sources,
         suggestedQuestions: [],
-        voice: data.voice, // *** LƯU DỮ LIỆU VOICE ***
+        voice: data.voice,
       };
       // Thêm tin nhắn của bot vào trước
       setMessages((prev) => [...prev, botMessage]);

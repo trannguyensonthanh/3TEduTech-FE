@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyProfile } from '@/hooks/queries/user.queries';
 import { EditProfileTab } from '@/components/profile/EditProfileTab';
 import { AccountSecurityTab } from '@/components/profile/AccountSecurityTab';
-import { PreferencesTab } from '@/components/profile/PreferencesTab';
+// import { PreferencesTab } from '@/components/profile/PreferencesTab';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'; // Cho TabsList trên mobile
@@ -30,11 +30,11 @@ const profileTabs = [
     label: 'Account Security',
     icon: <Icons.lockKeyhole className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />,
   },
-  {
-    value: 'preferences',
-    label: 'Preferences',
-    icon: <Icons.settings2 className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />,
-  },
+  // {
+  //   value: 'preferences',
+  //   label: 'Preferences',
+  //   icon: <Icons.settings2 className='mr-2 h-4 w-4 sm:h-5 sm:w-5' />,
+  // },
   // Thêm các tab khác nếu cần trong tương lai
   // { value: "notifications", label: "Notifications", icon: <Icons.bellRing className="mr-2 h-5 w-5" /> },
   // { value: "billing", label: "Billing", icon: <Icons.creditCard className="mr-2 h-5 w-5" /> },
@@ -354,17 +354,6 @@ const UserProfilePage = () => {
                       )}
                     >
                       <AccountSecurityTab />
-                    </TabsContent>
-
-                    <TabsContent
-                      value='preferences'
-                      forceMount={true}
-                      className={cn(
-                        activeTab !== 'preferences' && 'hidden',
-                        '!mt-0'
-                      )}
-                    >
-                      <PreferencesTab />
                     </TabsContent>
                   </motion.div>
                 </AnimatePresence>

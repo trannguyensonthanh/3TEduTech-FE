@@ -535,7 +535,7 @@ const IntroPage = () => {
     >
       {!isFadingOut && (
         <>
-          <Canvas
+          <Canvas // dùng Canvas để tạo không gian 3D
             frameloop={frameloopMode}
             gl={{
               antialias: false,
@@ -546,7 +546,7 @@ const IntroPage = () => {
             dpr={[1, 1.6]}
             shadows
           >
-            <CameraAnimator
+            <CameraAnimator // điều khiển camera theo trạng thái
               introState={introState}
               finalTreeHeight={FINAL_TRUNK_HEIGHT}
               currentTreeScale={treeAppearSpring.scale.get()}
@@ -608,8 +608,8 @@ const IntroPage = () => {
                 shrinkFadeDuration={SEED_SHRINK_FADE_DURATION}
                 initialRadius={0.55}
               />
-              {showTreeModel && (
-                <animated.group
+              {showTreeModel && ( // Chỉ hiển thị TreeModel khi cần
+                <animated.group // Sử dụng animated.group để scale và position
                   scale={0.001}
                   // Và bọc TreeModelSimple trong một group con để scale Y riêng
                   position={[-10, -5, 2]} // Vị trí bạn đã thấy đẹp
@@ -643,7 +643,7 @@ const IntroPage = () => {
                 isActiveNow={introState !== 'idle' && introState !== 'exiting'}
               />{' '}
               {/* Tăng count cho MagicParticles */}
-              <TreeFlourishParticles
+              <TreeFlourishParticles // dùng TreeFlourishParticles để tạo hiệu ứng lấp lánh
                 isActive={triggerFlourish}
                 onComplete={handleFlourishComplete}
                 // Điều chỉnh treeHeight để hạt phát ra từ phần ngọn của cây đã scale

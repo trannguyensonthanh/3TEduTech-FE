@@ -94,9 +94,7 @@ export const DiscussionPostForm: React.FC<DiscussionPostFormProps> = ({
             {isSubmitting && (
               <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
             )}
-            {replyingTo
-              ? t('lessonTabs.postReply')
-              : t('lessonTabs.commentPosted')}
+            {replyingTo ? t('lessonTabs.postReply') : 'Post Comment'}
           </Button>
         </div>
       </div>

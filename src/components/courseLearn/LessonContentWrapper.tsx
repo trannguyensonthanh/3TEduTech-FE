@@ -47,7 +47,7 @@ const LessonContentWrapper: React.FC<LessonContentWrapperProps> = ({
   onVideoEnded,
 }) => {
   const { t } = useTranslation();
-
+  console.log('course', course);
   if (!activeLesson || !activeSection) {
     return (
       <main className='flex-1 flex flex-col items-center justify-center p-8 text-center bg-muted/30 dark:bg-background'>
@@ -183,7 +183,7 @@ const LessonContentWrapper: React.FC<LessonContentWrapperProps> = ({
             <LessonTabs
               lesson={activeLesson}
               courseId={course.courseId}
-              courseInstructorId={course.instructorAccountId!}
+              courseInstructorId={course.instructorId!}
             />
           </div>
         </div>
