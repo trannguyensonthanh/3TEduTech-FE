@@ -124,19 +124,19 @@ const CheckoutPage: React.FC = () => {
     const methods = [];
     if (currency === 'VND') {
       methods.push(
-        // {
-        //   id: 'VNPAY',
-        //   name: 'VNPAY Gateway',
-        //   icon: (
-        //     <img
-        //       src='/images/payment/vnpay_logo.jpg'
-        //       alt='VNPAY'
-        //       className='h-6 w-auto'
-        //     />
-        //   ),
-        //   description: 'ATM, Visa/Master, QR Code.',
-        //   disabled: true,
-        // },
+        {
+          id: 'VNPAY',
+          name: 'VNPAY Gateway',
+          icon: (
+            <img
+              src='/images/payment/vnpay_logo.jpg'
+              alt='VNPAY'
+              className='h-6 w-auto'
+            />
+          ),
+          description: 'ATM, Visa/Master, QR Code.',
+          // disabled: true,
+        },
         {
           id: 'MOMO',
           name: 'MoMo E-Wallet',
